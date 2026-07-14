@@ -7,19 +7,20 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 0 - Project definition, architecture decisions, and engineering foundation |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 0 implementation completion | 100% of local implementation and acceptance checks |
-| Current branch | `phase/00-foundation` |
-| Latest PR-metadata commit before this CI-result update | `60a4c82` |
+| Current metadata branch | `docs/phase-00-post-merge-metadata` |
+| Latest main commit SHA | `097c01a40d3e153c3eaa6cfbea09f0ff981059fc` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | Draft PR [#1](https://github.com/SaXingrui-UM/aegishunt/pull/1), open from `phase/00-foundation` to `main` |
-| CI status | Passing; both required GitHub `quality` checks completed successfully when last inspected, and this documentation-only update re-triggers the same checks |
-| Phase tag | Not created; prohibited before PR merge and explicit instruction |
-| Working tree | Clean after this CI-result commit and push; the generated PR body is intentionally ignored |
-| Next action | User reviews Draft PR #1, confirms CI, marks it ready when appropriate, and merges it using the agreed squash strategy |
+| Pull request | [#1](https://github.com/SaXingrui-UM/aegishunt/pull/1) merged into `main` with squash and merge |
+| CI status | Passed; both final `quality` checks completed successfully before merge |
+| Phase tag | Annotated tag `phase-00-complete`, pushed and remotely verified at `097c01a` |
+| Working tree | Clean after the post-merge metadata commit; no Phase 1 changes are included |
+| Next action | Stop and wait for explicit user instruction; do not begin Phase 1 automatically |
 
-Phase 1 has not started. The phase must not be marked `Phase complete` before
-the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
+Phase 0 is complete: its PR was merged into `main`, the merge commit was pulled
+locally, and the explicitly requested annotated checkpoint tag was pushed and
+verified. Phase 1 has not started.
 
 ## Completed work
 
@@ -38,6 +39,8 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
   by ignoring generated figure artifacts, then confirmed no blocking findings remained.
 - Confirmed that no database, PCAP parser, flow feature, dataset, detection, ML,
   correlation, hypothesis, case, feedback, or replay implementation was added.
+- Confirmed PR #1 was squash-merged into `main` as `097c01a`.
+- Created, pushed, and remotely verified annotated tag `phase-00-complete`.
 
 ## Files created
 
@@ -84,6 +87,16 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 | Create Draft PR #1 with the GitHub connector | Successful; open, mergeable, base `main`, head `phase/00-foundation` |
 | Fetch PR and CI metadata | Successful; no review submitted and workflow run `29360239814` initially `in_progress` |
 | Final `gh pr checks 1` before this CI-result update | Exit 0; both `quality` checks passed (runs `29360314521` and `29360319383`) |
+| `git checkout main` | Exit 0 |
+| `git pull --ff-only origin main` | Exit 0; fast-forwarded from `fafe98f` to `097c01a` |
+| Phase 0 file and merge verification on `main` | Exit 0; required documents, application shells, and tests are present |
+| Local and remote tag absence checks | Confirmed `phase-00-complete` did not exist before creation |
+| `git tag -a phase-00-complete -m "AegisHunt Phase 0 complete: project foundation and architecture"` | Exit 0; annotated tag targets `097c01a` |
+| `git push origin phase-00-complete` | Exit 0 |
+| Remote tag verification | Exit 0; remote peeled tag target equals `main` at `097c01a` |
+| First post-merge `.venv/bin/pytest` | Exit 2 during collection because macOS marked virtual-environment `.pth` files hidden, so Python skipped the editable package path |
+| Editable reinstall and environment diagnosis | Install exit 0; diagnosis confirmed Python was skipping all hidden `.pth` files |
+| `chflags nohidden .venv/lib/python3.12/site-packages/*.pth` and pytest rerun | Exit 0; package import restored, 11 tests passed with 97.06% coverage |
 
 ## Tests
 
@@ -112,9 +125,7 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 - Only Phase 0 application shells exist; every business workflow remains planned.
 - No real or synthetic telemetry, model, metric, database, or generated artifact is included.
 - Performance has not been measured and no performance result is claimed.
-- Remote CI is running and PR review has not yet been submitted. The phase remains
-  incomplete until the PR is reviewed and merged and a later explicit instruction
-  authorizes the checkpoint tag.
+- Phase 1+ capabilities remain intentionally unimplemented.
 
 ## Review outcome
 
@@ -127,6 +138,6 @@ Required checks passed after the fix. The second pass found no blocking or high-
 
 ## Next phase
 
-Phase 1 is configuration, schemas, and storage foundation. It must not begin
-until the current phase reaches its GitHub checkpoint and the user completes the
-required review/merge process. No Phase 1 code has been started.
+Phase 1 is configuration, schemas, and storage foundation. Phase 0 now has its
+merged checkpoint and completion tag, but Phase 1 must not begin without a new
+explicit user instruction. No Phase 1 code has been started.

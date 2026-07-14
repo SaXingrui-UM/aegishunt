@@ -8,9 +8,8 @@ implementing later-phase telemetry, storage, flow, or ML behavior.
 
 ## Status
 
-Implementation complete — awaiting PR review. Draft PR #1 is open against `main`.
-This phase is not `Phase complete`; the PR has not been merged and no completion
-tag has been created.
+Phase complete. PR #1 was squash-merged into `main` as commit `097c01a`, and the
+annotated `phase-00-complete` tag was pushed and remotely verified at that commit.
 
 ## Completed scope
 
@@ -50,9 +49,14 @@ tag has been created.
 - `e3ea897` - `docs: record Phase 0 progress and release notes`
 - `a51ae44` - `fix: ignore generated figure artifacts`
 - `9d393fc` - `docs: record Phase 0 review outcome`
-- Final checkpoint-metadata commit - the commit containing this revision.
+- `28528ef` - `docs: finalize Phase 0 local checkpoint`
+- `adda438` - `docs: update Phase 0 publication status`
+- `60a4c82` - `docs: record Phase 0 pull request checkpoint`
+- `f482386` - `docs: record Phase 0 CI result`
 
 The `main` baseline is `fafe98f` (`chore: initialize AegisHunt source materials`).
+GitHub squash-merged the Phase 0 branch as `097c01a`
+(`phase(00): complete project foundation and architecture`).
 
 ## Tests
 
@@ -78,7 +82,7 @@ requirements, data-integrity, secret, oversized-file, or scope-creep findings.
 - No database, PCAP parser, flow records, behavioral features, datasets, models,
   detections, alerts, hypotheses, cases, replay engine, or measured performance exists.
 - No generated model, dataset, database, PCAP, or evaluation artifact is committed.
-- Both required GitHub Actions `quality` checks passed at the checkpoint; PR review and merge remain pending.
+- Both required GitHub Actions `quality` checks passed before PR #1 was merged.
 
 ## Migration notes
 
@@ -89,11 +93,11 @@ Python 3.11+ and install from `pyproject.toml` with the `dev` extra.
 
 - Branch: `phase/00-foundation`
 - Remote: `git@github.com:SaXingrui-UM/aegishunt.git` (private)
-- Pull request: [#1 - Project foundation and architecture](https://github.com/SaXingrui-UM/aegishunt/pull/1) (open Draft)
+- Pull request: [#1 - Project foundation and architecture](https://github.com/SaXingrui-UM/aegishunt/pull/1) (merged)
 - PR number: `1`
-- CI at checkpoint: both `quality` checks passed (runs `29360314521` and `29360319383`); this documentation-only CI-result commit re-triggers the same checks
-- Merge commit: pending
-- Tag: not created; must remain absent until merge and explicit user instruction
+- CI at final PR head: both `quality` checks passed (runs `29360450221` and `29360452470`)
+- Merge commit: `097c01a40d3e153c3eaa6cfbea09f0ff981059fc`
+- Tag: annotated `phase-00-complete`, remotely verified at the merge commit
 - Merge strategy: squash and merge
 
 ## Next phase
