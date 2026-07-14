@@ -8,9 +8,9 @@ implementing later-phase telemetry, storage, flow, or ML behavior.
 
 ## Status
 
-Implementation complete locally - GitHub checkpoint blocked. This phase is not
-`Phase complete`; its branch has not been pushed and its PR has not been created
-because `gh` and `origin` are unavailable.
+Implementation complete locally - GitHub publication in progress. This phase is
+not `Phase complete`; its PR has not yet been reviewed or merged and no completion
+tag has been created.
 
 ## Completed scope
 
@@ -78,7 +78,7 @@ requirements, data-integrity, secret, oversized-file, or scope-creep findings.
 - No database, PCAP parser, flow records, behavioral features, datasets, models,
   detections, alerts, hypotheses, cases, replay engine, or measured performance exists.
 - No generated model, dataset, database, PCAP, or evaluation artifact is committed.
-- Remote publication is blocked by missing GitHub CLI and absent `origin`.
+- Remote CI and PR review remain pending until the branch is pushed and the Phase 0 PR is created.
 
 ## Migration notes
 
@@ -88,7 +88,8 @@ Python 3.11+ and install from `pyproject.toml` with the `dev` extra.
 ## Version-control checkpoint
 
 - Branch: `phase/00-foundation`
-- Pull request: pending (blocked before creation)
+- Remote: `git@github.com:SaXingrui-UM/aegishunt.git` (private)
+- Pull request: pending creation during the publication workflow
 - PR number: pending
 - Merge commit: pending
 - Tag: not created; must remain absent until merge and explicit user instruction

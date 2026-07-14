@@ -7,16 +7,16 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 0 - Project definition, architecture decisions, and engineering foundation |
-| Status | Implementation complete locally - GitHub checkpoint blocked |
+| Status | Implementation complete locally - GitHub publication in progress |
 | Phase 0 implementation completion | 100% of local implementation and acceptance checks |
 | Current branch | `phase/00-foundation` |
-| Latest implementation/review-fix commit before this tracking update | `a51ae44` |
-| GitHub remote | Not configured |
-| Pull request | Not created; `gh` is unavailable and no `origin` exists |
-| CI status | Not run remotely; local equivalents pass |
+| Latest implementation/checkpoint commit before this tracking update | `28528ef` |
+| GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
+| Pull request | Pending creation after the publication-status commit is pushed |
+| CI status | Pending first Phase 0 branch push; local equivalents pass |
 | Phase tag | Not created; prohibited before PR merge and explicit instruction |
-| Working tree | Clean after `9d393fc`; the generated PR body is intentionally ignored |
-| Next action | Install/authenticate `gh`, create or attach a private GitHub repository, push the phase branch, create the Phase 0 PR, and wait for review |
+| Working tree | Clean before this publication-status documentation update; the generated PR body is intentionally ignored |
+| Next action | Commit this status update, push `phase/00-foundation`, create the Phase 0 PR, record its metadata, and wait for review |
 
 Phase 1 has not started. The phase must not be marked `Phase complete` before
 the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
@@ -75,6 +75,11 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 | Documentation structure checks | Exit 0 |
 | First review against `main` | One actionable finding: generated files under `artifacts/figures/` were not ignored |
 | Review fix and second review | Fix committed as `a51ae44`; no blocking findings remained |
+| `gh auth status` and private repository verification | Exit 0; authenticated as `SaXingrui-UM`, `origin/main` available |
+| Publication preflight `ruff check .` | Initial bare command exit 127 because the non-interactive shell did not include `.venv/bin`; explicit `.venv/bin/ruff check .` exit 0 |
+| Publication preflight `.venv/bin/mypy src` | Exit 0; eight source files checked |
+| Publication preflight `.venv/bin/pytest` | Exit 0; 11 passed, 97.06% branch-aware coverage |
+| Publication preflight diff and working-tree checks | Exit 0; no whitespace errors and no uncommitted files |
 
 ## Tests
 
@@ -98,14 +103,13 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 - No LLM dependency in the core system.
 - Squash and merge remains the default merge strategy.
 
-## Limitations and blockers
+## Limitations
 
 - Only Phase 0 application shells exist; every business workflow remains planned.
 - No real or synthetic telemetry, model, metric, database, or generated artifact is included.
 - Performance has not been measured and no performance result is claimed.
-- GitHub CLI is absent (`gh: command not found`), no remote is configured, and
-  the GitHub connector cannot create a repository. Therefore push, PR creation,
-  remote CI, PR metadata, and review state cannot be completed in this environment.
+- Remote CI and PR review have not run yet because the Phase 0 branch and PR are
+  being published in the current checkpoint workflow.
 
 ## Review outcome
 
