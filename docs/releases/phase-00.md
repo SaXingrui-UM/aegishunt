@@ -47,7 +47,9 @@ because `gh` and `origin` are unavailable.
 - `bf90cbf` - `test: add Phase 0 smoke coverage`
 - `df6fb75` - `ci: add Phase 0 quality checks`
 - `86f89a0` - `docs: define requirements and architecture decisions`
-- Progress/release metadata commit - pending at the time this file was authored.
+- `e3ea897` - `docs: record Phase 0 progress and release notes`
+- `a51ae44` - `fix: ignore generated figure artifacts`
+- Final review-metadata commit - the commit containing this revision.
 
 The `main` baseline is `fafe98f` (`chore: initialize AegisHunt source materials`).
 
@@ -60,6 +62,14 @@ The `main` baseline is `fafe98f` (`chore: initialize AegisHunt source materials`
 - API `/health` and `/docs`: HTTP 200 in a live Uvicorn process.
 - Streamlit: import, live health endpoint, HTTP root, and Chrome-rendered content verified.
 - CI and pre-commit YAML: parsed successfully.
+
+## Review findings
+
+The first review against `main` found one actionable issue: future generated
+figures under `artifacts/figures/` were not ignored. Commit `a51ae44` added the
+directory rule and `.gitkeep` exception. Quality checks passed after the fix.
+The second pass found no blocking or high-severity correctness, security,
+requirements, data-integrity, secret, oversized-file, or scope-creep findings.
 
 ## Known limitations
 
