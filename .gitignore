@@ -33,9 +33,11 @@ data/processed/*
 artifacts/models/*
 artifacts/logs/*
 artifacts/evaluations/*
+artifacts/figures/*
 !artifacts/models/.gitkeep
 !artifacts/logs/.gitkeep
 !artifacts/evaluations/.gitkeep
+!artifacts/figures/.gitkeep
 
 *.db
 *.sqlite
