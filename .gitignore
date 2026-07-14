@@ -1,0 +1,55 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python environments and bytecode
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Test, type-check, lint, and coverage output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Packaging output
+dist/
+build/
+*.egg-info/
+
+# Runtime and generated data
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+artifacts/models/*
+artifacts/logs/*
+artifacts/evaluations/*
+!artifacts/models/.gitkeep
+!artifacts/logs/.gitkeep
+!artifacts/evaluations/.gitkeep
+
+*.db
+*.sqlite
+*.sqlite3
+*.pcap
+*.pcapng
+*.joblib
+*.pkl
+
+# Generated PR bodies and local scratch files
+.github/generated/
+tmp/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
