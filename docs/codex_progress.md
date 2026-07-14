@@ -7,16 +7,16 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 0 - Project definition, architecture decisions, and engineering foundation |
-| Status | Implementation complete locally - GitHub publication in progress |
+| Status | Implementation complete — awaiting PR review |
 | Phase 0 implementation completion | 100% of local implementation and acceptance checks |
 | Current branch | `phase/00-foundation` |
-| Latest implementation/checkpoint commit before this tracking update | `28528ef` |
+| Latest publication-status commit before this PR-metadata update | `adda438` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | Pending creation after the publication-status commit is pushed |
-| CI status | Pending first Phase 0 branch push; local equivalents pass |
+| Pull request | Draft PR [#1](https://github.com/SaXingrui-UM/aegishunt/pull/1), open from `phase/00-foundation` to `main` |
+| CI status | GitHub Actions run `29360239814` was `in_progress` for `adda438` when inspected; this metadata push will trigger the current checks |
 | Phase tag | Not created; prohibited before PR merge and explicit instruction |
-| Working tree | Clean before this publication-status documentation update; the generated PR body is intentionally ignored |
-| Next action | Commit this status update, push `phase/00-foundation`, create the Phase 0 PR, record its metadata, and wait for review |
+| Working tree | Clean after this PR-metadata commit and push; the generated PR body is intentionally ignored |
+| Next action | User reviews Draft PR #1, confirms CI, marks it ready when appropriate, and merges it using the agreed squash strategy |
 
 Phase 1 has not started. The phase must not be marked `Phase complete` before
 the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
@@ -80,6 +80,9 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 | Publication preflight `.venv/bin/mypy src` | Exit 0; eight source files checked |
 | Publication preflight `.venv/bin/pytest` | Exit 0; 11 passed, 97.06% branch-aware coverage |
 | Publication preflight diff and working-tree checks | Exit 0; no whitespace errors and no uncommitted files |
+| `git push -u origin phase/00-foundation` | Exit 0; remote branch created and SHA verified as `adda438` before this metadata commit |
+| Create Draft PR #1 with the GitHub connector | Successful; open, mergeable, base `main`, head `phase/00-foundation` |
+| Fetch PR and CI metadata | Successful; no review submitted and workflow run `29360239814` initially `in_progress` |
 
 ## Tests
 
@@ -108,8 +111,9 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 - Only Phase 0 application shells exist; every business workflow remains planned.
 - No real or synthetic telemetry, model, metric, database, or generated artifact is included.
 - Performance has not been measured and no performance result is claimed.
-- Remote CI and PR review have not run yet because the Phase 0 branch and PR are
-  being published in the current checkpoint workflow.
+- Remote CI is running and PR review has not yet been submitted. The phase remains
+  incomplete until the PR is reviewed and merged and a later explicit instruction
+  authorizes the checkpoint tag.
 
 ## Review outcome
 

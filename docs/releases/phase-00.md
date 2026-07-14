@@ -8,8 +8,8 @@ implementing later-phase telemetry, storage, flow, or ML behavior.
 
 ## Status
 
-Implementation complete locally - GitHub publication in progress. This phase is
-not `Phase complete`; its PR has not yet been reviewed or merged and no completion
+Implementation complete — awaiting PR review. Draft PR #1 is open against `main`.
+This phase is not `Phase complete`; the PR has not been merged and no completion
 tag has been created.
 
 ## Completed scope
@@ -78,7 +78,7 @@ requirements, data-integrity, secret, oversized-file, or scope-creep findings.
 - No database, PCAP parser, flow records, behavioral features, datasets, models,
   detections, alerts, hypotheses, cases, replay engine, or measured performance exists.
 - No generated model, dataset, database, PCAP, or evaluation artifact is committed.
-- Remote CI and PR review remain pending until the branch is pushed and the Phase 0 PR is created.
+- GitHub Actions is running for the PR head; PR review and merge remain pending.
 
 ## Migration notes
 
@@ -89,8 +89,9 @@ Python 3.11+ and install from `pyproject.toml` with the `dev` extra.
 
 - Branch: `phase/00-foundation`
 - Remote: `git@github.com:SaXingrui-UM/aegishunt.git` (private)
-- Pull request: pending creation during the publication workflow
-- PR number: pending
+- Pull request: [#1 - Project foundation and architecture](https://github.com/SaXingrui-UM/aegishunt/pull/1) (open Draft)
+- PR number: `1`
+- CI at checkpoint: workflow run `29360239814` was `in_progress` before the PR-metadata push
 - Merge commit: pending
 - Tag: not created; must remain absent until merge and explicit user instruction
 - Merge strategy: squash and merge
