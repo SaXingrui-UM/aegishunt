@@ -49,7 +49,8 @@ because `gh` and `origin` are unavailable.
 - `86f89a0` - `docs: define requirements and architecture decisions`
 - `e3ea897` - `docs: record Phase 0 progress and release notes`
 - `a51ae44` - `fix: ignore generated figure artifacts`
-- Final review-metadata commit - the commit containing this revision.
+- `9d393fc` - `docs: record Phase 0 review outcome`
+- Final checkpoint-metadata commit - the commit containing this revision.
 
 The `main` baseline is `fafe98f` (`chore: initialize AegisHunt source materials`).
 

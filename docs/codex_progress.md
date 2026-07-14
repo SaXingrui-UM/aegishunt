@@ -15,7 +15,7 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Pull request | Not created; `gh` is unavailable and no `origin` exists |
 | CI status | Not run remotely; local equivalents pass |
 | Phase tag | Not created; prohibited before PR merge and explicit instruction |
-| Working tree | Expected clean after the progress/release metadata commit; verify with `git status --short` |
+| Working tree | Clean after `9d393fc`; the generated PR body is intentionally ignored |
 | Next action | Install/authenticate `gh`, create or attach a private GitHub repository, push the phase branch, create the Phase 0 PR, and wait for review |
 
 Phase 1 has not started. The phase must not be marked `Phase complete` before
