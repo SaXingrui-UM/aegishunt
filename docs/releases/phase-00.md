@@ -78,7 +78,7 @@ requirements, data-integrity, secret, oversized-file, or scope-creep findings.
 - No database, PCAP parser, flow records, behavioral features, datasets, models,
   detections, alerts, hypotheses, cases, replay engine, or measured performance exists.
 - No generated model, dataset, database, PCAP, or evaluation artifact is committed.
-- GitHub Actions is running for the PR head; PR review and merge remain pending.
+- Both required GitHub Actions `quality` checks passed at the checkpoint; PR review and merge remain pending.
 
 ## Migration notes
 
@@ -91,7 +91,7 @@ Python 3.11+ and install from `pyproject.toml` with the `dev` extra.
 - Remote: `git@github.com:SaXingrui-UM/aegishunt.git` (private)
 - Pull request: [#1 - Project foundation and architecture](https://github.com/SaXingrui-UM/aegishunt/pull/1) (open Draft)
 - PR number: `1`
-- CI at checkpoint: workflow run `29360239814` was `in_progress` before the PR-metadata push
+- CI at checkpoint: both `quality` checks passed (runs `29360314521` and `29360319383`); this documentation-only CI-result commit re-triggers the same checks
 - Merge commit: pending
 - Tag: not created; must remain absent until merge and explicit user instruction
 - Merge strategy: squash and merge

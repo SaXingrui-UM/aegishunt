@@ -10,12 +10,12 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 0 implementation completion | 100% of local implementation and acceptance checks |
 | Current branch | `phase/00-foundation` |
-| Latest publication-status commit before this PR-metadata update | `adda438` |
+| Latest PR-metadata commit before this CI-result update | `60a4c82` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull request | Draft PR [#1](https://github.com/SaXingrui-UM/aegishunt/pull/1), open from `phase/00-foundation` to `main` |
-| CI status | GitHub Actions run `29360239814` was `in_progress` for `adda438` when inspected; this metadata push will trigger the current checks |
+| CI status | Passing; both required GitHub `quality` checks completed successfully when last inspected, and this documentation-only update re-triggers the same checks |
 | Phase tag | Not created; prohibited before PR merge and explicit instruction |
-| Working tree | Clean after this PR-metadata commit and push; the generated PR body is intentionally ignored |
+| Working tree | Clean after this CI-result commit and push; the generated PR body is intentionally ignored |
 | Next action | User reviews Draft PR #1, confirms CI, marks it ready when appropriate, and merges it using the agreed squash strategy |
 
 Phase 1 has not started. The phase must not be marked `Phase complete` before
@@ -83,6 +83,7 @@ the Phase 0 PR is merged and an explicitly requested checkpoint tag is created.
 | `git push -u origin phase/00-foundation` | Exit 0; remote branch created and SHA verified as `adda438` before this metadata commit |
 | Create Draft PR #1 with the GitHub connector | Successful; open, mergeable, base `main`, head `phase/00-foundation` |
 | Fetch PR and CI metadata | Successful; no review submitted and workflow run `29360239814` initially `in_progress` |
+| Final `gh pr checks 1` before this CI-result update | Exit 0; both `quality` checks passed (runs `29360314521` and `29360319383`) |
 
 ## Tests
 
