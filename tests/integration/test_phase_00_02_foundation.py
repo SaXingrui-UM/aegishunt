@@ -56,11 +56,17 @@ ingestion:
     )
 
 
-def test_configuration_defaults_yaml_environment_and_rejections(tmp_path: Path) -> None:
+def test_configuration_defaults_yaml_environment_and_rejections(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     config_path = tmp_path / "application.yaml"
     _write_config(config_path, tmp_path / "yaml.sqlite3", Path("relative/raw"))
+    empty_root = tmp_path / "empty-root"
+    empty_root.mkdir()
+    monkeypatch.chdir(empty_root)
 
-    defaults = ApplicationSettings()
+    defaults = load_settings(environ={})
     yaml_settings = load_settings(config_path, environ={})
     overridden = load_settings(
         config_path,
@@ -82,19 +88,24 @@ def test_configuration_defaults_yaml_environment_and_rejections(tmp_path: Path) 
         load_settings(environ={"AEGISHUNT_APPLICATION__LOG_LEVEL": "INVALID"})
 
 
-def test_doctor_reports_supported_runtime_and_required_directories(tmp_path: Path) -> None:
+def test_doctor_reports_supported_runtime_and_required_directories(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     for directory in cli.REQUIRED_DIRECTORIES:
         (tmp_path / directory).mkdir()
+    monkeypatch.chdir(tmp_path)
 
     result = CliRunner().invoke(cli.app, ["doctor"], catch_exceptions=False)
-    report = cli.collect_doctor_report(tmp_path)
+    report = json.loads(result.stdout)
 
-    assert result.exit_code in {0, 1}
-    assert report.python_supported is True
-    assert report.operating_system
-    assert report.machine
-    assert report.directories == {directory: True for directory in cli.REQUIRED_DIRECTORIES}
-    assert "password" not in report.to_json().lower()
+    assert result.exit_code == 0
+    assert report["python_supported"] is True
+    assert report["operating_system"]
+    assert report["machine"]
+    assert report["project_root"] == str(tmp_path.resolve())
+    assert report["directories"] == {directory: True for directory in cli.REQUIRED_DIRECTORIES}
+    assert "password" not in result.stdout.lower()
 
 
 def test_repeatable_init_db_and_connection_pragmas(tmp_path: Path) -> None:

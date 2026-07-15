@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -40,16 +41,29 @@ def _settings(tmp_path: Path) -> ApplicationSettings:
     )
 
 
-def _assert_completed(payload: dict[str, object], expected: bytes, records: int) -> None:
+def _assert_completed(
+    payload: dict[str, object],
+    expected: bytes,
+    records: int,
+    original_filename: str,
+    storage_root: Path,
+) -> None:
     assert payload["status"] == "completed"
     assert payload["progress"] == 1.0
+    assert payload["original_filename"] == original_filename
     assert payload["records_processed"] == records
     assert payload["checksum"] == hashlib.sha256(expected).hexdigest()
+    assert payload["byte_size"] == len(expected)
     assert payload["stored_filename"]
     assert Path(str(payload["stored_filename"])).name == payload["stored_filename"]
-    assert payload["started_at"]
-    assert payload["completed_at"]
+    stored_path = (storage_root / str(payload["stored_filename"])).resolve()
+    assert stored_path.is_relative_to(storage_root.resolve())
+    assert stored_path.read_bytes() == expected
+    started_at = datetime.fromisoformat(str(payload["started_at"]).replace("Z", "+00:00"))
+    completed_at = datetime.fromisoformat(str(payload["completed_at"]).replace("Z", "+00:00"))
+    assert completed_at >= started_at
     assert payload["error"] is None
+    UUID(str(payload["job_id"]))
 
 
 def test_configuration_to_ingestion_persistence_and_application_restart(tmp_path: Path) -> None:
@@ -69,13 +83,25 @@ def test_configuration_to_ingestion_persistence_and_application_restart(tmp_path
             response = client.post(endpoint, files={"file": (filename, payload, content_type)})
             assert response.status_code == 201
             job = response.json()
-            _assert_completed(job, payload, records)
+            _assert_completed(
+                job,
+                payload,
+                records,
+                filename,
+                settings.ingestion.storage_root,
+            )
             jobs.append(job)
 
         sample_response = client.post("/ingestion/samples/phase2-benign-pcap")
         assert sample_response.status_code == 201
         sample_job = sample_response.json()
-        _assert_completed(sample_job, pcap, 1)
+        _assert_completed(
+            sample_job,
+            pcap,
+            1,
+            "phase2-benign.pcap",
+            settings.ingestion.storage_root,
+        )
         jobs.append(sample_job)
 
         listed = client.get("/ingestion/jobs", params={"limit": 10, "offset": 0})

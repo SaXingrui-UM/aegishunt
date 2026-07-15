@@ -133,7 +133,7 @@ CASES = (
     ),
     pytest.param(
         "/ingestion/pcap",
-        "/tmp/outside.pcap",
+        "__ABSOLUTE_PATH__",
         PCAP,
         "application/octet-stream",
         False,
@@ -152,10 +152,15 @@ def test_rejected_uploads_fail_closed_without_path_or_error_leakage(
     has_job: bool,
 ) -> None:
     settings = _settings(tmp_path)
-    outside = tmp_path.parent / "outside.pcap"
+    traversal_outside = tmp_path.parent / "outside.pcap"
+    absolute_outside = tmp_path.parent / "absolute-outside.pcap"
+    request_filename = str(absolute_outside) if filename == "__ABSOLUTE_PATH__" else filename
 
     with TestClient(create_app(settings)) as client:
-        response = client.post(endpoint, files={"file": (filename, content, content_type)})
+        response = client.post(
+            endpoint,
+            files={"file": (request_filename, content, content_type)},
+        )
         assert response.status_code == 422
         detail = response.json()["detail"]
         assert bool(detail.get("job_id")) is has_job
@@ -169,7 +174,8 @@ def test_rejected_uploads_fail_closed_without_path_or_error_leakage(
             for forbidden in (str(tmp_path), "Traceback", "sqlite:///", "SELECT ")
         )
 
-    assert not outside.exists()
+    assert not traversal_outside.exists()
+    assert not absolute_outside.exists()
     raw = tmp_path / "raw"
     assert not raw.exists() or list(raw.iterdir()) == []
 
@@ -226,16 +232,18 @@ def test_database_failure_is_generic_and_never_commits_a_job(
         raise RuntimeError("controlled database failure marker")
         yield
 
-    with TestClient(create_app(settings, database), raise_server_exceptions=False) as client:
-        monkeypatch.setattr(database, "session", failing_session)
-        response = client.post(
-            "/ingestion/pcap",
-            files={"file": ("capture.pcap", PCAP, "application/octet-stream")},
-        )
-        assert response.status_code == 500
-        assert "controlled database failure marker" not in response.text
-        assert str(tmp_path) not in response.text
-        monkeypatch.setattr(database, "session", original_session)
-        with database.session() as session:
-            assert TelemetrySourceRepository(session).list() == []
-    database.dispose()
+    try:
+        with TestClient(create_app(settings, database), raise_server_exceptions=False) as client:
+            monkeypatch.setattr(database, "session", failing_session)
+            response = client.post(
+                "/ingestion/pcap",
+                files={"file": ("capture.pcap", PCAP, "application/octet-stream")},
+            )
+            assert response.status_code == 500
+            assert "controlled database failure marker" not in response.text
+            assert str(tmp_path) not in response.text
+            monkeypatch.setattr(database, "session", original_session)
+            with database.session() as session:
+                assert TelemetrySourceRepository(session).list() == []
+    finally:
+        database.dispose()
