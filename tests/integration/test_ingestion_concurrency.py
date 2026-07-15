@@ -7,7 +7,7 @@ from aegishunt.config import DatabaseSettings, IngestionSettings
 from aegishunt.ingestion.service import IngestionService
 from aegishunt.schemas.enums import LifecycleStatus
 from aegishunt.storage import Database
-from aegishunt.storage.repositories import AuditLogRepository
+from aegishunt.storage.repositories import AuditLogRepository, NetworkFlowRepository
 
 SAMPLE_ROOT = Path(__file__).parents[2] / "data" / "sample"
 
@@ -43,7 +43,8 @@ def test_five_concurrent_sample_jobs_survive_database_restart(tmp_path: Path) ->
         assert all(job.status is LifecycleStatus.COMPLETED for job in jobs)
         assert len(list((tmp_path / "raw").iterdir())) == 1
         with database.session() as session:
-            assert len(AuditLogRepository(session).list()) == 20
+            assert len(AuditLogRepository(session).list()) == 25
+            assert len(NetworkFlowRepository(session).list()) == 5
     finally:
         database.dispose()
 
@@ -54,5 +55,7 @@ def test_five_concurrent_sample_jobs_survive_database_restart(tmp_path: Path) ->
         page = restarted.list_jobs(limit=10, offset=0)
         assert page.total == 5
         assert all(job.status is LifecycleStatus.COMPLETED for job in page.items)
+        with restarted_database.session() as session:
+            assert len(NetworkFlowRepository(session).list()) == 5
     finally:
         restarted_database.dispose()

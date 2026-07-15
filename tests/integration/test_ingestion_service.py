@@ -30,7 +30,7 @@ def service_for(tmp_path: Path) -> tuple[Database, IngestionService]:
     return database, service
 
 
-def test_sample_ingestion_persists_completed_job_without_network_flows(
+def test_sample_pcap_ingestion_persists_completed_job_and_network_flow(
     tmp_path: Path,
 ) -> None:
     database, service = service_for(tmp_path)
@@ -49,9 +49,17 @@ def test_sample_ingestion_persists_completed_job_without_network_flows(
         assert page.total == 1
 
         with database.session() as session:
-            assert NetworkFlowRepository(session).list() == []
+            flows = NetworkFlowRepository(session).list_by_source(job.job_id)
             audit = AuditLogRepository(session).list()
-        assert [event.action for event in audit] == ["create", "update", "update", "update"]
+        assert len(flows) == 1
+        assert flows[0].behavioral_features["total_packets"] == 1
+        assert [event.action for event in audit] == [
+            "create",
+            "update",
+            "update",
+            "create",
+            "update",
+        ]
     finally:
         database.dispose()
 

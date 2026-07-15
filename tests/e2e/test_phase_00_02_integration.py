@@ -119,8 +119,13 @@ def test_configuration_to_ingestion_persistence_and_application_restart(tmp_path
                 source = source_repository.get(UUID(str(job["job_id"])))
                 assert source is not None
                 assert source.status is LifecycleStatus.COMPLETED
-            assert len(AuditLogRepository(session).list()) == 16
-            assert NetworkFlowRepository(session).list() == []
+            assert len(AuditLogRepository(session).list()) == 18
+            flows = NetworkFlowRepository(session).list()
+            assert len(flows) == 2
+            assert {flow.source_id for flow in flows} == {
+                UUID(str(jobs[0]["job_id"])),
+                UUID(str(jobs[3]["job_id"])),
+            }
     finally:
         database.dispose()
 
@@ -160,14 +165,17 @@ ingestion:
     for command in commands:
         result = runner.invoke(cli.app, [*command, "--config", str(config_path)])
         assert result.exit_code == 0, result.output
-        assert json.loads(result.stdout)["status"] == "completed"
+        payload = json.loads(result.stdout)
+        assert payload["status"] == "completed"
+        if command[1] == "pcap":
+            assert payload["format_metadata"]["flow_count"] == 1
 
     database = Database(settings.database)
     database.initialize()
     try:
         with database.session() as session:
             assert len(TelemetrySourceRepository(session).list()) == 4
-            assert len(AuditLogRepository(session).list()) == 16
-            assert NetworkFlowRepository(session).list() == []
+            assert len(AuditLogRepository(session).list()) == 17
+            assert len(NetworkFlowRepository(session).list()) == 1
     finally:
         database.dispose()
