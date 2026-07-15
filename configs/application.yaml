@@ -7,3 +7,10 @@ database:
   busy_timeout_ms: 5000
   enable_wal: true
   enable_foreign_keys: true
+
+ingestion:
+  storage_root: data/raw
+  sample_root: data/sample
+  max_upload_bytes: 52428800
+  chunk_size_bytes: 65536
+  max_records: 100000

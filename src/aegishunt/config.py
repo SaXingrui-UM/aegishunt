@@ -56,13 +56,26 @@ class DatabaseSettings(BaseModel):
         return normalized
 
 
+class IngestionSettings(BaseModel):
+    """Safety and storage policy for untrusted telemetry uploads."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    storage_root: Path = Path("data/raw")
+    sample_root: Path = Path("data/sample")
+    max_upload_bytes: int = Field(default=52_428_800, ge=1)
+    chunk_size_bytes: int = Field(default=65_536, ge=1, le=1_048_576)
+    max_records: int = Field(default=100_000, ge=1)
+
+
 class ApplicationSettings(BaseModel):
-    """Complete Phase 1 settings assembled from YAML and environment values."""
+    """Complete validated settings assembled from YAML and environment values."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     application: ApplicationSection = Field(default_factory=ApplicationSection)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
 
     @property
     def environment(self) -> str:

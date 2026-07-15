@@ -47,6 +47,12 @@ artifacts/figures/*
 *.joblib
 *.pkl
 
+# Explicitly reviewed, deterministic Phase 2 demonstration inputs.
+!data/sample/phase2-benign.pcap
+!data/sample/phase2-flows.csv
+!data/sample/manifest.yaml
+!data/sample/README.md
+
 # Generated PR bodies and local scratch files
 .github/generated/
 tmp/
