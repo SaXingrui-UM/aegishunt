@@ -17,8 +17,9 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Latest main commit | `45056b6c0b61ec78c39fca82ad8fea6da006577f` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), `[Phase 02] Telemetry ingestion framework`, merged into `main` from `phase/02-telemetry-ingestion` on 2026-07-16 00:00:35 (UTC+8) |
-| Post-merge metadata | PR #6 merged into `main` as `45056b6`; the verification PR is pending creation from the current branch |
-| CI status | Passed; both PR #5 `quality` checks succeeded with zero failures or pending checks |
+| Post-merge metadata | PR #6 merged into `main` as `45056b6` |
+| Integration verification PR | [#7](https://github.com/SaXingrui-UM/aegishunt/pull/7), `[Test] Verify Phase 0–2 integration baseline`, Draft, `main` <- `test/phase-00-02-integration-verification` |
+| CI status | Phase 2 PR #5 passed; integration verification PR #7 `quality` check is pending |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
