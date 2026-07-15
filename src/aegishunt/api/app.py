@@ -9,6 +9,7 @@ from typing import Literal
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from aegishunt.api.routes.ingestion import router as ingestion_router
 from aegishunt.config import ApplicationSettings, load_settings
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME, __version__
 from aegishunt.storage import Database
@@ -39,6 +40,7 @@ def create_app(
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         schema_version = runtime_database.initialize()
         application.state.database = runtime_database
+        application.state.settings = runtime_settings
         application.state.schema_version = schema_version
         try:
             yield
@@ -52,6 +54,7 @@ def create_app(
         version=__version__,
         lifespan=lifespan,
     )
+    application.include_router(ingestion_router)
 
     @application.get("/health", response_model=HealthResponse, tags=["system"])
     def health() -> HealthResponse:

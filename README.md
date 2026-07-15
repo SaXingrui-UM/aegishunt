@@ -18,12 +18,13 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 1 data foundation is implemented on `phase/01-data-foundation`. The
-repository provides validated YAML/environment settings, typed core schemas,
-SQLAlchemy repositories, repeatable SQLite initialization with WAL, explicit
-schema versioning, append-only audit events, and the Phase 0 application shells.
-Telemetry ingestion, packet/flow processing, feature extraction, detection,
-model training, correlation, hypotheses, and case workflows are **not implemented**.
+Phase 2 telemetry ingestion is implemented on `phase/02-telemetry-ingestion`.
+The repository now provides bounded PCAP/PCAPNG container inspection, canonical
+flow-CSV validation, structured JSON validation, checksum-addressed safe storage,
+durable ingestion jobs, controlled samples, API endpoints, and CLI commands on
+top of the Phase 1 data foundation. Packet-to-flow processing, feature extraction,
+detection, model training, correlation, hypotheses, replay, and case workflows
+are **not implemented**.
 
 ## Planned architecture
 
@@ -53,13 +54,28 @@ python -m pip install -e ".[dev]"
 aegishunt --help
 aegishunt doctor
 aegishunt init-db
+aegishunt ingest --help
+aegishunt ingest pcap data/sample/phase2-benign.pcap
+aegishunt ingest csv data/sample/phase2-flows.csv
+aegishunt ingest sample phase2-benign-pcap
 aegishunt api
 aegishunt frontend
 ```
 
 `doctor` checks Python compatibility, the operating system, and required local
 directories. `init-db` validates configuration and idempotently initializes the
-configured database without printing its URL.
+configured database without printing its URL. `ingest` validates and stores
+explicit local files; it does not replay traffic, capture an interface, or
+derive flows from packets.
+
+## Telemetry ingestion
+
+The Phase 2 API exposes `/ingestion/pcap`, `/ingestion/flow-csv`,
+`/ingestion/json-events`, `/ingestion/jobs`, and `/ingestion/samples`. Uploads
+are streamed through configured byte and record limits, stored under a
+SHA-256-derived filename, and represented by durable status/error records.
+Reviewed samples are declared in `data/sample/manifest.yaml` and verified before
+use. See [`docs/ingestion.md`](docs/ingestion.md) for contracts and boundaries.
 
 ## Configuration and database initialization
 
@@ -91,8 +107,8 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 1 page reports data-foundation status and planned modules only. It does
-not display invented flows, alerts, hypotheses, or model metrics.
+The Phase 2 page reports ingestion-foundation status and planned modules only.
+It does not display invented flows, alerts, hypotheses, or model metrics.
 
 ## Quality checks
 

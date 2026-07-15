@@ -15,6 +15,7 @@ import uvicorn
 
 from aegishunt.config import load_settings
 from aegishunt.errors import AegisHuntError
+from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 from aegishunt.storage import Database
 
@@ -23,6 +24,7 @@ app = typer.Typer(
     help=f"{APPLICATION_NAME}: {APPLICATION_DESCRIPTION}",
     no_args_is_help=True,
 )
+app.add_typer(ingest_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 

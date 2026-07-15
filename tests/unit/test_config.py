@@ -39,12 +39,14 @@ database:
             "AEGISHUNT_APPLICATION__ENVIRONMENT": "test",
             "AEGISHUNT_DATABASE__URL": "sqlite:///environment.db",
             "AEGISHUNT_DATABASE__BUSY_TIMEOUT_MS": "7000",
+            "AEGISHUNT_INGESTION__MAX_UPLOAD_BYTES": "4096",
         },
     )
 
     assert settings.environment == "test"
     assert settings.database.url == "sqlite:///environment.db"
     assert settings.database.busy_timeout_ms == 7000
+    assert settings.ingestion.max_upload_bytes == 4096
 
 
 def test_legacy_environment_label_remains_supported() -> None:
