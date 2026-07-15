@@ -19,3 +19,7 @@ class DatabaseInitializationError(DatabaseError):
 
 class SchemaVersionError(DatabaseError):
     """Raised when the on-disk schema is incompatible with this application."""
+
+
+class RepositoryRecordNotFoundError(DatabaseError):
+    """Raised when an update targets a record that no longer exists."""
