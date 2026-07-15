@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy.exc import SQLAlchemyError
 
 from aegishunt.api.dependencies import get_ingestion_service
+from aegishunt.errors import DatabaseError
 from aegishunt.ingestion.errors import (
     IngestionError,
     IngestionJobFailedError,
@@ -18,6 +21,7 @@ from aegishunt.ingestion.service import IngestionService
 from aegishunt.schemas.enums import SourceType
 
 router = APIRouter(prefix="/ingestion", tags=["ingestion"])
+logger = logging.getLogger(__name__)
 ServiceDependency = Annotated[IngestionService, Depends(get_ingestion_service)]
 UploadDependency = Annotated[UploadFile, File(description="Bounded telemetry upload")]
 
@@ -28,6 +32,20 @@ def _operator_error(error: IngestionError) -> HTTPException:
         detail["code"] = error.cause.code
         detail["job_id"] = str(error.job_id)
     return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+
+def _database_unavailable(error: DatabaseError | SQLAlchemyError) -> HTTPException:
+    """Return a fixed fail-closed response and log no exception details."""
+
+    del error
+    logger.error("database operation is unavailable; request was not completed")
+    return HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail={
+            "code": "database_unavailable",
+            "message": "database is unavailable; request was not completed",
+        },
+    )
 
 
 def _ingest_upload(
@@ -45,6 +63,8 @@ def _ingest_upload(
         )
     except IngestionError as exc:
         raise _operator_error(exc) from exc
+    except (DatabaseError, SQLAlchemyError) as exc:
+        raise _database_unavailable(exc) from exc
 
 
 @router.post("/pcap", response_model=IngestionJob, status_code=status.HTTP_201_CREATED)
@@ -76,7 +96,10 @@ def list_jobs(
 ) -> IngestionJobPage:
     """List durable ingestion jobs with bounded pagination."""
 
-    return service.list_jobs(limit=limit, offset=offset)
+    try:
+        return service.list_jobs(limit=limit, offset=offset)
+    except (DatabaseError, SQLAlchemyError) as exc:
+        raise _database_unavailable(exc) from exc
 
 
 @router.get("/jobs/{job_id}", response_model=IngestionJob)
@@ -90,6 +113,8 @@ def get_job(job_id: UUID, service: ServiceDependency) -> IngestionJob:
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": exc.code, "message": str(exc)},
         ) from exc
+    except (DatabaseError, SQLAlchemyError) as exc:
+        raise _database_unavailable(exc) from exc
 
 
 @router.get("/samples", response_model=list[SampleDescriptor])
@@ -114,3 +139,5 @@ def ingest_sample(sample_id: str, service: ServiceDependency) -> IngestionJob:
         return service.ingest_sample(sample_id, actor="api")
     except IngestionError as exc:
         raise _operator_error(exc) from exc
+    except (DatabaseError, SQLAlchemyError) as exc:
+        raise _database_unavailable(exc) from exc
