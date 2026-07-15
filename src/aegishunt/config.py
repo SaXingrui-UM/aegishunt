@@ -68,6 +68,18 @@ class IngestionSettings(BaseModel):
     max_records: int = Field(default=100_000, ge=1)
 
 
+class FlowSettings(BaseModel):
+    """Deterministic packet-to-flow aggregation and memory bounds."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    idle_timeout_seconds: float = Field(default=60.0, gt=0.0, le=86_400.0)
+    active_timeout_seconds: float = Field(default=300.0, gt=0.0, le=86_400.0)
+    max_packets_per_flow: int = Field(default=10_000, ge=1, le=1_000_000)
+    max_active_flows: int = Field(default=100_000, ge=1, le=1_000_000)
+    max_packet_bytes: int = Field(default=262_144, ge=64, le=16_777_216)
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -76,6 +88,7 @@ class ApplicationSettings(BaseModel):
     application: ApplicationSection = Field(default_factory=ApplicationSection)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
+    flows: FlowSettings = Field(default_factory=FlowSettings)
 
     @property
     def environment(self) -> str:
