@@ -91,7 +91,7 @@ Dependency versions and isolation details are in [environment.md](environment.md
 | --- | --- |
 | `ruff check .` | PASS |
 | `mypy src` | PASS; 46 source files |
-| `pytest` | PASS; 75 passed in 3.08 s after pre-Phase 3 cleanup |
+| `pytest` | PASS; 75 passed in 2.93 s on the clean preflight branch |
 | Failed / skipped / xfailed | 0 / 0 / 0 |
 | Branch-aware coverage | 91.97% |
 | Coverage threshold | 85%; met |
