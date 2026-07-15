@@ -41,7 +41,11 @@ def _run_path(path: Path, source_type: SourceType, config: Path | None) -> None:
         settings = load_settings(config)
         database = Database(settings.database)
         database.initialize()
-        job = IngestionService(database, settings.ingestion).ingest_path(
+        job = IngestionService(
+            database,
+            settings.ingestion,
+            flow_settings=settings.flows,
+        ).ingest_path(
             path,
             source_type=source_type,
             actor="cli",
@@ -88,7 +92,11 @@ def ingest_sample(
         settings = load_settings(config)
         database = Database(settings.database)
         database.initialize()
-        job = IngestionService(database, settings.ingestion).ingest_sample(
+        job = IngestionService(
+            database,
+            settings.ingestion,
+            flow_settings=settings.flows,
+        ).ingest_sample(
             sample_id,
             actor="cli",
         )

@@ -6,13 +6,17 @@ from pathlib import Path
 from typing import BinaryIO
 from uuid import UUID
 
-from aegishunt.config import IngestionSettings
+from aegishunt.config import FlowSettings, IngestionSettings
+from aegishunt.flows.errors import FlowProcessingError
+from aegishunt.flows.registry import FEATURE_SCHEMA_VERSION
+from aegishunt.flows.service import PcapFlowProcessor
 from aegishunt.ingestion.base import IngestorRegistry
 from aegishunt.ingestion.errors import (
     FileStorageError,
     IngestionError,
     IngestionJobFailedError,
     IngestionJobNotFoundError,
+    TelemetryFormatError,
 )
 from aegishunt.ingestion.file_storage import SafeFileStorage
 from aegishunt.ingestion.flow_csv import FlowCsvIngestor
@@ -27,9 +31,13 @@ from aegishunt.ingestion.schemas import (
 )
 from aegishunt.schemas.base import JsonObject, utc_now
 from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
-from aegishunt.schemas.telemetry import TelemetrySource
+from aegishunt.schemas.telemetry import NetworkFlow, TelemetrySource
 from aegishunt.storage import Database
-from aegishunt.storage.repositories import AuditLogRepository, TelemetrySourceRepository
+from aegishunt.storage.repositories import (
+    AuditLogRepository,
+    NetworkFlowRepository,
+    TelemetrySourceRepository,
+)
 
 
 def default_registry() -> IngestorRegistry:
@@ -52,10 +60,12 @@ class IngestionService:
         database: Database,
         settings: IngestionSettings,
         *,
+        flow_settings: FlowSettings | None = None,
         registry: IngestorRegistry | None = None,
     ) -> None:
         self._database = database
         self._settings = settings
+        self._flow_settings = flow_settings or FlowSettings()
         self._registry = registry or default_registry()
         self._storage = SafeFileStorage(
             settings.storage_root,
@@ -63,6 +73,10 @@ class IngestionService:
             chunk_size=settings.chunk_size_bytes,
         )
         self._samples = SampleDataRegistry(settings.sample_root)
+        self._pcap_flows = PcapFlowProcessor(
+            self._flow_settings,
+            max_records=settings.max_records,
+        )
 
     def _add(self, source: TelemetrySource, *, actor: str) -> TelemetrySource:
         with self._database.session() as session, session.begin():
@@ -72,6 +86,22 @@ class IngestionService:
     def _update(self, source: TelemetrySource, *, actor: str) -> TelemetrySource:
         with self._database.session() as session, session.begin():
             audit = AuditLogRepository(session)
+            return TelemetrySourceRepository(session, audit).update(source, actor=actor)
+
+    def _complete(
+        self,
+        source: TelemetrySource,
+        flows: tuple[NetworkFlow, ...],
+        *,
+        actor: str,
+    ) -> TelemetrySource:
+        """Commit all derived flows and the completed source in one transaction."""
+
+        with self._database.session() as session, session.begin():
+            audit = AuditLogRepository(session)
+            flow_repository = NetworkFlowRepository(session, audit)
+            for flow in flows:
+                flow_repository.add(flow, actor=actor)
             return TelemetrySourceRepository(session, audit).update(source, actor=actor)
 
     def _mark_failed(
@@ -159,6 +189,25 @@ class IngestionService:
                 Path(staged.path),
                 max_records=self._settings.max_records,
             )
+            flow_metadata: JsonObject = {}
+            flows: tuple[NetworkFlow, ...] = ()
+            if source_type is SourceType.PCAP:
+                flow_result = self._pcap_flows.process(
+                    Path(staged.path),
+                    source_id=source.source_id,
+                    capture_session_id=f"pcap:{source.source_id}",
+                )
+                if flow_result.captured_packets != inspection.records_processed:
+                    raise FlowProcessingError(
+                        "packet decoding count does not match validated capture framing"
+                    )
+                flows = flow_result.flows
+                flow_metadata = {
+                    "flow_count": len(flows),
+                    "decoded_packet_count": flow_result.decoded_packets,
+                    "skipped_packet_count": flow_result.skipped_packets,
+                    "feature_schema_version": FEATURE_SCHEMA_VERSION,
+                }
             stored = self._storage.commit(staged)
             staged = None
             completed = _updated(
@@ -172,13 +221,17 @@ class IngestionService:
                     "progress": 1.0,
                     "stored_filename": stored.stored_filename,
                     "byte_size": stored.byte_size,
-                    "format_metadata": inspection.metadata,
+                    "format_metadata": {**inspection.metadata, **flow_metadata},
                 },
             )
-            return IngestionJob.from_source(self._update(completed, actor=actor))
+            return IngestionJob.from_source(self._complete(completed, flows, actor=actor))
         except IngestionError as exc:
             failed_job = self._mark_failed(source, exc, actor=actor)
             raise IngestionJobFailedError(failed_job.job_id, exc) from exc
+        except FlowProcessingError as exc:
+            safe_error = TelemetryFormatError(str(exc))
+            failed_job = self._mark_failed(source, safe_error, actor=actor)
+            raise IngestionJobFailedError(failed_job.job_id, safe_error) from exc
         finally:
             self._storage.discard(staged)
 
