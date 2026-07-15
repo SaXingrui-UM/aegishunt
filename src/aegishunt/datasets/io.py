@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from collections.abc import Iterable
 from contextlib import suppress
 from pathlib import Path
@@ -46,11 +47,15 @@ def write_canonical_jsonl(rows: Iterable[CanonicalDatasetRow], path: Path) -> st
             for row in rows:
                 destination.write(canonical_row_json(row))
                 destination.write("\n")
-        temporary.replace(path)
+        try:
+            os.link(temporary, path)
+        except FileExistsError as exc:
+            raise DatasetConversionError("canonical output already exists") from exc
     except OSError as exc:
+        raise DatasetConversionError("unable to write canonical dataset") from exc
+    finally:
         with suppress(OSError):
             temporary.unlink(missing_ok=True)
-        raise DatasetConversionError("unable to write canonical dataset") from exc
     return sha256_file(path)
 
 

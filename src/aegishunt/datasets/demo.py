@@ -268,6 +268,7 @@ def build_controlled_demo(
                             scenario_id=scenario_id,
                             group_id=group_id,
                             original_row_id=str(row_index + 1),
+                            source_access_date=BASE_TIME.date(),
                             observed_at=start,
                             provenance={
                                 "generator": "aegishunt-controlled-demo",

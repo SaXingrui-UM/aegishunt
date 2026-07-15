@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -19,7 +20,7 @@ from aegishunt.datasets.io import (
     write_canonical_jsonl,
 )
 from aegishunt.datasets.labels import LabelMapper
-from aegishunt.datasets.schemas import CanonicalMetadata
+from aegishunt.datasets.schemas import CanonicalDatasetRow, CanonicalMetadata
 from aegishunt.flows.registry import feature_names
 from tests.fixtures.datasets import LABEL_ROOT, demo_rows
 
@@ -71,12 +72,14 @@ def test_exact_phase3_csv_conversion_is_deterministic_and_preserves_source(tmp_p
         dataset_id="aegishunt-controlled-demo",
         dataset_version="1.0.0",
         label_mapper=mapper,
+        source_access_date=date(2026, 1, 1),
     )
     second = convert_flow_csv(
         raw,
         dataset_id="aegishunt-controlled-demo",
         dataset_version="1.0.0",
         label_mapper=mapper,
+        source_access_date=date(2026, 1, 1),
     )
 
     assert first == second
@@ -110,6 +113,7 @@ def test_conversion_rejects_malformed_or_non_finite_rows(
             dataset_id="aegishunt-controlled-demo",
             dataset_version="1.0.0",
             label_mapper=mapper,
+            source_access_date=date(2026, 1, 1),
         )
 
 
@@ -122,6 +126,7 @@ def test_conversion_rejects_unknown_label_header_mismatch_and_empty_input(tmp_pa
             dataset_id="aegishunt-controlled-demo",
             dataset_version="1.0.0",
             label_mapper=mapper,
+            source_access_date=date(2026, 1, 1),
         )
 
     wrong = _write_raw_csv(tmp_path / "wrong.csv", header=("record_id",))
@@ -131,6 +136,7 @@ def test_conversion_rejects_unknown_label_header_mismatch_and_empty_input(tmp_pa
             dataset_id="aegishunt-controlled-demo",
             dataset_version="1.0.0",
             label_mapper=mapper,
+            source_access_date=date(2026, 1, 1),
         )
 
     empty = tmp_path / "empty.csv"
@@ -141,6 +147,21 @@ def test_conversion_rejects_unknown_label_header_mismatch_and_empty_input(tmp_pa
             dataset_id="aegishunt-controlled-demo",
             dataset_version="1.0.0",
             label_mapper=mapper,
+            source_access_date=date(2026, 1, 1),
+        )
+
+
+def test_conversion_rejects_label_mapping_for_different_dataset(tmp_path: Path) -> None:
+    raw = _write_raw_csv(tmp_path / "raw.csv")
+    mapper = LabelMapper.load(LABEL_ROOT / "aegishunt-controlled-demo-v1.yaml")
+
+    with pytest.raises(DatasetConversionError, match="does not match conversion input"):
+        convert_flow_csv(
+            raw,
+            dataset_id="different-dataset",
+            dataset_version="1.0.0",
+            label_mapper=mapper,
+            source_access_date=date(2026, 1, 1),
         )
 
 
@@ -177,3 +198,35 @@ def test_canonical_metadata_rejects_absolute_or_traversal_source_identifiers() -
         payload["source_file"] = unsafe
         with pytest.raises(ValidationError, match="safe relative"):
             CanonicalMetadata.model_validate(payload)
+
+
+def test_canonical_schema_rejects_string_features_and_string_binary_labels() -> None:
+    payload = demo_rows()[0].model_dump(mode="python")
+    values = list(payload["features"]["values"])
+    values[0] = "5"
+    payload["features"]["values"] = values
+    with pytest.raises(ValidationError, match="JSON numbers"):
+        CanonicalDatasetRow.model_validate(payload)
+
+    payload = demo_rows()[0].model_dump(mode="python")
+    payload["labels"]["binary_label"] = "0"
+    with pytest.raises(ValidationError, match="valid integer"):
+        CanonicalDatasetRow.model_validate(payload)
+
+
+def test_canonical_writer_does_not_overwrite_racing_target(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = tmp_path / "canonical.jsonl"
+
+    def racing_link(source: Path, target: Path) -> None:
+        del source
+        Path(target).write_text("concurrent-writer\n", encoding="utf-8")
+        raise FileExistsError
+
+    monkeypatch.setattr("aegishunt.datasets.io.os.link", racing_link)
+
+    with pytest.raises(DatasetConversionError, match="already exists"):
+        write_canonical_jsonl(demo_rows()[:1], output)
+    assert output.read_text(encoding="utf-8") == "concurrent-writer\n"

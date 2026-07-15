@@ -170,6 +170,8 @@ def test_dataset_cli_converts_exact_phase3_feature_csv(tmp_path: Path) -> None:
             str(raw),
             "--output",
             str(output),
+            "--access-date",
+            "2026-01-01",
         ],
     )
 

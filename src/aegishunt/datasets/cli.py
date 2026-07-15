@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Annotated
 
@@ -122,12 +123,25 @@ def convert_dataset(
     dataset_id: str,
     raw_path: CanonicalPath,
     output: Annotated[Path, typer.Option("--output", dir_okay=False)],
+    access_date: Annotated[
+        str,
+        typer.Option(
+            "--access-date",
+            help="Operator-recorded source access date in YYYY-MM-DD format.",
+        ),
+    ],
     config: ConfigPath = None,
 ) -> None:
     """Convert an exact Phase 3 feature CSV to canonical JSON Lines."""
 
     try:
-        count, checksum = _service(config).convert_csv(dataset_id, raw_path, output)
+        source_access_date = date.fromisoformat(access_date)
+        count, checksum = _service(config).convert_csv(
+            dataset_id,
+            raw_path,
+            output,
+            source_access_date=source_access_date,
+        )
     except (AegisHuntError, ValueError) as exc:
         _fail(exc)
     typer.echo(json.dumps({"rows": count, "sha256": checksum}, sort_keys=True))

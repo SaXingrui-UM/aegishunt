@@ -55,6 +55,7 @@ def analyze_quality(
     exact_fingerprints = [
         hashlib.sha256(canonical_row_json(row).encode()).hexdigest() for row in rows
     ]
+    duplicate_record_ids = _duplicates([row.metadata.record_id for row in rows])
     feature_fingerprints = [feature_fingerprint(row) for row in rows]
     label_by_feature: dict[str, set[str]] = defaultdict(set)
     for row, fingerprint in zip(rows, feature_fingerprints, strict=True):
@@ -112,6 +113,16 @@ def analyze_quality(
     }
     findings: list[QualityFinding] = []
     conflicting = sum(len(labels) > 1 for labels in label_by_feature.values())
+    if duplicate_record_ids:
+        findings.append(
+            QualityFinding(
+                code="Q-DUPLICATE-RECORD-ID",
+                severity="high",
+                message="canonical record IDs must be unique within a dataset version",
+                evidence=(str(duplicate_record_ids),),
+                remediation="repair deterministic record ID generation before splitting",
+            )
+        )
     if conflicting:
         findings.append(
             QualityFinding(
@@ -143,7 +154,9 @@ def analyze_quality(
             )
         )
     status: Literal["pass", "fail", "warning"] = (
-        "fail" if conflicting or invalid or any(missing_counts.values()) else "pass"
+        "fail"
+        if duplicate_record_ids or conflicting or invalid or any(missing_counts.values())
+        else "pass"
     )
     return QualityReport(
         report_schema_version=QUALITY_REPORT_SCHEMA_VERSION,
@@ -157,6 +170,7 @@ def analyze_quality(
             name: count / len(rows) for name, count in missing_counts.items()
         },
         exact_duplicate_count=_duplicates(exact_fingerprints),
+        duplicate_record_id_count=duplicate_record_ids,
         feature_duplicate_count=_duplicates(feature_fingerprints),
         conflicting_label_fingerprint_count=conflicting,
         provenance_duplicate_count=_duplicates(provenance_fingerprints),

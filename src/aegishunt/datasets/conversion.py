@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import csv
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -41,9 +41,12 @@ def convert_flow_csv(
     dataset_id: str,
     dataset_version: str,
     label_mapper: LabelMapper,
+    source_access_date: date,
 ) -> tuple[CanonicalDatasetRow, ...]:
     """Convert an exact Phase 3 feature export; never fabricate absent features."""
 
+    if label_mapper.dataset_id != dataset_id:
+        raise DatasetConversionError("label mapping dataset ID does not match conversion input")
     checksum = sha256_file(raw_path)
     rows: list[CanonicalDatasetRow] = []
     try:
@@ -73,6 +76,7 @@ def convert_flow_csv(
                                 scenario_id=raw["scenario_id"],
                                 group_id=raw["group_id"],
                                 original_row_id=raw["original_row_id"],
+                                source_access_date=source_access_date,
                                 observed_at=observed_at,
                                 provenance={
                                     "adapter": "phase3-feature-csv",

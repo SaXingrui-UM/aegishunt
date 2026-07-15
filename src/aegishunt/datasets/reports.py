@@ -36,6 +36,7 @@ class QualityReport(DatasetModel):
     missing_counts: dict[str, int]
     missing_percentages: dict[str, float]
     exact_duplicate_count: int = Field(ge=0)
+    duplicate_record_id_count: int = Field(ge=0)
     feature_duplicate_count: int = Field(ge=0)
     conflicting_label_fingerprint_count: int = Field(ge=0)
     provenance_duplicate_count: int = Field(ge=0)

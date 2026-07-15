@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 from aegishunt.config import DatasetSettings
-from aegishunt.datasets.errors import DatasetQualityError
-from aegishunt.datasets.io import read_canonical_jsonl
+from aegishunt.datasets.errors import DatasetConversionError, DatasetQualityError
+from aegishunt.datasets.io import read_canonical_jsonl, write_canonical_jsonl
 from aegishunt.datasets.reports import DatasetManifest, LeakageReport, QualityReport, SplitManifest
+from aegishunt.datasets.schemas import CanonicalDatasetRow
 from aegishunt.datasets.service import DatasetService
 from tests.fixtures.datasets import LABEL_ROOT, REGISTRY_PATH
 
@@ -33,6 +35,27 @@ def _contents(root: Path) -> dict[str, bytes]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+def _with_dataset_identity(
+    rows: tuple[CanonicalDatasetRow, ...],
+    *,
+    dataset_id: str,
+    dataset_version: str,
+    source_access_date: date,
+) -> tuple[CanonicalDatasetRow, ...]:
+    converted: list[CanonicalDatasetRow] = []
+    for row in rows:
+        payload = row.model_dump(mode="python")
+        payload["metadata"].update(
+            {
+                "dataset_id": dataset_id,
+                "dataset_version": dataset_version,
+                "source_access_date": source_access_date,
+            }
+        )
+        converted.append(CanonicalDatasetRow.model_validate(payload))
+    return tuple(converted)
 
 
 def test_controlled_demo_full_workflow_outputs_required_artifacts(tmp_path: Path) -> None:
@@ -171,3 +194,78 @@ def test_manual_provider_file_verification_is_bounded_to_raw_root(tmp_path: Path
     outside.write_bytes(b"outside")
     with pytest.raises(DatasetQualityError, match="inside the configured raw root"):
         service.verify_manual_file("cse-cic-ids2018", outside)
+
+
+def test_public_manifest_preserves_raw_checksums_and_source_access_date(tmp_path: Path) -> None:
+    service = DatasetService(_settings(tmp_path))
+    demo = service.build_demo(
+        data_root=tmp_path / "demo" / "data",
+        report_root=tmp_path / "demo" / "reports",
+    )
+    rows = read_canonical_jsonl(demo.data_files[0])
+    public_rows = _with_dataset_identity(
+        rows,
+        dataset_id="cse-cic-ids2018",
+        dataset_version="2018",
+        source_access_date=date(2026, 7, 15),
+    )
+    canonical = tmp_path / "public-canonical.jsonl"
+    write_canonical_jsonl(public_rows, canonical)
+
+    result = service.split_existing(
+        canonical,
+        data_root=tmp_path / "public" / "data",
+        report_root=tmp_path / "public" / "reports",
+    )
+
+    assert result.dataset_manifest.access_date == "2026-07-15"
+    assert len(result.dataset_manifest.raw_files) == 24
+    assert set(result.dataset_manifest.raw_files) == set(
+        result.dataset_manifest.raw_checksums
+    )
+
+
+def test_workflow_rejects_blocked_or_registry_version_mismatch(tmp_path: Path) -> None:
+    service = DatasetService(_settings(tmp_path))
+    with pytest.raises(DatasetConversionError, match="blocked by the registry"):
+        service.convert_csv(
+            "unsw-nb15",
+            tmp_path / "not-read.csv",
+            tmp_path / "not-written.jsonl",
+            source_access_date=date(2026, 7, 15),
+        )
+
+    rows = _with_dataset_identity(
+        read_canonical_jsonl(
+            service.build_demo(
+                data_root=tmp_path / "demo" / "data",
+                report_root=tmp_path / "demo" / "reports",
+            ).data_files[0]
+        ),
+        dataset_id="aegishunt-controlled-demo",
+        dataset_version="wrong-version",
+        source_access_date=date(2026, 1, 1),
+    )
+    canonical = tmp_path / "wrong-version.jsonl"
+    write_canonical_jsonl(rows, canonical)
+    with pytest.raises(DatasetQualityError, match="identity does not match"):
+        service.split_existing(
+            canonical,
+            data_root=tmp_path / "wrong" / "data",
+            report_root=tmp_path / "wrong" / "reports",
+        )
+
+
+def test_workflow_preflights_all_outputs_before_writing(tmp_path: Path) -> None:
+    service = DatasetService(_settings(tmp_path))
+    data_root = tmp_path / "bundle" / "data"
+    report_root = tmp_path / "bundle" / "reports"
+    report_root.mkdir(parents=True)
+    existing = report_root / "quality_report.json"
+    existing.write_text("operator-owned\n", encoding="utf-8")
+
+    with pytest.raises(DatasetQualityError, match="output already exists"):
+        service.build_demo(data_root=data_root, report_root=report_root)
+
+    assert existing.read_text(encoding="utf-8") == "operator-owned\n"
+    assert not data_root.exists()

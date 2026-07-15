@@ -18,6 +18,7 @@ from aegishunt.datasets.errors import (
 from aegishunt.datasets.labels import LabelMapper
 from aegishunt.datasets.registry import DatasetRegistry
 from aegishunt.datasets.schemas import DatasetDefinition, DatasetRegistryDocument
+from aegishunt.datasets.service import DatasetService
 from tests.fixtures.datasets import LABEL_ROOT, REGISTRY_PATH
 
 
@@ -103,6 +104,13 @@ def test_registry_contract_rejects_duplicates_and_invalid_license_metadata() -> 
         DatasetDefinition.model_validate(_definition(dataset_id="BAD ID"))
     with pytest.raises(ValidationError, match="source URL"):
         DatasetDefinition.model_validate(_definition(source_url=None))
+    with pytest.raises(ValidationError, match="safe YAML"):
+        DatasetDefinition.model_validate(_definition(label_schema="../../mapping.yaml"))
+    duplicate_file = {"filename": "data.csv", "required": True}
+    with pytest.raises(ValidationError, match="filenames must be unique"):
+        DatasetDefinition.model_validate(
+            _definition(expected_files=[duplicate_file, duplicate_file])
+        )
 
 
 def test_dataset_settings_validate_ratios_and_environment_paths() -> None:
@@ -153,3 +161,46 @@ def test_label_mapper_rejects_invalid_mapping(tmp_path: Path) -> None:
     path.write_text(yaml.safe_dump({"dataset_id": "x"}), encoding="utf-8")
     with pytest.raises(DatasetConversionError, match="validation failed"):
         LabelMapper.load(path)
+
+
+def test_label_mapping_rejects_inconsistent_binary_semantics(tmp_path: Path) -> None:
+    path = tmp_path / "mapping.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "dataset_id": "example",
+                "mapping_version": "1.0.0",
+                "unknown_label_policy": "fail",
+                "rules": [
+                    {
+                        "aliases": ["benign"],
+                        "ground_truth_label": "benign",
+                        "binary_label": 1,
+                        "attack_family": "benign",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DatasetConversionError, match="binary_label must agree"):
+        LabelMapper.load(path)
+
+
+def test_service_rejects_label_mapping_for_a_different_dataset(tmp_path: Path) -> None:
+    label_root = tmp_path / "labels"
+    label_root.mkdir()
+    source = LABEL_ROOT / "aegishunt-controlled-demo-v1.yaml"
+    payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+    payload["dataset_id"] = "different-dataset"
+    (label_root / source.name).write_text(yaml.safe_dump(payload), encoding="utf-8")
+    service = DatasetService(
+        DatasetSettings(registry_path=REGISTRY_PATH, label_mapping_root=label_root)
+    )
+
+    with pytest.raises(DatasetConversionError, match="does not match the registry"):
+        service.build_demo(
+            data_root=tmp_path / "data",
+            report_root=tmp_path / "reports",
+        )

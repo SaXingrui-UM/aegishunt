@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from aegishunt.config import DatasetSettings
@@ -21,7 +21,7 @@ from aegishunt.datasets.demo import (
     demo_generation_config,
 )
 from aegishunt.datasets.download import download_dataset_file
-from aegishunt.datasets.errors import DatasetQualityError
+from aegishunt.datasets.errors import DatasetConversionError, DatasetQualityError
 from aegishunt.datasets.io import read_canonical_jsonl, sha256_file, write_canonical_jsonl
 from aegishunt.datasets.labels import LabelMapper
 from aegishunt.datasets.leakage import analyze_leakage
@@ -67,7 +67,10 @@ class DatasetService:
 
     def _label_mapper(self, definition: DatasetDefinition) -> LabelMapper:
         mapping_name = Path(definition.label_schema).name
-        return LabelMapper.load(self._settings.label_mapping_root / mapping_name)
+        mapper = LabelMapper.load(self._settings.label_mapping_root / mapping_name)
+        if mapper.dataset_id != definition.dataset_id:
+            raise DatasetConversionError("label mapping dataset ID does not match the registry")
+        return mapper
 
     def download(self, dataset_id: str) -> tuple[Path, str]:
         """Download only registry entries explicitly marked automatic."""
@@ -101,7 +104,7 @@ class DatasetService:
                 for expected in definition.expected_files
                 if expected.filename == path.name and expected.checksum_sha256 is not None
             ),
-            definition.expected_checksum,
+            definition.expected_checksum or definition.locally_computed_checksum,
         )
         checksum = sha256_file(path)
         if expected is not None and checksum != expected:
@@ -113,15 +116,20 @@ class DatasetService:
         dataset_id: str,
         raw_path: Path,
         output_path: Path,
+        *,
+        source_access_date: date,
     ) -> tuple[int, str]:
         """Convert an exact Phase 3 raw flow export without changing the source."""
 
         definition = self.describe(dataset_id)
+        if definition.conversion_status == "blocked":
+            raise DatasetConversionError("dataset conversion is blocked by the registry")
         rows = convert_flow_csv(
             raw_path,
             dataset_id=definition.dataset_id,
             dataset_version=definition.version,
             label_mapper=self._label_mapper(definition),
+            source_access_date=source_access_date,
         )
         checksum = write_canonical_jsonl(rows, output_path)
         return len(rows), checksum
@@ -151,6 +159,13 @@ class DatasetService:
         creation_timestamp: datetime,
         label_mapping_version: str,
     ) -> DatasetWorkflowResult:
+        if definition.conversion_status == "blocked":
+            raise DatasetQualityError("dataset conversion is blocked by the registry")
+        identities = {
+            (row.metadata.dataset_id, row.metadata.dataset_version) for row in rows
+        }
+        if identities != {(definition.dataset_id, definition.version)}:
+            raise DatasetQualityError("canonical dataset identity does not match the registry")
         quality_report = analyze_quality(
             rows,
             near_duplicate_tolerance=self._settings.near_duplicate_tolerance,
@@ -172,6 +187,23 @@ class DatasetService:
             raise DatasetQualityError("dataset leakage gates failed")
 
         canonical_path = data_root / "canonical.jsonl"
+        expected_outputs = (
+            canonical_path,
+            *(data_root / f"{split}.jsonl" for split in ("train", "validation", "test")),
+            *(report_root / name for name in (
+                "quality_report.json",
+                "leakage_report.json",
+                "split_manifest.json",
+                "dataset_manifest.json",
+                "feature_statistics.csv",
+                "class_distribution.csv",
+            )),
+        )
+        temporary_outputs = tuple(
+            path.with_name(f".{path.name}.tmp") for path in expected_outputs[:4]
+        )
+        if any(path.exists() for path in (*expected_outputs, *temporary_outputs)):
+            raise DatasetQualityError("dataset workflow output already exists")
         write_canonical_jsonl(rows, canonical_path)
         split_paths = write_split_datasets(assignments, data_root)
         manifest = build_dataset_manifest(

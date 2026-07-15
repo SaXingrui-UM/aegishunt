@@ -4,11 +4,19 @@ from __future__ import annotations
 
 import math
 import re
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import PurePosixPath
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 
 from aegishunt.flows.registry import FEATURE_DEFINITIONS, FEATURE_SCHEMA_VERSION, feature_names
 from aegishunt.schemas.base import require_aware_utc
@@ -95,6 +103,14 @@ class DatasetDefinition(DatasetModel):
     def validate_timestamp(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
 
+    @field_validator("label_schema")
+    @classmethod
+    def validate_label_schema(cls, value: str) -> str:
+        path = PurePosixPath(value)
+        if path.is_absolute() or ".." in path.parts or not path.name.endswith((".yaml", ".yml")):
+            raise ValueError("label_schema must identify a safe YAML mapping")
+        return path.as_posix()
+
     @field_validator("expected_checksum", "locally_computed_checksum")
     @classmethod
     def validate_optional_checksum(cls, value: str | None) -> str | None:
@@ -111,6 +127,9 @@ class DatasetDefinition(DatasetModel):
             raise ValueError("updated_at must not precede created_at")
         if len(set(self.group_fields)) != len(self.group_fields) or not self.group_fields:
             raise ValueError("group_fields must contain unique values")
+        filenames = [item.filename for item in self.expected_files]
+        if len(filenames) != len(set(filenames)):
+            raise ValueError("expected dataset filenames must be unique")
         if self.dataset_type == "public_benchmark" and self.official_page is None:
             raise ValueError("public benchmarks require an official page")
         if self.academic_use_status == "permitted" and self.license_url is None:
@@ -167,6 +186,7 @@ class CanonicalMetadata(DatasetModel):
     scenario_id: str = Field(min_length=1, max_length=255)
     group_id: str = Field(min_length=1, max_length=255)
     original_row_id: str = Field(min_length=1, max_length=255)
+    source_access_date: date
     observed_at: datetime | None = None
     provenance: dict[str, str]
     conversion_version: str
@@ -208,6 +228,18 @@ class CanonicalFeatureVector(DatasetModel):
     names: tuple[str, ...]
     values: tuple[float, ...]
 
+    @field_validator("values", mode="before")
+    @classmethod
+    def validate_numeric_input(cls, value: object) -> tuple[float, ...]:
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("feature values must be an ordered numeric sequence")
+        if any(
+            isinstance(item, bool) or not isinstance(item, (int, float))
+            for item in value
+        ):
+            raise ValueError("feature values must contain only JSON numbers")
+        return tuple(float(item) for item in value)
+
     @model_validator(mode="after")
     def validate_vector(self) -> Self:
         if self.schema_version != FEATURE_SCHEMA_VERSION:
@@ -228,13 +260,14 @@ class CanonicalFeatureVector(DatasetModel):
         return self
 
 
-BinaryLabel = Annotated[int, Field(ge=0, le=1)]
+BinaryLabel = Annotated[StrictInt, Field(ge=0, le=1)]
+GroundTruthLabel = Literal["benign", "malicious", "unmapped"]
 
 
 class CanonicalLabels(DatasetModel):
     """Ground truth kept outside the model feature vector."""
 
-    ground_truth_label: str = Field(min_length=1, max_length=255)
+    ground_truth_label: GroundTruthLabel
     binary_label: BinaryLabel | None
     attack_family: str = Field(min_length=1, max_length=255)
     original_label: str = Field(min_length=1, max_length=255)
@@ -260,7 +293,7 @@ class LabelMappingRule(DatasetModel):
     """One normalized alias-to-label rule."""
 
     aliases: tuple[str, ...]
-    ground_truth_label: str
+    ground_truth_label: Literal["benign", "malicious"]
     binary_label: BinaryLabel
     attack_family: str
 
@@ -271,6 +304,13 @@ class LabelMappingRule(DatasetModel):
         if not normalized or len(normalized) != len(set(normalized)):
             raise ValueError("label aliases must be unique and non-empty")
         return normalized
+
+    @model_validator(mode="after")
+    def validate_binary_semantics(self) -> Self:
+        expected = 0 if self.ground_truth_label == "benign" else 1
+        if self.binary_label != expected:
+            raise ValueError("binary_label must agree with ground_truth_label")
+        return self
 
 
 class LabelMappingDocument(DatasetModel):

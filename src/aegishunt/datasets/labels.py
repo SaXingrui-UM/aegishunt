@@ -26,6 +26,10 @@ class LabelMapper:
     def version(self) -> str:
         return self._document.mapping_version
 
+    @property
+    def dataset_id(self) -> str:
+        return self._document.dataset_id
+
     @classmethod
     def load(cls, path: Path) -> LabelMapper:
         try:

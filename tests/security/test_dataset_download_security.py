@@ -141,6 +141,48 @@ def test_existing_checksum_mismatch_is_not_overwritten(tmp_path: Path) -> None:
     assert target.read_bytes() == b"existing"
 
 
+def test_locally_recorded_checksum_is_enforced_for_existing_file(tmp_path: Path) -> None:
+    expected = hashlib.sha256(b"reviewed-local-file").hexdigest()
+    definition = _automatic_definition().model_copy(
+        update={"locally_computed_checksum": expected}
+    )
+    target = tmp_path / definition.dataset_id / definition.version / "data.bin"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"changed-after-review")
+
+    with pytest.raises(DatasetAcquisitionError, match="existing.*checksum"):
+        download_dataset_file(
+            definition,
+            tmp_path,
+            max_bytes=1024,
+            opener=_opener(b"must-not-download"),  # type: ignore[arg-type]
+        )
+
+
+def test_download_does_not_overwrite_racing_target(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    definition = _automatic_definition()
+    target = tmp_path / definition.dataset_id / definition.version / "data.bin"
+
+    def racing_link(source: Path, destination: Path) -> None:
+        del source
+        Path(destination).write_bytes(b"concurrent-writer")
+        raise FileExistsError
+
+    monkeypatch.setattr("aegishunt.datasets.download.os.link", racing_link)
+
+    with pytest.raises(DatasetAcquisitionError, match="target already exists"):
+        download_dataset_file(
+            definition,
+            tmp_path,
+            max_bytes=1024,
+            opener=_opener(b"downloaded"),  # type: ignore[arg-type]
+        )
+    assert target.read_bytes() == b"concurrent-writer"
+
+
 def test_manual_dataset_never_contacts_network(tmp_path: Path) -> None:
     definition = DatasetRegistry.load(REGISTRY_PATH).describe("cse-cic-ids2018")
     contacted = False

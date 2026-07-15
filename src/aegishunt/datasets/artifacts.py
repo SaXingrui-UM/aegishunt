@@ -78,6 +78,24 @@ def build_dataset_manifest(
 ) -> DatasetManifest:
     """Build a sanitized manifest from generated and verified artifacts."""
 
+    checksums_by_source: dict[str, set[str]] = {}
+    for row in rows:
+        checksums_by_source.setdefault(row.metadata.source_file, set()).add(
+            row.metadata.source_file_checksum
+        )
+    if any(len(checksums) != 1 for checksums in checksums_by_source.values()):
+        raise DatasetQualityError("one source file has conflicting provenance checksums")
+    raw_checksums = (
+        {
+            filename: next(iter(checksums))
+            for filename, checksums in sorted(checksums_by_source.items())
+        }
+        if definition.dataset_type == "public_benchmark"
+        else {}
+    )
+    access_dates = {row.metadata.source_access_date for row in rows}
+    if not access_dates:
+        raise DatasetQualityError("dataset rows do not record a source access date")
     source = (
         str(definition.official_page)
         if definition.official_page is not None
@@ -92,9 +110,9 @@ def build_dataset_manifest(
         source=source,
         provider=definition.provider,
         license_name=definition.license_name,
-        access_date=creation_timestamp.date().isoformat(),
-        raw_files=(),
-        raw_checksums={},
+        access_date=max(access_dates).isoformat(),
+        raw_files=tuple(raw_checksums),
+        raw_checksums=raw_checksums,
         processed_files=tuple(sorted(processed_paths)),
         processed_checksums={
             name: sha256_file(path) for name, path in sorted(processed_paths.items())

@@ -94,6 +94,17 @@ def test_quality_missing_timestamp_fails_without_imputation() -> None:
     assert report.missing_counts["metadata.observed_at"] == 1
 
 
+def test_quality_rejects_duplicate_canonical_record_ids() -> None:
+    rows = demo_rows()
+    duplicate_id = _replace_row(rows[1], record_id=rows[0].metadata.record_id)
+
+    report = analyze_quality((rows[0], duplicate_id), near_duplicate_tolerance=1e-6)
+
+    assert report.status == "fail"
+    assert report.duplicate_record_id_count == 1
+    assert any(finding.code == "Q-DUPLICATE-RECORD-ID" for finding in report.findings)
+
+
 def test_quality_and_feature_vector_reject_empty_or_invalid_values() -> None:
     with pytest.raises(DatasetQualityError, match="at least one"):
         analyze_quality((), near_duplicate_tolerance=1e-6)

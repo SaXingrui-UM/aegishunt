@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import shutil
 import tarfile
 import urllib.error
@@ -35,7 +36,7 @@ def _expected_checksum(definition: DatasetDefinition, filename: str) -> str | No
     for expected in definition.expected_files:
         if expected.filename == filename and expected.checksum_sha256 is not None:
             return expected.checksum_sha256
-    return definition.expected_checksum
+    return definition.expected_checksum or definition.locally_computed_checksum
 
 
 def download_dataset_file(
@@ -83,7 +84,10 @@ def download_dataset_file(
         computed = digest.hexdigest()
         if expected_checksum is not None and computed != expected_checksum:
             raise DatasetAcquisitionError("downloaded dataset checksum does not match")
-        temporary.replace(target)
+        try:
+            os.link(temporary, target)
+        except FileExistsError as exc:
+            raise DatasetAcquisitionError("dataset target already exists") from exc
     except (OSError, urllib.error.URLError, urllib.error.HTTPError) as exc:
         raise DatasetAcquisitionError("dataset download failed") from exc
     finally:
