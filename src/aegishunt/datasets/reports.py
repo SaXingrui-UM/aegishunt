@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import Field, field_validator
 
-from aegishunt.datasets.schemas import DatasetModel
+from aegishunt.datasets.schemas import SHA256_PATTERN, DatasetModel
 from aegishunt.schemas.base import require_aware_utc
 
 ReportStatus = Literal["pass", "fail", "warning"]
@@ -103,6 +103,14 @@ class SplitManifest(DatasetModel):
     canonical_schema_version: str
     feature_schema_version: str
 
+    @field_validator("dataset_checksum")
+    @classmethod
+    def validate_dataset_checksum(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("dataset_checksum must be a SHA-256 digest")
+        return normalized
+
 
 class DatasetManifest(DatasetModel):
     """Auditable provenance and generation manifest for one processed dataset."""
@@ -114,7 +122,7 @@ class DatasetManifest(DatasetModel):
     source: str
     provider: str
     license_name: str
-    access_date: str
+    access_date: date
     raw_files: tuple[str, ...]
     raw_checksums: dict[str, str]
     processed_files: tuple[str, ...]
@@ -128,10 +136,19 @@ class DatasetManifest(DatasetModel):
     generation_config: dict[str, object]
     random_seed: int
     quality_status: ReportStatus
+    registry_conversion_status: Literal["supported", "provisional", "blocked"]
     known_limitations: tuple[str, ...]
     creation_timestamp: datetime
     tool_version: str
     git_commit_sha: str | None
+
+    @field_validator("raw_checksums", "processed_checksums")
+    @classmethod
+    def validate_checksums(cls, value: dict[str, str]) -> dict[str, str]:
+        normalized = {name: checksum.strip().lower() for name, checksum in value.items()}
+        if any(not SHA256_PATTERN.fullmatch(checksum) for checksum in normalized.values()):
+            raise ValueError("manifest checksums must be SHA-256 digests")
+        return normalized
 
     @field_validator("creation_timestamp")
     @classmethod

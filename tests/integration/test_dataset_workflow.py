@@ -7,6 +7,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from aegishunt.config import DatasetSettings
 from aegishunt.datasets.errors import DatasetConversionError, DatasetQualityError
@@ -86,6 +87,7 @@ def test_controlled_demo_full_workflow_outputs_required_artifacts(tmp_path: Path
     }
     assert sum(result.split_manifest.row_counts.values()) == result.row_count
     assert len(read_canonical_jsonl(data_root / "canonical.jsonl")) == 48
+    assert result.dataset_manifest.registry_conversion_status == "supported"
 
     DatasetManifest.model_validate_json(
         (report_root / "dataset_manifest.json").read_text(encoding="utf-8")
@@ -218,11 +220,30 @@ def test_public_manifest_preserves_raw_checksums_and_source_access_date(tmp_path
         report_root=tmp_path / "public" / "reports",
     )
 
-    assert result.dataset_manifest.access_date == "2026-07-15"
+    assert result.dataset_manifest.access_date == date(2026, 7, 15)
+    assert result.dataset_manifest.registry_conversion_status == "provisional"
     assert len(result.dataset_manifest.raw_files) == 24
     assert set(result.dataset_manifest.raw_files) == set(
         result.dataset_manifest.raw_checksums
     )
+
+
+def test_manifest_schema_rejects_invalid_dates_and_checksums(tmp_path: Path) -> None:
+    service = DatasetService(_settings(tmp_path))
+    result = service.build_demo(
+        data_root=tmp_path / "data",
+        report_root=tmp_path / "reports",
+    )
+    dataset_payload = result.dataset_manifest.model_dump(mode="json")
+    dataset_payload["access_date"] = "not-a-date"
+    dataset_payload["processed_checksums"]["canonical.jsonl"] = "not-a-sha"
+    with pytest.raises(ValidationError):
+        DatasetManifest.model_validate(dataset_payload)
+
+    split_payload = result.split_manifest.model_dump(mode="json")
+    split_payload["dataset_checksum"] = "not-a-sha"
+    with pytest.raises(ValidationError, match="SHA-256"):
+        SplitManifest.model_validate(split_payload)
 
 
 def test_workflow_rejects_blocked_or_registry_version_mismatch(tmp_path: Path) -> None:

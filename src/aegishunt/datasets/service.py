@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 
 from aegishunt.config import DatasetSettings
@@ -289,8 +289,8 @@ class DatasetService:
         if len(dataset_ids) != 1:
             raise DatasetQualityError("canonical input contains multiple dataset IDs")
         definition = self.describe(next(iter(dataset_ids)))
-        observed = [row.metadata.observed_at for row in rows if row.metadata.observed_at]
-        creation_timestamp = min(observed) if observed else BASE_TIME
+        access_dates = {row.metadata.source_access_date for row in rows}
+        creation_timestamp = datetime.combine(max(access_dates), time.min, tzinfo=UTC)
         mapping_versions = {row.labels.label_mapping_version for row in rows}
         if len(mapping_versions) != 1:
             raise DatasetQualityError("canonical input contains multiple label mapping versions")
