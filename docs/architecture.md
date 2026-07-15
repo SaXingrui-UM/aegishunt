@@ -3,10 +3,12 @@
 ## Status and scope
 
 This document defines the target architecture and its phased realization. Phase
-3 adds bounded packet decoding, canonical bidirectional aggregation, deterministic
-feature schema `1.0.0`, and transactional `NetworkFlow` persistence to the Phase
-2 safe-ingestion boundary. Datasets, ML, detection, correlation, hunting workflows,
-cases, PCAP replay orchestration, and runtime workers remain planned.
+3 provides bounded packet decoding, canonical bidirectional aggregation,
+deterministic feature schema `1.0.0`, and transactional `NetworkFlow`
+persistence. Phase 4 adds file-based dataset registry, canonical transformation,
+quality/leakage gates, and group-exclusive frozen splits. ML, detection,
+correlation, hunting workflows, cases, PCAP replay orchestration, and runtime
+workers remain planned.
 
 ## System context
 
@@ -36,7 +38,7 @@ One deployable Python application is divided by responsibility:
 | `config`, schemas, storage | Implemented settings, entity contracts, repositories, audit | 1 |
 | ingestion | Implemented safe adapters, storage, samples, and ingestion jobs | 2 |
 | flows, features | Implemented packet state, timeouts, finalization, and feature registry | 3 |
-| datasets | Registry, conversion, split, manifests, leakage and quality | 4 |
+| datasets | Implemented registry, conversion, split, manifests, leakage and quality | 4 |
 | ML supervised/anomaly/fusion/evaluation | Training, inference, thresholds, comparison | 5-7 |
 | detection and explainability | Results, risk, alerts, reasons, explanations | 8 |
 | correlation and hunting | Entity/time groups and deterministic hypotheses | 9 |
@@ -58,7 +60,10 @@ flowchart TD
     Job --> Packet["Phase 3 packet/event processing"]
     Packet --> Flow["Canonical bidirectional flow"]
     Flow --> Feature["Versioned behavioral feature vector"]
-    Feature --> Supervised["Supervised detector"]
+    Feature --> Dataset["Phase 4 canonical dataset + provenance"]
+    Dataset --> Quality["Quality + leakage gates"]
+    Quality --> Split["Group-exclusive frozen splits"]
+    Split --> Supervised["Supervised detector"]
     Feature --> Anomaly["Anomaly detector"]
     Supervised --> Fusion["Configured signal fusion"]
     Anomaly --> Fusion
@@ -70,10 +75,38 @@ flowchart TD
     Case --> Feedback["Analyst feedback export"]
 ```
 
-The boundary through `Feature` is implemented for supported PCAP packets. The
-remaining nodes are planned. IDs and provenance are preserved across transitions;
-raw evidence, model inference, fusion, correlation, and analyst judgment remain
-distinguishable.
+The boundary through `Split` is implemented for supported PCAP-derived features
+and the controlled demo. Public benchmark acquisition and label joining remain
+manual/provisional gates. The remaining nodes are planned. IDs and provenance
+are preserved across transitions; raw evidence, labels, model inference, fusion,
+correlation, and analyst judgment remain distinguishable.
+
+## Dataset lifecycle
+
+```mermaid
+flowchart LR
+    Registry["Static dataset + license registry"] --> Acquire["Manual/explicit acquisition"]
+    Acquire --> Raw["Configured raw root + SHA-256"]
+    Raw --> Convert["Versioned exact-schema converter"]
+    Convert --> Canonical["Metadata | ordered features | labels"]
+    Canonical --> Quality["Schema, missing, duplicate, range, class checks"]
+    Quality --> GroupSplit["Seeded whole-group split"]
+    GroupSplit --> Leakage["Cross-split and label leakage gate"]
+    Leakage --> Manifests["Frozen manifests + CSV/JSON reports"]
+```
+
+Static provider facts are separate from machine-local state. Raw files are never
+overwritten. The canonical feature section exactly matches the Phase 3 43-field
+tuple; source, capture, scenario, group, timestamp, IDs, labels, and checksums
+remain metadata. Missing or semantically unmatched public features are rejected,
+not imputed or fabricated. CSE-CIC-IDS2018 is the conditional primary candidate,
+while the offline controlled demo validates the machinery without representing
+real traffic.
+
+The splitter refuses fewer than three groups and any source/session/scenario
+identity shared by multiple groups. It never falls back to random rows. Quality
+and leakage reports must pass before a final dataset manifest is written. Test
+is marked frozen and prohibited for future model/threshold/feature selection.
 
 ## Planned ML lifecycle
 
@@ -147,6 +180,11 @@ Large or generated material stays outside source control:
 - original and derived telemetry under `data/` with manifests and checksums;
 - immutable model and evaluation bundles under `artifacts/`;
 - human-readable experiment output under `reports/`.
+
+Phase 4 generated canonical/split JSONL and machine reports use configured
+`data/processed/datasets` and `reports/datasets` roots, both ignored except for
+directory placeholders. Registry YAML, versioned label mappings, schema docs,
+and tests are reviewed source files.
 
 The controlled model registry will verify schema and hashes before loading; user
 uploads can never be treated as arbitrary serialized Python models.
