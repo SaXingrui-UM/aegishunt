@@ -39,7 +39,7 @@ class DatabaseSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    url: str = "sqlite:///data/aegishunt.db"
+    url: str = Field(default="sqlite:///data/aegishunt.db", repr=False)
     echo: bool = False
     busy_timeout_ms: int = Field(default=5_000, ge=1, le=120_000)
     enable_wal: bool = True
