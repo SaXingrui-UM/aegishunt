@@ -3,11 +3,10 @@
 ## Status and scope
 
 This document defines the target architecture and its phased realization. In
-Phase 1, validated configuration, core Pydantic contracts, SQLAlchemy records,
-SQLite/WAL initialization, schema versioning, repositories, and audit events
-exist alongside the Phase 0 CLI/API/frontend shells. Telemetry ingestion, flow
-construction, features, ML, detection, correlation, hunting workflows, cases,
-and runtime workers remain planned for their roadmap phases.
+Phase 2 adds safe telemetry upload/storage, bounded format adapters, controlled
+samples, and durable ingestion-job lifecycles to the Phase 1 data foundation.
+Flow construction, features, ML, detection, correlation, hunting workflows,
+cases, PCAP replay, and runtime workers remain planned for their roadmap phases.
 
 ## System context
 
@@ -35,7 +34,7 @@ One deployable Python application is divided by responsibility:
 | Module boundary | Planned responsibility | First owning phase |
 | --- | --- | --- |
 | `config`, schemas, storage | Implemented settings, entity contracts, repositories, audit | 1 |
-| ingestion | Safe adapters and ingestion jobs | 2 |
+| ingestion | Implemented safe adapters, storage, samples, and ingestion jobs | 2 |
 | flows, features | Packet-to-flow state and deterministic feature registry | 3 |
 | datasets | Registry, conversion, split, manifests, leakage and quality | 4 |
 | ML supervised/anomaly/fusion/evaluation | Training, inference, thresholds, comparison | 5-7 |
@@ -54,8 +53,9 @@ the whole application.
 
 ```mermaid
 flowchart TD
-    Input["Validated telemetry source"] --> Job["Ingestion job + checksum"]
-    Job --> Packet["Packet/event adapter"]
+    Input["Untrusted telemetry file"] --> Boundary["Phase 2 safety + format validation"]
+    Boundary --> Job["Durable ingestion job + checksum"]
+    Job --> Packet["Phase 3 packet/event processing"]
     Packet --> Flow["Canonical bidirectional flow"]
     Flow --> Feature["Versioned behavioral feature vector"]
     Feature --> Supervised["Supervised detector"]
@@ -70,8 +70,10 @@ flowchart TD
     Case --> Feedback["Analyst feedback export"]
 ```
 
-The flow will preserve IDs and provenance across each transition. Raw evidence,
-model inference, fusion, correlation, and analyst judgment remain distinguishable.
+The Phase 2 boundary through `Job` is implemented. The remaining nodes are
+planned. IDs and provenance will be preserved across each later transition;
+raw evidence, model inference, fusion, correlation, and analyst judgment remain
+distinguishable.
 
 ## Planned ML lifecycle
 
@@ -111,9 +113,10 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 1, Streamlit remains a
-truthful static status shell and FastAPI exposes `/health`; API lifespan startup
-initializes and verifies the empty or existing configured database.
+application services for batch workflows. In Phase 2, Streamlit remains a
+truthful static status shell. FastAPI exposes `/health` plus typed ingestion,
+sample, and job endpoints; API lifespan startup initializes and verifies the
+empty or existing configured database.
 
 ## Planned storage approach
 
@@ -122,8 +125,14 @@ Foreign keys and a bounded busy timeout are enabled for SQLite connections.
 Typed repositories prevent SQL from leaking into business logic and preserve a
 future PostgreSQL migration path. Schema version `1` is registered explicitly;
 an incompatible database is rejected rather than silently mutated. Core entity
-tables exist now, while later phases will populate them through validated
-services. Audit events are written in the same transaction as repository creates.
+tables exist now. Phase 2 persists ingestion lifecycle state in
+`telemetry_sources` and writes an audit event in the same transaction as every
+create or transition. It deliberately creates no `network_flows` records.
+
+Untrusted uploads are written to private temporary files below the configured
+root in bounded chunks, hashed with SHA-256, format-validated, and atomically
+moved to checksum-derived names. Client paths are never used as destinations.
+Failures remove staging files and remain observable as safe failed jobs.
 
 Large or generated material stays outside source control:
 

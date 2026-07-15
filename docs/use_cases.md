@@ -1,9 +1,10 @@
 # Core Use Cases
 
 All use cases below describe target behavior derived from the Project Plan.
-They are acceptance inputs, not implementation claims. Phase 0 implements only
-the CLI/API/frontend shells; each use case remains **planned** until its owning
-phase supplies code and tests.
+They are acceptance inputs, not blanket implementation claims. Phase 2 implements
+the safe storage, container/schema validation, durable job, sample, API, and CLI
+portions of UC-01 and UC-02. Packet-to-flow conversion and canonical flow
+persistence remain Phase 3 work; PCAP replay in UC-03 remains Phase 11 work.
 
 ## UC-01: Import a PCAP file
 
