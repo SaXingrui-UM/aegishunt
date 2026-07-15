@@ -1,0 +1,16 @@
+version: 1
+samples:
+  - sample_id: phase2-benign-pcap
+    filename: phase2-benign.pcap
+    source_type: pcap
+    content_type: application/vnd.tcpdump.pcap
+    checksum: 84aa852419452b33020b08aa329e54dd37ea454589318fd8ba437c3b3a9f2e9a
+    description: Deterministic synthetic DNS-query PCAP for ingestion demonstration.
+    synthetic: true
+  - sample_id: phase2-flow-csv
+    filename: phase2-flows.csv
+    source_type: flow_csv
+    content_type: text/csv
+    checksum: b941140c30f4d7f823626d9861498998089bb5c993d12e6490350d9d6dcfd08a
+    description: Two deterministic synthetic canonical flow rows for CSV ingestion.
+    synthetic: true
