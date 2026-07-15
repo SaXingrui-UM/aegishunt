@@ -7,21 +7,22 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 1 - Configuration, schemas, and database foundation |
-| Status | Implementation complete — awaiting PR review |
-| Phase 1 implementation completion | 100% of implementation and local acceptance checks |
-| Current branch | `phase/01-data-foundation` |
-| Latest main commit | `b3d6b196168896affa8f88a4a8ddfb44d51f2f57` (Phase 0 metadata PR #2) |
+| Status | Phase complete |
+| Completion date | 2026-07-15 (Asia/Shanghai) |
+| Phase 1 completion | 100%; implementation, review, merge, and checkpoint Tag complete |
+| Current branch | `docs/phase-01-post-merge-metadata` |
+| Latest main commit | `a240805f53d7213bd4b0f074fa35964d5dfecc5b` (Phase 1 squash merge) |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Latest Phase 1 implementation commit | `f11e3314e713f4b284c1896667dc871291e27832` (before this PR checkpoint metadata commit) |
-| Pull request | [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), Draft, open and mergeable; base `main`, head `phase/01-data-foundation` |
-| CI status | Passed; both GitHub Actions `quality` checks succeeded at PR checkpoint `2acd246`; the documentation-only CI-record update runs the same checks |
+| Pull request | [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), squash-merged into `main` as `a240805` |
+| CI status | Passed; both final GitHub Actions `quality` checks succeeded before merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
-| Phase 1 tag | Not created; prohibited before merge and explicit instruction |
-| Working tree | Clean after the Phase 1 implementation and documentation commits |
-| Next action | User reviews PR #3, confirms CI, and merges when satisfied; do not start Phase 2 automatically |
+| Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
+| Working tree | Clean after the post-merge metadata commit |
+| Next action | After this metadata PR is reviewed and merged, prepare `phase/02-telemetry-ingestion` only when the user explicitly starts Phase 2 |
 
-Phase 1 does not become `Phase complete` before its PR is merged and a later
-explicit instruction authorizes a checkpoint tag. Phase 2 has not started.
+Phase 1 is complete: PR #3 was merged into `main`, the merged commit was pulled
+locally, and the explicitly requested annotated checkpoint Tag was pushed and
+verified. Phase 2 has not started.
 
 ## Phase 0 checkpoint
 
@@ -79,6 +80,11 @@ explicit instruction authorizes a checkpoint tag. Phase 2 has not started.
 | Bare CLI after editable reinstall in the Codex macOS runtime | Failed when the runtime repeatedly restored the hidden flag on the editable `.pth`; failure was not treated as a product success |
 | CLI/API/Streamlit manual rerun with explicit `PYTHONPATH=src` | Passed; this bypassed only the runtime-specific hidden-file behavior |
 | `gh pr checks 3 --watch --interval 10` at `2acd246` | Exit 0; two `quality` checks passed, zero failed or pending |
+| `git checkout main` and `git pull --ff-only origin main` after PR #3 | Exit 0; fast-forwarded to merge commit `a240805` |
+| Phase 1 deliverable and PR #3 verification | Required configuration, schemas, storage, CLI, and tests present; PR state `MERGED` with two successful checks |
+| Local and remote `phase-01-complete` absence checks | Confirmed absent before creation |
+| `git tag -a phase-01-complete -m "AegisHunt Phase 1 complete: configuration, schemas, and database foundation"` | Exit 0; annotated Tag targets `a240805` |
+| `git push origin phase-01-complete` and local/remote verification | Exit 0; remote peeled Tag target equals current `main` at `a240805` |
 | Temporary PDF renders and SQLite databases | Removed after verification |
 
 ## Tests
@@ -131,5 +137,7 @@ no remaining blocking or high-severity issue.
 
 ## Next phase
 
-Phase 2 is the controlled telemetry-ingestion framework. It must not begin until
-the Phase 1 PR is reviewed and merged and the user explicitly starts that phase.
+Phase 2 is the controlled telemetry-ingestion framework. Its branch has not been
+created and implementation has not started. After this post-merge metadata PR is
+reviewed and merged, the next action is to prepare `phase/02-telemetry-ingestion`
+only when the user explicitly authorizes Phase 2.
