@@ -10,10 +10,10 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Status | Final local verification complete — review and publication pending |
 | Phase 4 implementation | 100%; local implementation and pre-review verification complete |
 | Current activity | Phase 4 final diff review, publication, and pull-request checkpoint |
-| Verification status | Ruff, strict mypy, 157 tests, controlled demo E2E, restart, and security checks passed locally |
+| Verification status | Ruff, strict mypy, 168 tests, controlled demo E2E, restart, and security checks passed locally |
 | Current branch | `phase/04-dataset-quality` |
 | Phase 4 baseline | `main` at `21750914ab0da09a36b60972e6abdff5d565d454` |
-| Latest reviewed implementation commit | pending final Phase 4 read-only review |
+| Latest reviewed implementation commit | `9b0bdef` (first-review integrity fixes; second review pending) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit / latest main | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
@@ -46,13 +46,16 @@ Phase 5 has not started.
   class-distribution and feature-statistics CSV, Typer commands, and EDA notebook.
 - Manual demo verification: 48 rows, 24 groups, quality pass, leakage pass,
   zero exact/feature/near duplicates, and 28/10/10 train/validation/test rows.
-- Pre-review checks: Ruff pass; strict mypy pass for 73 source files; 157 pytest
-  tests passed with 0 failures/skips/xfails and 87.87% branch-aware coverage.
-- Focused Phase 4 suite: 49 passed; two fixed-seed offline rebuilds were
+- Post-fix checks: Ruff pass; strict mypy pass for 73 source files; 168 pytest
+  tests passed with 0 failures/skips/xfails and 88.01% branch-aware coverage.
+- Focused Phase 4 suite: 60 passed; two fixed-seed offline rebuilds were
   byte-identical. Controlled split counts are 28/10/10 rows and 14/5/5 groups.
 - The current Codex/macOS runtime skips virtual-environment `.pth` files marked
   hidden, so standalone editable console verification required `PYTHONPATH=src`;
   this workaround is not recorded as a standard-install pass.
+- First read-only review identified provenance, registry conversion/version,
+  label mapping, strict-type, duplicate-ID, checksum, non-overwrite, and output
+  preflight gaps. Commit `9b0bdef` fixed them with regression coverage.
 - No public network, root, live capture, external target, database migration,
   Phase 3 schema change, model, model metric, anomaly detector, fusion, alert, or
   hypothesis functionality was introduced.

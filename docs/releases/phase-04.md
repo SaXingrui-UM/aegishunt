@@ -27,6 +27,8 @@ later user-authorized checkpoint tag is created.
   sanitized failures, and traversal/bomb/symlink-resistant ZIP/TAR extraction.
 - Strict canonical JSONL sections for provenance metadata, the unchanged 43-field
   Phase 3 feature vector, and versioned labels.
+- Public provenance manifests retain raw filenames, checksums, and explicit
+  source access dates; registry dataset/version/conversion gates fail closed.
 - Exact feature-CSV adapter that refuses missing/reordered features, unknown
   labels, NaN, Infinity, invalid types/ranges, and unsafe source identifiers.
 - Fixed-seed offline controlled demo covering browsing, DNS, file transfer,
@@ -103,28 +105,30 @@ Pre-review local verification on 2026-07-16:
 
 - `ruff check .`: pass.
 - `mypy src`: pass across 73 source files.
-- `pytest`: 157 passed, 0 failed, 0 skipped, 0 xfailed.
-- Branch-aware coverage: 87.87% (project threshold: 85%).
+- `pytest`: 168 passed, 0 failed, 0 skipped, 0 xfailed.
+- Branch-aware coverage: 88.01% (project threshold: 85%).
 - Focused Phase 4 registry/conversion/quality/leakage/split/download/workflow/CLI
-  tests: 49 passed.
+  tests: 60 passed.
 - Offline build, validate, quality, deterministic restart, group resplit,
   manifest validation, manual raw-file verification, and archive safety tests:
   pass.
 - Two fixed-seed builds were byte-identical and produced canonical SHA-256
-  `cdc46dc56ad5f6c70b1f74e5dbc0f02814ee638087b9cbab012c6602d9e0d0e1`.
+  `75c584dbee56cf985864fabeb3d01a0975122276a31c2acbb45b0323c4f885ad`.
 - On this Codex/macOS host, the bundled Python marks virtual-environment `.pth`
   files hidden and its `site.py` skips them, so the standalone editable console
   script required `PYTHONPATH=src`. This environment-specific limitation was
   recorded as a workaround, not counted as a standard-install pass; direct
   imports, Typer CLI tests, and the full offline workflow passed.
 
-Final post-review numbers will be updated if a review fix changes the suite.
+The first read-only review found provenance, registry-gate, mapping-integrity,
+strict-type, duplicate-ID, checksum, non-overwrite, and partial-output gaps.
+Commit `9b0bdef` added the corresponding fail-closed guards and regression tests.
 
 ## Generated artifacts
 
 Manual verification generated canonical/split JSONL and the six required reports
 under a temporary ignored directory only. The reviewed canonical checksum was
-`cdc46dc56ad5f6c70b1f74e5dbc0f02814ee638087b9cbab012c6602d9e0d0e1`.
+`75c584dbee56cf985864fabeb3d01a0975122276a31c2acbb45b0323c4f885ad`.
 All runtime datasets and machine reports are ignored and are not committed.
 
 ## Security considerations
@@ -148,6 +152,15 @@ All runtime datasets and machine reports are ignored and are not committed.
   intentionally rejects CICFlowMeter/Argus/Zeek columns with missing semantics.
 - Quantized near-duplicate detection is deterministic and configurable but is not
   a universal semantic similarity measure.
+- Canonical quality and split analysis currently loads the selected rows into
+  memory. Full public collections require an explicitly reviewed subset and
+  resource measurement; Phase 4 does not claim whole-corpus laptop processing.
+- Output names are preflighted and individual files use exclusive creation, but
+  an unexpected I/O failure after a multi-file bundle starts can leave a partial
+  bundle. Such a bundle lacks a complete manifest and must not be consumed.
+- Controlled-demo manifests use the fixed generator epoch as their creation
+  timestamp to preserve byte reproducibility; it is generation-contract
+  metadata, not a wall-clock claim.
 - Group isolation may leave a split without a rare family; no row split or
   resampling is used to force balance.
 - The demo is small and synthetic and cannot measure real-world generalization.

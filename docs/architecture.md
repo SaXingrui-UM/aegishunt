@@ -103,6 +103,11 @@ not imputed or fabricated. CSE-CIC-IDS2018 is the conditional primary candidate,
 while the offline controlled demo validates the machinery without representing
 real traffic.
 
+Public rows also carry an operator-recorded source access date. Public manifests
+derive raw filenames/checksums from canonical provenance, enforce registry
+dataset/version and conversion-state gates, and never substitute traffic
+observation time for acquisition time.
+
 The splitter refuses fewer than three groups and any source/session/scenario
 identity shared by multiple groups. It never falls back to random rows. Quality
 and leakage reports must pass before a final dataset manifest is written. Test

@@ -57,3 +57,8 @@ performs the documented acquisition and label-join validation.
 - Large captures require explicit subsets and resource measurement.
 - The controlled demo is structurally useful but cannot estimate real-world
   performance.
+- Canonical quality and split operations are in-memory in Phase 4; whole-corpus
+  streaming is deferred until measured need justifies the added complexity.
+- Multi-file bundles preflight all names and create each file exclusively, but
+  an unexpected mid-write I/O failure can leave an incomplete bundle without a
+  valid final manifest.

@@ -29,6 +29,7 @@ intentionally separate so training code can consume only `features.values`.
 | `dataset_id`, `dataset_version` | Stable registry identity | Reject |
 | `record_id`, `original_row_id` | Canonical and provider row references | Reject |
 | `source_file`, `source_file_checksum` | Safe relative source identifier and SHA-256 | Reject; absolute/traversal paths rejected |
+| `source_access_date` | Operator-recorded acquisition/generation date used by manifests | Reject |
 | `capture_session_id`, `scenario_id`, `group_id` | Split and provenance identities | Reject |
 | `observed_at` | UTC evidence time | Allowed by schema for sources without a row time, but quality gate fails until handled explicitly |
 | `provenance` | String-only converter/source evidence | Reject empty key/value |
@@ -65,9 +66,10 @@ never changes labels for class balance.
 ## Deterministic conversion
 
 The implemented CSV adapter accepts metadata columns followed by all 43 feature
-columns in the exact registry order. It computes the raw SHA-256, preserves the
-source, validates timestamps and values, normalizes labels, and emits stable
-sorted-key JSON Lines. It does not overwrite raw or processed files.
+columns in the exact registry order. The CLI requires an explicit
+`--access-date YYYY-MM-DD`. It computes the raw SHA-256, preserves the source,
+validates timestamps and values, normalizes labels, and emits stable sorted-key
+JSON Lines. It does not overwrite raw or processed files.
 
 The controlled demo directly builds harmless `PacketRecord` observations and
 uses the Phase 3 finalizer/feature engine. It is therefore schema-compatible but
