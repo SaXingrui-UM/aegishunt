@@ -18,11 +18,12 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 0 foundation is implemented on `phase/00-foundation`. The repository
-currently provides an installable Python package, CLI shell, FastAPI health
-endpoint, Streamlit status page, engineering controls, and architecture and
-requirements documentation. Telemetry ingestion, storage, features, detection,
-models, alerts, hypotheses, and cases are planned and are **not implemented**.
+Phase 1 data foundation is implemented on `phase/01-data-foundation`. The
+repository provides validated YAML/environment settings, typed core schemas,
+SQLAlchemy repositories, repeatable SQLite initialization with WAL, explicit
+schema versioning, append-only audit events, and the Phase 0 application shells.
+Telemetry ingestion, packet/flow processing, feature extraction, detection,
+model training, correlation, hypotheses, and case workflows are **not implemented**.
 
 ## Planned architecture
 
@@ -44,19 +45,35 @@ python -m pip install -e ".[dev]"
 ```
 
 `pyproject.toml` is the dependency source of truth; no compatibility
-`requirements.txt` is maintained in Phase 0.
+`requirements.txt` is maintained.
 
 ## Current commands
 
 ```bash
 aegishunt --help
 aegishunt doctor
+aegishunt init-db
 aegishunt api
 aegishunt frontend
 ```
 
 `doctor` checks Python compatibility, the operating system, and required local
-directories. Only the commands above exist in Phase 0.
+directories. `init-db` validates configuration and idempotently initializes the
+configured database without printing its URL.
+
+## Configuration and database initialization
+
+Version-controlled defaults live in `configs/application.yaml`. Environment
+variables override YAML values with `AEGISHUNT_` and a double underscore for
+nested keys:
+
+```bash
+export AEGISHUNT_DATABASE__URL="sqlite:///data/aegishunt.db"
+aegishunt init-db --config configs/application.yaml
+```
+
+The default SQLite database uses WAL, foreign-key enforcement, a bounded busy
+timeout, and schema version `1`. Database files and WAL sidecars are ignored by Git.
 
 ## Start the API
 
@@ -74,7 +91,7 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 0 page reports foundation status and planned modules only. It does
+The Phase 1 page reports data-foundation status and planned modules only. It does
 not display invented flows, alerts, hypotheses, or model metrics.
 
 ## Quality checks
