@@ -6,31 +6,58 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 3 - Packet-to-Flow and behavioral feature extraction |
-| Status | Phase complete |
-| Phase 3 implementation | 100%; merged, post-merge validated, and checkpoint-tagged |
-| Current activity | Phase 3 post-merge metadata PR preparation; Phase 4 is not started |
-| Verification status | PR #9 merged; two GitHub Actions checks and post-merge local checks passed |
-| Current branch | `docs/phase-03-post-merge-metadata` |
-| Phase 3 baseline | `main` at `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb` |
-| Latest reviewed implementation commit | `242e1f35dabfe936c36dce485d0403fcf5e10249` |
+| Current phase | Phase 4 - Dataset registry, transformation, and quality control |
+| Status | Final local verification complete — review and publication pending |
+| Phase 4 implementation | 100%; local implementation and pre-review verification complete |
+| Current activity | Phase 4 final diff review, publication, and pull-request checkpoint |
+| Verification status | Ruff, strict mypy, 157 tests, controlled demo E2E, restart, and security checks passed locally |
+| Current branch | `phase/04-dataset-quality` |
+| Phase 4 baseline | `main` at `21750914ab0da09a36b60972e6abdff5d565d454` |
+| Latest reviewed implementation commit | pending final Phase 4 read-only review |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit / latest main | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), `[Phase 03] Flow feature engineering`, merged into `main` from `phase/03-flow-feature-engineering` on 2026-07-16 02:43:29 (UTC+8) |
-| CI status | Both PR #9 GitHub Actions `quality` checks passed; post-merge Ruff, mypy, and pytest also passed |
+| Pull request | Phase 4 PR pending creation; base `main`, head `phase/04-dataset-quality` |
+| CI status | Local checks pass; Phase 4 GitHub Actions pending PR creation |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
-| Working tree | Expected clean after the Phase 3 post-merge metadata commit |
-| Next action | Review and merge the Phase 3 metadata-only PR; Phase 4 remains unauthorized and not started |
+| Working tree | Expected clean after the Phase 4 release/progress documentation commit |
+| Next action | Complete review, push Phase 4 branch, create PR, and wait for user review; do not start Phase 5 |
 
-Phase 0, Phase 1, and Phase 2 remain complete and their tags are unchanged. Phase
-3 is complete: PR #9 was squash-merged as `5df43bc`, both required checks passed,
-and annotated tag `phase-03-complete` was pushed and peeled to that merged `main`
-commit. Phase 4 has not started; its planned branch remains
-`phase/04-dataset-quality`.
+Phase 0 through Phase 3 remain complete and their annotated tags are unchanged.
+Phase 4 is implemented on its declared branch and has not been merged or tagged.
+Phase 5 has not started.
+
+## Phase 4 implementation checkpoint
+
+- Added strict public/controlled dataset definitions, versioned label mappings,
+  safe acquisition/manual verification, SHA-256, and bounded archive extraction.
+- Selected CSE-CIC-IDS2018 as the conditional primary benchmark from official
+  evidence; no public dataset was downloaded, mirrored, or fabricated.
+- Added canonical metadata/ordered-feature/label contracts bound to unchanged
+  Phase 3 feature schema `1.0.0`, deterministic JSONL, and exact CSV conversion.
+- Added a fixed-seed offline controlled demo with eight documented behavior
+  patterns produced through the real Phase 3 feature engine.
+- Added missingness, duplicate/near-duplicate, class, range, constant-feature,
+  and formal leakage analysis plus group-exclusive frozen splits.
+- Added deterministic dataset/split manifests, quality/leakage JSON,
+  class-distribution and feature-statistics CSV, Typer commands, and EDA notebook.
+- Manual demo verification: 48 rows, 24 groups, quality pass, leakage pass,
+  zero exact/feature/near duplicates, and 28/10/10 train/validation/test rows.
+- Pre-review checks: Ruff pass; strict mypy pass for 73 source files; 157 pytest
+  tests passed with 0 failures/skips/xfails and 87.87% branch-aware coverage.
+- Focused Phase 4 suite: 49 passed; two fixed-seed offline rebuilds were
+  byte-identical. Controlled split counts are 28/10/10 rows and 14/5/5 groups.
+- The current Codex/macOS runtime skips virtual-environment `.pth` files marked
+  hidden, so standalone editable console verification required `PYTHONPATH=src`;
+  this workaround is not recorded as a standard-install pass.
+- No public network, root, live capture, external target, database migration,
+  Phase 3 schema change, model, model metric, anomaly detector, fusion, alert, or
+  hypothesis functionality was introduced.
+- DEF-004 remains open and non-blocking; Phase 4 does not add an alternate queue
+  or database merely to record a total database outage.
 
 ## Phase 3 implementation checkpoint
 
