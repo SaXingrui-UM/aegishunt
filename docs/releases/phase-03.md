@@ -8,10 +8,11 @@ vector without starting dataset or model work.
 
 ## Status
 
-Implementation complete — awaiting PR review on
-`phase/03-flow-feature-engineering` in PR
-[#9](https://github.com/SaXingrui-UM/aegishunt/pull/9). It is not Phase complete
-until a later user-reviewed merge and explicitly authorized checkpoint tag.
+Phase complete. PR [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9),
+`[Phase 03] Flow feature engineering`, was squash-merged from
+`phase/03-flow-feature-engineering` into `main` as
+`5df43bc6b994f846fd11e2e7221ef55f9b5610aa` on 2026-07-16 02:43:29
+(UTC+8). Annotated tag `phase-03-complete` was pushed and verified at that commit.
 
 ## Completed scope
 
@@ -58,9 +59,9 @@ Pre-review validation on 2026-07-16 passed:
 - Deterministic replay, restart persistence, schema export, timeout boundaries,
   malformed/truncated captures, and no-partial-flow rollback are covered and pass.
 
-The post-review run passed. At this checkpoint the initial branch `quality` check
-passed and the latest PR `quality` check is in progress; no pending result is
-reported as successful.
+The post-review run passed. Both PR #9 GitHub Actions `quality` checks passed.
+Post-merge verification on synchronized `main` repeated Ruff, strict mypy, and
+all 108 tests with the same 87.83% branch-aware coverage.
 
 ## Review outcome
 
@@ -87,6 +88,9 @@ they are removed by `tmp_path` and are not committed.
 - Cross-flow repeated destination/port and short-connection-window features are not fabricated.
 - Flow list/detail HTTP/UI surfaces and timed replay belong to later interface/runtime phases.
 - DEF-004 remains open and non-blocking: a total database outage cannot record its own failure in that database.
+- Dataset registry, unified dataset transformation, quality/leakage analysis,
+  grouped train/validation/test splitting, and dataset manifests belong to Phase 4 and are not implemented.
+- Model training, hyperparameter tuning, classification metrics, and anomaly detection remain later-phase work.
 - On the current Codex macOS host, the editable console script still requires
   the known `PYTHONPATH=src` workaround despite successful editable installation;
   automated package imports and tests pass, but this host-specific manual CLI
@@ -103,12 +107,14 @@ repository contract.
 - Branch: `phase/03-flow-feature-engineering`
 - Baseline main: `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb`
 - Latest reviewed implementation commit: `242e1f35dabfe936c36dce485d0403fcf5e10249`
-- Pull request: [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), open and ready for review
-- Merge commit: pending
-- Tag: pending; `phase-03-complete` must not be created before merge
+- Pull request: [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), merged
+- Base/head: `main` <- `phase/03-flow-feature-engineering`
+- Merge commit: `5df43bc6b994f846fd11e2e7221ef55f9b5610aa`
+- Completion date: 2026-07-16 (Asia/Shanghai)
+- Tag: annotated `phase-03-complete`; remote peeled target is the merge commit
 
 ## Next phase
 
-Phase 4 — Dataset Quality, Registry, Splitting, and Leakage Control is not started.
-It must not begin before this Phase 3 PR is reviewed and merged and the user
-explicitly authorizes the next phase.
+Phase 4 — Dataset Registry, Transformation and Quality Control is not started.
+Its planned branch is `phase/04-dataset-quality`. It must not begin until the
+metadata-only post-merge PR is reviewed and the user explicitly authorizes Phase 4.

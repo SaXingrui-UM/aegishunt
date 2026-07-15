@@ -7,29 +7,30 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 3 - Packet-to-Flow and behavioral feature extraction |
-| Status | Implementation complete — awaiting PR review |
-| Phase 3 implementation | 100% of declared Phase 3 scope implemented and locally validated; not Phase complete |
-| Current activity | Phase 3 PR #9 is open; Phase 4 is not started |
-| Verification status | Final local checks and two-pass manual review complete |
-| Current branch | `phase/03-flow-feature-engineering` |
+| Status | Phase complete |
+| Phase 3 implementation | 100%; merged, post-merge validated, and checkpoint-tagged |
+| Current activity | Phase 3 post-merge metadata PR preparation; Phase 4 is not started |
+| Verification status | PR #9 merged; two GitHub Actions checks and post-merge local checks passed |
+| Current branch | `docs/phase-03-post-merge-metadata` |
 | Phase 3 baseline | `main` at `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb` |
 | Latest reviewed implementation commit | `242e1f35dabfe936c36dce485d0403fcf5e10249` |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
-| Latest main commit at Phase 3 start | `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb` |
+| Phase 3 merge commit / latest main | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), `[Phase 03] Flow feature engineering`, open and ready for review, `main` <- `phase/03-flow-feature-engineering` |
-| CI status | Initial branch `quality` check passed; latest PR `quality` check is in progress |
+| Pull request | [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), `[Phase 03] Flow feature engineering`, merged into `main` from `phase/03-flow-feature-engineering` on 2026-07-16 02:43:29 (UTC+8) |
+| CI status | Both PR #9 GitHub Actions `quality` checks passed; post-merge Ruff, mypy, and pytest also passed |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
-| Phase 3 tag | Not created; `phase-03-complete` is prohibited before merge and explicit instruction |
-| Working tree | Expected clean after the Phase 3 PR metadata commit |
-| Next action | Wait for CI, review PR #9, confirm no Phase 4 scope creep, and Squash and merge only after approval |
+| Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
+| Working tree | Expected clean after the Phase 3 post-merge metadata commit |
+| Next action | Review and merge the Phase 3 metadata-only PR; Phase 4 remains unauthorized and not started |
 
 Phase 0, Phase 1, and Phase 2 remain complete and their tags are unchanged. Phase
-3 implementation is present only on its dedicated branch and PR #9. It is not
-Phase complete until user review, merge to `main`, synchronization, and a later
-explicitly authorized checkpoint tag. Phase 4 has not started.
+3 is complete: PR #9 was squash-merged as `5df43bc`, both required checks passed,
+and annotated tag `phase-03-complete` was pushed and peeled to that merged `main`
+commit. Phase 4 has not started; its planned branch remains
+`phase/04-dataset-quality`.
 
 ## Phase 3 implementation checkpoint
 
@@ -57,6 +58,8 @@ explicitly authorized checkpoint tag. Phase 4 has not started.
   no alternate queue/database dependency.
 - Cross-flow history/window features are deferred explicitly; Phase 4 datasets,
   model training/inference, detections, alerts, correlation, and hypotheses are absent.
+- Post-merge verification repeated Ruff, strict mypy, and all 108 tests on
+  synchronized `main`; results and coverage remained unchanged.
 
 ## Phase 0–2 integration verification
 
