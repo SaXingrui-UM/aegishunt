@@ -64,7 +64,11 @@ class SafeFileStorage:
         normalized_content_type = self.validate_content_type(content_type, policy)
         try:
             self._root.mkdir(parents=True, exist_ok=True, mode=0o750)
-            descriptor, temporary_name = tempfile.mkstemp(prefix=".upload-", dir=self._root)
+            descriptor, temporary_name = tempfile.mkstemp(
+                prefix=".upload-",
+                suffix=extension,
+                dir=self._root,
+            )
         except OSError as exc:
             raise FileStorageError("unable to create controlled upload staging file") from exc
 
