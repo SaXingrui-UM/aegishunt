@@ -6,138 +6,130 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 0 - Project definition, architecture decisions, and engineering foundation |
-| Status | Phase complete |
-| Phase 0 implementation completion | 100% of local implementation and acceptance checks |
-| Current metadata branch | `docs/phase-00-post-merge-metadata` |
-| Latest main commit SHA | `097c01a40d3e153c3eaa6cfbea09f0ff981059fc` |
+| Current phase | Phase 1 - Configuration, schemas, and database foundation |
+| Status | Implementation complete — awaiting PR review |
+| Phase 1 implementation completion | 100% of implementation and local acceptance checks |
+| Current branch | `phase/01-data-foundation` |
+| Latest main commit | `b3d6b196168896affa8f88a4a8ddfb44d51f2f57` (Phase 0 metadata PR #2) |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | [#1](https://github.com/SaXingrui-UM/aegishunt/pull/1) merged into `main` with squash and merge |
-| CI status | Passed; both final `quality` checks completed successfully before merge |
-| Phase tag | Annotated tag `phase-00-complete`, pushed and remotely verified at `097c01a` |
-| Working tree | Clean after the post-merge metadata commit; no Phase 1 changes are included |
-| Next action | Stop and wait for explicit user instruction; do not begin Phase 1 automatically |
+| Latest Phase 1 implementation commit | `f11e3314e713f4b284c1896667dc871291e27832` (before this PR checkpoint metadata commit) |
+| Pull request | [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), Draft, open and mergeable; base `main`, head `phase/01-data-foundation` |
+| CI status | Passed; both GitHub Actions `quality` checks succeeded at PR checkpoint `2acd246`; the documentation-only CI-record update runs the same checks |
+| Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
+| Phase 1 tag | Not created; prohibited before merge and explicit instruction |
+| Working tree | Clean after the Phase 1 implementation and documentation commits |
+| Next action | User reviews PR #3, confirms CI, and merges when satisfied; do not start Phase 2 automatically |
 
-Phase 0 is complete: its PR was merged into `main`, the merge commit was pulled
-locally, and the explicitly requested annotated checkpoint tag was pushed and
-verified. Phase 1 has not started.
+Phase 1 does not become `Phase complete` before its PR is merged and a later
+explicit instruction authorizes a checkpoint tag. Phase 2 has not started.
 
-## Completed work
+## Phase 0 checkpoint
 
-- Read all 26 pages of the Project Plan and all 11 pages of the Implementation Roadmap.
-- Rendered both PDFs and visually checked page continuity and legibility.
-- Converted source requirements into system, use-case, non-functional, and architecture documents.
-- Recorded eight architecture decisions with consistent status/context/decision/alternatives/consequences/risks sections.
-- Created a Python 3.11+ `src`-layout package and reserved configuration, data, artifact, report, and test workspaces.
-- Added a Typer CLI with `doctor`, `api`, and `frontend` commands.
-- Added a structured FastAPI `GET /health` response and an OpenAPI shell.
-- Added a truthful Streamlit Phase 0 page with planned modules and research-prototype disclaimer.
-- Added unit smoke tests, coverage enforcement, Ruff, strict mypy, pre-commit, Make targets, CI, and a PR template.
-- Added ignore rules for secrets, environments, caches, databases, captures, models, datasets, and generated artifacts.
-- Created logical Conventional Commits on `phase/00-foundation`.
-- Completed two review passes against `main`; fixed the sole actionable finding
-  by ignoring generated figure artifacts, then confirmed no blocking findings remained.
-- Confirmed that no database, PCAP parser, flow feature, dataset, detection, ML,
-  correlation, hypothesis, case, feedback, or replay implementation was added.
-- Confirmed PR #1 was squash-merged into `main` as `097c01a`.
-- Created, pushed, and remotely verified annotated tag `phase-00-complete`.
+- PR #1 delivered the foundation and was squash-merged as `097c01a`.
+- Annotated tag `phase-00-complete` was pushed and verified at that merge commit.
+- PR #2 recorded post-merge metadata and was merged as `b3d6b19`.
+- Final Phase 0 tests were 11 passed with 97.06% branch-aware coverage.
+
+## Phase 1 completed work
+
+- Implemented safe YAML loading with `AEGISHUNT_*` environment-variable overrides.
+- Added strict immutable Pydantic schemas for all Project Plan core entities.
+- Added SQLAlchemy 2.x records with explicit UUIDs, UTC timestamps, enums, JSON evidence, indexes, and foreign keys.
+- Added repeatable SQLite initialization with WAL, foreign keys, bounded busy timeout, and explicit schema version `1`.
+- Refused incompatible or non-empty unversioned databases without destructive mutation.
+- Added typed add/get/list repositories and same-transaction append-only audit events.
+- Added `aegishunt init-db --config ...` with safe structured output and non-zero expected failure handling.
+- Initialized empty databases during FastAPI lifespan and exposed ready/schema state through `/health`.
+- Updated the Streamlit shell to report only truthful Phase 1 foundation status.
+- Added schema, database, repository, CLI, API, frontend, and configuration tests.
+- Confirmed no ingestion, PCAP parsing, flow construction, features, datasets, ML, detection workflow, correlation, hypothesis generation, or case service was implemented.
 
 ## Files created
 
-- Root: `README.md`, `pyproject.toml`, `Makefile`, `.gitignore`, `.env.example`, `.pre-commit-config.yaml`.
-- GitHub: `.github/workflows/ci.yml`, `.github/pull_request_template.md`.
-- Package: `src/aegishunt/` metadata, configuration placeholder, CLI, API, and frontend modules.
-- Tests: unit API/CLI/config/frontend tests plus reserved integration, E2E, and fixture structure.
-- Documentation: `docs/system_requirements.md`, `docs/use_cases.md`,
-  `docs/non_functional_requirements.md`, `docs/architecture.md`, eight ADRs,
-  this progress file, and `docs/releases/phase-00.md`.
-- Workspaces: versioned placeholder structure under `configs/`, `data/`, `artifacts/`, and `reports/`.
+- Configuration: `configs/application.yaml`.
+- Errors and schemas: `src/aegishunt/errors.py`, `src/aegishunt/schemas/`.
+- Storage: `src/aegishunt/storage/` and typed repositories.
+- Tests: `tests/unit/test_schemas.py`, `tests/unit/test_database.py`, and `tests/integration/test_repositories.py`.
+- Documentation: `docs/data_model.md`, ADR 0009, and `docs/releases/phase-01.md`.
+
+## Files modified
+
+- `pyproject.toml`, `.env.example`, `Makefile`, and configuration documentation.
+- CLI, FastAPI application, Streamlit shell, README, and architecture documentation.
+- Existing configuration, CLI, API, and frontend tests.
 
 ## Commands executed
 
 | Command or check | Result |
 | --- | --- |
-| `git rev-parse --is-inside-work-tree` | Exit 0; repository already initialized |
-| `pdfinfo` on both source PDFs | Exit 0; 26-page Plan and 11-page Roadmap, unencrypted |
-| PDF text extraction and full-page rendering | Exit 0; all 37 pages extracted/rendered |
-| `git branch -M main` and baseline source-material commit | Exit 0 |
-| `git switch -c phase/00-foundation` | Exit 0 |
-| Initial Python 3.13 editable install | Exit 0, later superseded because that Anaconda runtime skipped setuptools' hidden editable `.pth` on reinstall |
-| First Ruff run | Exit 1; three findings fixed |
-| First pytest run | Exit 1; 10 passed, one Typer runner compatibility test fixed |
-| First mypy attempts | One command-path exit 127; later analysis was interrupted after an excessive third-party traversal and configuration was narrowed |
-| Python 3.12 isolated `python -m pip install -e ".[dev]"` | Exit 0 |
-| Final `ruff check .` | Exit 0 |
-| Final `mypy src` | Exit 0 |
-| Final `pytest` | Exit 0; 11 passed, 97.06% branch-aware coverage |
-| `aegishunt --help` | Exit 0 |
-| `aegishunt doctor` | Exit 0; healthy on Darwin arm64 with Python 3.12 |
-| Uvicorn startup, `/health`, and `/docs` | Successful; both HTTP endpoints returned 200 |
-| Streamlit import, startup, health, and Chrome visual check | Successful; expected content verified; server then stopped manually |
-| YAML parse of CI and pre-commit configuration | Exit 0 |
-| Documentation structure checks | Exit 0 |
-| First review against `main` | One actionable finding: generated files under `artifacts/figures/` were not ignored |
-| Review fix and second review | Fix committed as `a51ae44`; no blocking findings remained |
-| `gh auth status` and private repository verification | Exit 0; authenticated as `SaXingrui-UM`, `origin/main` available |
-| Publication preflight `ruff check .` | Initial bare command exit 127 because the non-interactive shell did not include `.venv/bin`; explicit `.venv/bin/ruff check .` exit 0 |
-| Publication preflight `.venv/bin/mypy src` | Exit 0; eight source files checked |
-| Publication preflight `.venv/bin/pytest` | Exit 0; 11 passed, 97.06% branch-aware coverage |
-| Publication preflight diff and working-tree checks | Exit 0; no whitespace errors and no uncommitted files |
-| `git push -u origin phase/00-foundation` | Exit 0; remote branch created and SHA verified as `adda438` before this metadata commit |
-| Create Draft PR #1 with the GitHub connector | Successful; open, mergeable, base `main`, head `phase/00-foundation` |
-| Fetch PR and CI metadata | Successful; no review submitted and workflow run `29360239814` initially `in_progress` |
-| Final `gh pr checks 1` before this CI-result update | Exit 0; both `quality` checks passed (runs `29360314521` and `29360319383`) |
-| `git checkout main` | Exit 0 |
-| `git pull --ff-only origin main` | Exit 0; fast-forwarded from `fafe98f` to `097c01a` |
-| Phase 0 file and merge verification on `main` | Exit 0; required documents, application shells, and tests are present |
-| Local and remote tag absence checks | Confirmed `phase-00-complete` did not exist before creation |
-| `git tag -a phase-00-complete -m "AegisHunt Phase 0 complete: project foundation and architecture"` | Exit 0; annotated tag targets `097c01a` |
-| `git push origin phase-00-complete` | Exit 0 |
-| Remote tag verification | Exit 0; remote peeled tag target equals `main` at `097c01a` |
-| First post-merge `.venv/bin/pytest` | Exit 2 during collection because macOS marked virtual-environment `.pth` files hidden, so Python skipped the editable package path |
-| Editable reinstall and environment diagnosis | Install exit 0; diagnosis confirmed Python was skipping all hidden `.pth` files |
-| `chflags nohidden .venv/lib/python3.12/site-packages/*.pth` and pytest rerun | Exit 0; package import restored, 11 tests passed with 97.06% coverage |
+| Read `docs/codex_progress.md`, `AGENTS.md`, Phase 1 PDF pages, architecture, requirements, and existing code | Completed |
+| Verify PR #2 and CI | Merged; remote `quality` check passed |
+| `git checkout main` and `git pull --ff-only origin main` | Exit 0; updated to `b3d6b19` |
+| Baseline Ruff and mypy | Exit 0 |
+| Baseline pytest | Initial desktop-runtime import failure; `PYTHONPATH=src` rerun exit 0, 11 passed, 97.06% coverage |
+| `git checkout -b phase/01-data-foundation` | Exit 0 |
+| `python -m pip install -e ".[dev]"` | Exit 0; installed SQLAlchemy and PyYAML typing support |
+| Initial Phase 1 Ruff/mypy/test cycles | Found and fixed formatting, typing, and local environment issues; no failures hidden |
+| Final `.venv/bin/ruff check .` | Exit 0 |
+| Final `.venv/bin/mypy src` | Exit 0; 32 source files |
+| Final `.venv/bin/pytest` | Exit 0; 26 passed, 94.92% branch-aware coverage |
+| Repeat `init-db` twice on a temporary SQLite database | Both exit 0; WAL, schema version `1`, and 11 tables verified |
+| Live FastAPI `/health` and `/docs` on loopback | Both HTTP 200; database ready and schema version `1` |
+| Live Streamlit health and root on loopback | Health `ok`; root HTTP 200; process stopped manually |
+| Bare CLI after editable reinstall in the Codex macOS runtime | Failed when the runtime repeatedly restored the hidden flag on the editable `.pth`; failure was not treated as a product success |
+| CLI/API/Streamlit manual rerun with explicit `PYTHONPATH=src` | Passed; this bypassed only the runtime-specific hidden-file behavior |
+| `gh pr checks 3 --watch --interval 10` at `2acd246` | Exit 0; two `quality` checks passed, zero failed or pending |
+| Temporary PDF renders and SQLite databases | Removed after verification |
 
 ## Tests
 
-- 11 tests passed.
-- Total branch-aware coverage: 97.06%.
-- FastAPI health payload, CLI help/doctor/launch delegation, configuration
-  defaulting, and Streamlit content are covered.
-- `ruff check .`: pass.
-- `mypy src`: pass for eight source files.
-- No integration or E2E business-pipeline tests exist because those capabilities
-  belong to later phases.
+- 26 tests passed: 25 unit/smoke tests and one repository integration test.
+- Branch-aware coverage: 94.92% (required minimum 85%).
+- Ruff passes.
+- Strict mypy passes for 32 source files.
+- Tests cover configuration precedence/failures, schema validation, repeatable initialization, WAL, version mismatch, unversioned-database refusal, all core repository round trips, audit events, CLI, API startup, and frontend truthfulness.
 
-## Decisions
+## Architecture decisions
 
-- Modular monolith rather than premature microservices.
-- FastAPI API, Streamlit demonstration UI, and Typer CLI.
-- SQLite/SQLAlchemy/WAL as the planned Phase 1 default with repository boundaries.
-- Separate supervised and benign-baseline anomaly engines with configured fusion.
-- Deterministic evidence templates for hypotheses.
-- PCAP replay as the primary safe and reproducible demo path.
-- No LLM dependency in the core system.
-- Squash and merge remains the default merge strategy.
+- Configuration precedence is defaults, YAML, then environment overrides.
+- Pydantic domain contracts remain separate from SQLAlchemy records.
+- Repositories own persistence operations; business modules do not construct SQL.
+- Audit events share the entity-write transaction so rollback preserves truthfulness.
+- SQLite integrity pragmas are configured at connection creation.
+- ADR 0009 uses explicit version `1` now and requires a migration decision before any schema-changing release.
+- Pytest declares the `src` path so tests do not depend on platform-specific editable `.pth` handling.
 
-## Limitations
+## Generated artifacts
 
-- Only Phase 0 application shells exist; every business workflow remains planned.
-- No real or synthetic telemetry, model, metric, database, or generated artifact is included.
-- Performance has not been measured and no performance result is claimed.
-- Phase 1+ capabilities remain intentionally unimplemented.
+No database, dataset, PCAP, model, evaluation result, or fabricated record was
+committed. Manual verification used temporary SQLite files under ignored `tmp/`
+and removed them after inspection. Coverage output remains ignored.
+
+## Known limitations and risks
+
+- Phase 1 provides contracts and storage only; later services must enforce workflow-specific references and transitions.
+- Schema versioning detects incompatibility but does not yet perform upgrades.
+- SQLite is tested; PostgreSQL portability is not demonstrated.
+- JSON evidence/reference fields trade relational constraints for planned schema evolution.
+- Concurrent SQLite load and migration behavior require later hardening tests.
+- This Codex macOS runtime repeatedly hides editable-install `.pth` files; local
+  manual commands required `PYTHONPATH=src`, while pytest's declared `pythonpath`
+  and standard GitHub runners do not depend on that hidden-file state.
+- No performance result is claimed.
 
 ## Review outcome
 
-The review covered correctness, security, requirements and roadmap compliance,
-tests, typing, error handling, data/model integrity, API/filesystem safety,
-secrets, file sizes, and scope creep. The first pass found one artifact-governance
-issue: future generated figures were not covered by `.gitignore`. Commit
-`a51ae44` added the missing ignore rule and retained the reviewed `.gitkeep`.
-Required checks passed after the fix. The second pass found no blocking or high-severity issues.
+The first read-only review covered correctness, security, requirements, tests,
+typing, error handling, data integrity, API/filesystem safety, secrets, oversized
+files, scope creep, and documentation accuracy. It found one acceptance-level
+test gap: repository reads occurred in the writing Session and could use its
+identity map. The fix verifies every entity and audit record after commit in a
+new Session. Two low-risk findings also clarified ORM registration and recorded
+the local editable-install limitation. Dedicated fix commit `e04234d` passes
+Ruff, strict mypy, and all 26 tests at 94.92% coverage. The second review found
+no remaining blocking or high-severity issue.
 
 ## Next phase
 
-Phase 1 is configuration, schemas, and storage foundation. Phase 0 now has its
-merged checkpoint and completion tag, but Phase 1 must not begin without a new
-explicit user instruction. No Phase 1 code has been started.
+Phase 2 is the controlled telemetry-ingestion framework. It must not begin until
+the Phase 1 PR is reviewed and merged and the user explicitly starts that phase.

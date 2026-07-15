@@ -3,10 +3,11 @@
 ## Status and scope
 
 This document defines the target architecture and its phased realization. In
-Phase 0, only the Python package, Typer CLI shell, FastAPI `/health` endpoint,
-Streamlit foundation page, and engineering configuration exist. Storage,
-telemetry, flows, features, ML, detection, correlation, hunting, cases, and
-runtime workers remain planned for their roadmap phases.
+Phase 1, validated configuration, core Pydantic contracts, SQLAlchemy records,
+SQLite/WAL initialization, schema versioning, repositories, and audit events
+exist alongside the Phase 0 CLI/API/frontend shells. Telemetry ingestion, flow
+construction, features, ML, detection, correlation, hunting workflows, cases,
+and runtime workers remain planned for their roadmap phases.
 
 ## System context
 
@@ -33,7 +34,7 @@ One deployable Python application is divided by responsibility:
 
 | Module boundary | Planned responsibility | First owning phase |
 | --- | --- | --- |
-| `config`, schemas, storage | Validated settings, entity contracts, repositories, audit | 1 |
+| `config`, schemas, storage | Implemented settings, entity contracts, repositories, audit | 1 |
 | ingestion | Safe adapters and ingestion jobs | 2 |
 | flows, features | Packet-to-flow state and deterministic feature registry | 3 |
 | datasets | Registry, conversion, split, manifests, leakage and quality | 4 |
@@ -110,16 +111,19 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 0, Streamlit is a truthful
-static status shell and FastAPI exposes only `/health`.
+application services for batch workflows. In Phase 1, Streamlit remains a
+truthful static status shell and FastAPI exposes `/health`; API lifespan startup
+initializes and verifies the empty or existing configured database.
 
 ## Planned storage approach
 
-SQLite with SQLAlchemy and WAL mode is the default local store beginning in
-Phase 1. Repository interfaces will prevent SQL from leaking into business
-logic and preserve a future PostgreSQL migration path. The database will store
-metadata, flows, detection records, alerts, groups, hypotheses, cases, feedback,
-model versions, job state, and audit events as they are introduced.
+SQLite with SQLAlchemy and WAL mode is the implemented default local store.
+Foreign keys and a bounded busy timeout are enabled for SQLite connections.
+Typed repositories prevent SQL from leaking into business logic and preserve a
+future PostgreSQL migration path. Schema version `1` is registered explicitly;
+an incompatible database is rejected rather than silently mutated. Core entity
+tables exist now, while later phases will populate them through validated
+services. Audit events are written in the same transaction as repository creates.
 
 Large or generated material stays outside source control:
 
@@ -132,7 +136,7 @@ uploads can never be treated as arbitrary serialized Python models.
 
 ## Deployment and trust boundaries
 
-Local Python is the Phase 0 execution mode. Docker and Docker Compose are Phase
+Local Python is the current execution mode. Docker and Docker Compose are Phase
 14 deliverables. Default listeners bind to loopback. Inputs cross an untrusted
 file/API boundary and require validation before persistence or parsing. The
 system performs observation and recommendation only: it does not scan targets,

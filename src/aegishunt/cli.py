@@ -1,4 +1,4 @@
-"""Command-line entry point for the Phase 0 application shells."""
+"""Command-line entry point for application shells and data-foundation setup."""
 
 from __future__ import annotations
 
@@ -13,7 +13,10 @@ from typing import Annotated
 import typer
 import uvicorn
 
+from aegishunt.config import load_settings
+from aegishunt.errors import AegisHuntError
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
+from aegishunt.storage import Database
 
 app = typer.Typer(
     name="aegishunt",
@@ -45,6 +48,21 @@ class DoctorReport:
         """Serialize the report for readable CLI output."""
 
         return json.dumps({**asdict(self), "healthy": self.healthy}, indent=2, sort_keys=True)
+
+
+@dataclass(frozen=True, slots=True)
+class DatabaseInitializationReport:
+    """Safe operator-facing result of repeatable database initialization."""
+
+    status: str
+    dialect: str
+    schema_version: int
+    journal_mode: str
+
+    def to_json(self) -> str:
+        """Serialize the result without exposing a database URL or credentials."""
+
+        return json.dumps(asdict(self), indent=2, sort_keys=True)
 
 
 def collect_doctor_report(project_root: Path | None = None) -> DoctorReport:
@@ -87,6 +105,23 @@ def run_frontend(address: str, port: int, headless: bool) -> int:
     return subprocess.run(command, check=False).returncode
 
 
+def initialize_database(config_path: Path | None = None) -> DatabaseInitializationReport:
+    """Load validated settings and initialize the configured database."""
+
+    settings = load_settings(config_path)
+    database = Database(settings.database)
+    try:
+        schema_version = database.initialize()
+        return DatabaseInitializationReport(
+            status="initialized",
+            dialect=database.engine.dialect.name,
+            schema_version=schema_version,
+            journal_mode=database.journal_mode(),
+        )
+    finally:
+        database.dispose()
+
+
 @app.command()
 def doctor() -> None:
     """Check the Python runtime, operating system, and foundation directories."""
@@ -95,6 +130,28 @@ def doctor() -> None:
     typer.echo(report.to_json())
     if not report.healthy:
         raise typer.Exit(code=1)
+
+
+@app.command("init-db")
+def init_db(
+    config: Annotated[
+        Path | None,
+        typer.Option(
+            "--config",
+            dir_okay=False,
+            readable=True,
+            help="YAML configuration file; environment variables override its values.",
+        ),
+    ] = None,
+) -> None:
+    """Initialize or verify the configured database schema."""
+
+    try:
+        report = initialize_database(config)
+    except AegisHuntError as exc:
+        typer.echo(f"Database initialization failed: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(report.to_json())
 
 
 @app.command()

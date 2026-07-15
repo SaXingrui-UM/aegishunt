@@ -1,4 +1,4 @@
-"""Minimal Streamlit page for the Phase 0 foundation."""
+"""Minimal Streamlit page for the Phase 1 data foundation."""
 
 from __future__ import annotations
 
@@ -17,12 +17,13 @@ PLANNED_MODULES = (
 
 
 def main() -> None:
-    """Render only truthful Phase 0 status and planned capabilities."""
+    """Render truthful Phase 1 foundation status and planned capabilities."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
-    st.info("Current status: Phase 0 foundation")
+    st.info("Current status: Phase 1 data foundation")
+    st.success("Validated configuration and SQLite storage foundation are available.")
     st.subheader("Planned system modules")
     for module in PLANNED_MODULES:
         st.markdown(f"- {module}")

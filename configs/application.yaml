@@ -1,0 +1,9 @@
+application:
+  environment: development
+
+database:
+  url: sqlite:///data/aegishunt.db
+  echo: false
+  busy_timeout_ms: 5000
+  enable_wal: true
+  enable_foreign_keys: true

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -20,6 +21,7 @@ def test_help_lists_foundation_commands() -> None:
     assert "doctor" in result.stdout
     assert "api" in result.stdout
     assert "frontend" in result.stdout
+    assert "init-db" in result.stdout
 
 
 def test_doctor_succeeds_when_foundation_directories_exist(
@@ -98,3 +100,34 @@ def test_run_frontend_uses_current_python(monkeypatch: MonkeyPatch) -> None:
     assert result == 0
     assert captured[0][:4] == [cli.sys.executable, "-m", "streamlit", "run"]
     assert captured[0][-2:] == ["--server.headless", "true"]
+
+
+def test_init_db_is_repeatable_and_does_not_expose_database_url(tmp_path: Path) -> None:
+    database_path = tmp_path / "cli.db"
+    config_path = tmp_path / "application.yaml"
+    config_path.write_text(
+        f"database:\n  url: sqlite:///{database_path}\n",
+        encoding="utf-8",
+    )
+
+    first = runner.invoke(cli.app, ["init-db", "--config", str(config_path)])
+    second = runner.invoke(cli.app, ["init-db", "--config", str(config_path)])
+
+    assert first.exit_code == 0
+    assert second.exit_code == 0
+    payload = json.loads(first.stdout)
+    assert payload == {
+        "dialect": "sqlite",
+        "journal_mode": "wal",
+        "schema_version": 1,
+        "status": "initialized",
+    }
+    assert str(database_path) not in first.stdout
+
+
+def test_init_db_reports_configuration_failure(tmp_path: Path) -> None:
+    missing = tmp_path / "missing.yaml"
+
+    result = runner.invoke(cli.app, ["init-db", "--config", str(missing)])
+
+    assert result.exit_code != 0
