@@ -12,8 +12,10 @@ from typing import Annotated
 
 import typer
 import uvicorn
+from sqlalchemy import make_url, text
+from sqlalchemy.exc import SQLAlchemyError
 
-from aegishunt.config import load_settings
+from aegishunt.config import DatabaseSettings, load_settings
 from aegishunt.errors import AegisHuntError
 from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
@@ -37,14 +39,21 @@ class DoctorReport:
     python_supported: bool
     operating_system: str
     machine: str
-    project_root: str
     directories: dict[str, bool]
+    configuration_status: str
+    database_status: str
+    diagnostics: tuple[str, ...]
 
     @property
     def healthy(self) -> bool:
         """Return whether all Phase 0 prerequisites are present."""
 
-        return self.python_supported and all(self.directories.values())
+        return (
+            self.python_supported
+            and all(self.directories.values())
+            and self.configuration_status == "loaded"
+            and self.database_status == "available"
+        )
 
     def to_json(self) -> str:
         """Serialize the report for readable CLI output."""
@@ -67,17 +76,62 @@ class DatabaseInitializationReport:
         return json.dumps(asdict(self), indent=2, sort_keys=True)
 
 
-def collect_doctor_report(project_root: Path | None = None) -> DoctorReport:
-    """Inspect Python, the operating system, and required project directories."""
+def _database_availability(settings: DatabaseSettings) -> tuple[str, str]:
+    """Check one configured database without exposing or creating its location."""
+
+    try:
+        url = make_url(settings.url)
+    except (SQLAlchemyError, ValueError):
+        return "unavailable", "database configuration is invalid"
+
+    if url.get_backend_name() == "sqlite" and url.database and url.database != ":memory:":
+        database_path = Path(url.database).expanduser()
+        if not database_path.is_absolute():
+            database_path = Path.cwd() / database_path
+        if not database_path.is_file():
+            return "unavailable", "database is not initialized"
+
+    try:
+        database = Database(settings)
+        try:
+            with database.engine.connect() as connection:
+                available = connection.scalar(text("SELECT 1")) == 1
+        finally:
+            database.dispose()
+    except (AegisHuntError, ImportError, OSError, SQLAlchemyError, ValueError):
+        return "unavailable", "database connection is unavailable"
+    if not available:
+        return "unavailable", "database connection check failed"
+    return "available", "database connection succeeded"
+
+
+def collect_doctor_report(
+    project_root: Path | None = None,
+    config_path: Path | None = None,
+) -> DoctorReport:
+    """Inspect runtime, directories, configuration, and database availability."""
 
     root = (project_root or Path.cwd()).resolve()
+    diagnostics: tuple[str, ...]
+    try:
+        settings = load_settings(config_path)
+    except AegisHuntError:
+        configuration_status = "error"
+        database_status = "not_checked"
+        diagnostics = ("configuration could not be loaded or validated",)
+    else:
+        configuration_status = "loaded"
+        database_status, database_diagnostic = _database_availability(settings.database)
+        diagnostics = ("configuration loaded", database_diagnostic)
     return DoctorReport(
         python_version=platform.python_version(),
         python_supported=sys.version_info >= (3, 11),
         operating_system=platform.system(),
         machine=platform.machine(),
-        project_root=str(root),
         directories={name: (root / name).is_dir() for name in REQUIRED_DIRECTORIES},
+        configuration_status=configuration_status,
+        database_status=database_status,
+        diagnostics=diagnostics,
     )
 
 
@@ -125,10 +179,19 @@ def initialize_database(config_path: Path | None = None) -> DatabaseInitializati
 
 
 @app.command()
-def doctor() -> None:
-    """Check the Python runtime, operating system, and foundation directories."""
+def doctor(
+    config: Annotated[
+        Path | None,
+        typer.Option(
+            "--config",
+            dir_okay=False,
+            help="YAML configuration file; environment variables override its values.",
+        ),
+    ] = None,
+) -> None:
+    """Check runtime, directories, configuration, and database availability."""
 
-    report = collect_doctor_report()
+    report = collect_doctor_report(config_path=config)
     typer.echo(report.to_json())
     if not report.healthy:
         raise typer.Exit(code=1)

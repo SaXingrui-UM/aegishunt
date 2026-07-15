@@ -92,19 +92,29 @@ def test_doctor_reports_supported_runtime_and_required_directories(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    config_path = tmp_path / "application.yaml"
+    _write_config(config_path, tmp_path / "doctor.sqlite3", tmp_path / "raw")
     for directory in cli.REQUIRED_DIRECTORIES:
         (tmp_path / directory).mkdir()
+    cli.initialize_database(config_path)
     monkeypatch.chdir(tmp_path)
 
-    result = CliRunner().invoke(cli.app, ["doctor"], catch_exceptions=False)
+    result = CliRunner().invoke(
+        cli.app,
+        ["doctor", "--config", str(config_path)],
+        catch_exceptions=False,
+    )
     report = json.loads(result.stdout)
 
     assert result.exit_code == 0
     assert report["python_supported"] is True
     assert report["operating_system"]
     assert report["machine"]
-    assert report["project_root"] == str(tmp_path.resolve())
     assert report["directories"] == {directory: True for directory in cli.REQUIRED_DIRECTORIES}
+    assert report["configuration_status"] == "loaded"
+    assert report["database_status"] == "available"
+    assert "project_root" not in report
+    assert str(tmp_path) not in result.stdout
     assert "password" not in result.stdout.lower()
 
 

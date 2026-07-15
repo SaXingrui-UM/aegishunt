@@ -37,21 +37,98 @@ def test_doctor_succeeds_when_foundation_directories_exist(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
+    database_path = tmp_path / "doctor.db"
+    config_path = tmp_path / "application.yaml"
+    config_path.write_text(
+        f"database:\n  url: sqlite:///{database_path}\n",
+        encoding="utf-8",
+    )
+    for directory in cli.REQUIRED_DIRECTORIES:
+        (tmp_path / directory).mkdir()
+    cli.initialize_database(config_path)
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(cli.app, ["doctor", "--config", str(config_path)])
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["configuration_status"] == "loaded"
+    assert payload["database_status"] == "available"
+    assert payload["diagnostics"] == [
+        "configuration loaded",
+        "database connection succeeded",
+    ]
+    assert payload["healthy"] is True
+    assert "project_root" not in payload
+    assert str(tmp_path) not in result.stdout
+
+
+def test_doctor_report_detects_missing_directory(tmp_path: Path) -> None:
+    report = cli.collect_doctor_report(tmp_path, tmp_path / "missing.yaml")
+
+    assert report.healthy is False
+    assert report.directories == {name: False for name in cli.REQUIRED_DIRECTORIES}
+    assert report.configuration_status == "error"
+    assert report.database_status == "not_checked"
+
+
+def test_doctor_fails_safely_when_database_is_unavailable(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "missing.db"
+    config_path = tmp_path / "application.yaml"
+    config_path.write_text(
+        f"database:\n  url: sqlite:///{database_path}\n",
+        encoding="utf-8",
+    )
     for directory in cli.REQUIRED_DIRECTORIES:
         (tmp_path / directory).mkdir()
     monkeypatch.chdir(tmp_path)
 
-    result = runner.invoke(cli.app, ["doctor"])
+    result = runner.invoke(cli.app, ["doctor", "--config", str(config_path)])
+    payload = json.loads(result.stdout)
 
-    assert result.exit_code == 0
-    assert '"healthy": true' in result.stdout
+    assert result.exit_code == 1
+    assert payload["configuration_status"] == "loaded"
+    assert payload["database_status"] == "unavailable"
+    assert payload["diagnostics"] == [
+        "configuration loaded",
+        "database is not initialized",
+    ]
+    assert payload["healthy"] is False
+    assert not database_path.exists()
+    assert str(tmp_path) not in result.stdout
+    assert "sqlite:///" not in result.stdout
+    assert "Traceback" not in result.stdout
 
 
-def test_doctor_report_detects_missing_directory(tmp_path: Path) -> None:
-    report = cli.collect_doctor_report(tmp_path)
+def test_doctor_redacts_credentials_when_database_driver_is_unavailable(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    secret = "doctor-secret-value"
+    config_path = tmp_path / "application.yaml"
+    config_path.write_text(
+        f"database:\n  url: postgresql+missingdoctor://analyst:{secret}@localhost/aegis\n",
+        encoding="utf-8",
+    )
+    for directory in cli.REQUIRED_DIRECTORIES:
+        (tmp_path / directory).mkdir()
+    monkeypatch.chdir(tmp_path)
 
-    assert report.healthy is False
-    assert report.directories == {name: False for name in cli.REQUIRED_DIRECTORIES}
+    result = runner.invoke(cli.app, ["doctor", "--config", str(config_path)])
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 1
+    assert payload["configuration_status"] == "loaded"
+    assert payload["database_status"] == "unavailable"
+    assert payload["diagnostics"][-1] == "database connection is unavailable"
+    assert secret not in result.stdout
+    assert "analyst" not in result.stdout
+    assert "localhost" not in result.stdout
+    assert str(tmp_path) not in result.stdout
+    assert "Traceback" not in result.stdout
 
 
 def test_api_command_delegates_to_uvicorn(monkeypatch: MonkeyPatch) -> None:
@@ -150,9 +227,9 @@ def test_ingest_pcap_command_runs_against_explicit_local_configuration(
     config_path.write_text(
         f"""
 database:
-  url: sqlite:///{tmp_path / 'cli-ingestion.db'}
+  url: sqlite:///{tmp_path / "cli-ingestion.db"}
 ingestion:
-  storage_root: {tmp_path / 'raw'}
+  storage_root: {tmp_path / "raw"}
   sample_root: {sample.parent}
   max_upload_bytes: 1024
   chunk_size_bytes: 16
