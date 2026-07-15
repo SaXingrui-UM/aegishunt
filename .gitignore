@@ -15,6 +15,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 coverage.xml
+coverage.json
 htmlcov/
 
 # Packaging output
@@ -34,6 +35,7 @@ artifacts/models/*
 artifacts/logs/*
 artifacts/evaluations/*
 artifacts/figures/*
+artifacts/test-reports/*
 !artifacts/models/.gitkeep
 !artifacts/logs/.gitkeep
 !artifacts/evaluations/.gitkeep

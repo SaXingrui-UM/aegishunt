@@ -73,3 +73,19 @@ def test_invalid_yaml_has_explicit_error(tmp_path: Path, content: str, message: 
 def test_unknown_nested_environment_key_is_rejected() -> None:
     with pytest.raises(ConfigurationError, match="configuration validation failed"):
         load_settings(environ={"AEGISHUNT_DATABASE__UNKNOWN": "value"})
+
+
+def test_database_credentials_are_redacted_from_repr_and_validation_errors() -> None:
+    secret = "phase-verification-secret"
+    settings = load_settings(
+        environ={
+            "AEGISHUNT_DATABASE__URL": f"postgresql://analyst:{secret}@localhost/aegis"
+        }
+    )
+
+    assert secret not in repr(settings)
+    assert secret not in repr(settings.database)
+
+    with pytest.raises(ConfigurationError) as failure:
+        load_settings(environ={"AEGISHUNT_DATABASE__URL": secret})
+    assert secret not in str(failure.value)
