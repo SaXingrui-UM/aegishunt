@@ -6,32 +6,57 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 2 - Telemetry ingestion framework |
-| Status | Phase complete |
-| Phase 2 implementation | 100%; merged, validated, and checkpoint-tagged |
-| Current activity | Phase 3 preflight cleanup; Phase 3 is not started |
-| Verification status | Preflight implementation complete — awaiting PR review |
-| Current branch | `codex/phase-03-preflight-cleanup` |
-| Verification baseline | `main` at `45056b6c0b61ec78c39fca82ad8fea6da006577f` |
+| Current phase | Phase 3 - Packet-to-Flow and behavioral feature extraction |
+| Status | Implementation complete — awaiting PR review |
+| Phase 3 implementation | 100% of declared Phase 3 scope implemented and locally validated; not Phase complete |
+| Current activity | Phase 3 PR #9 is open; Phase 4 is not started |
+| Verification status | Final local checks and two-pass manual review complete |
+| Current branch | `phase/03-flow-feature-engineering` |
+| Phase 3 baseline | `main` at `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb` |
+| Latest reviewed implementation commit | `242e1f35dabfe936c36dce485d0403fcf5e10249` |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
-| Latest main commit | `452a99880cb8de64b66e673b2717d7333e98a665` |
+| Latest main commit at Phase 3 start | `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), `[Phase 02] Telemetry ingestion framework`, merged into `main` from `phase/02-telemetry-ingestion` on 2026-07-16 00:00:35 (UTC+8) |
-| Post-merge metadata | PR #6 merged into `main` as `45056b6` |
-| Integration verification PR | [#7](https://github.com/SaXingrui-UM/aegishunt/pull/7), merged into `main` as `452a998` |
-| Preflight cleanup PR | [#8](https://github.com/SaXingrui-UM/aegishunt/pull/8), `[Fix] Resolve Phase 3 preflight findings`, Draft, `main` <- `codex/phase-03-preflight-cleanup` |
-| CI status | PR #7 passed; PR #8 `quality` check is pending |
+| Pull request | [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), `[Phase 03] Flow feature engineering`, open and ready for review, `main` <- `phase/03-flow-feature-engineering` |
+| CI status | Initial branch `quality` check passed; latest PR `quality` check is in progress |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
-| Working tree | Expected clean after the preflight PR metadata commit |
-| Next action | Run CI, review, and merge PR #8; then synchronize a clean `main` before any Phase 3 branch is created |
+| Phase 3 tag | Not created; `phase-03-complete` is prohibited before merge and explicit instruction |
+| Working tree | Expected clean after the Phase 3 PR metadata commit |
+| Next action | Wait for CI, review PR #9, confirm no Phase 4 scope creep, and Squash and merge only after approval |
 
-Phase 1 remains complete and its tags are unchanged. Phase 2 is complete: PR #5
-was squash-merged, its two GitHub Actions quality checks passed, and annotated tag
-`phase-02-complete` was verified locally and remotely against the merged `main`.
-Phase 3 has not started, and no Phase 3 branch exists. The independent
-integration-verification branch does not change any completion tag.
+Phase 0, Phase 1, and Phase 2 remain complete and their tags are unchanged. Phase
+3 implementation is present only on its dedicated branch and PR #9. It is not
+Phase complete until user review, merge to `main`, synchronization, and a later
+explicitly authorized checkpoint tag. Phase 4 has not started.
+
+## Phase 3 implementation checkpoint
+
+- Added bounded classic PCAP/supported PCAPNG reading and payload-independent
+  IPv4/IPv6 TCP, UDP, ICMP, and ICMPv6 packet parsing.
+- Added canonical bidirectional keys, first-packet forward direction, bounded
+  directional state, active/idle/capacity segmentation, and idempotent flush.
+- Added deterministic finite volume, size, timing, TCP evidence, and basic
+  single-flow behavioral features in fixed schema `1.0.0` (43 features).
+- Added deterministic `artifacts/feature_schema.json`, feature dictionary, and
+  ADR 0011 for direction, timeout, time-order, division, schema, and transaction semantics.
+- Integrated complete PCAP flow sets with existing repositories/audit records in
+  the same transaction as ingestion completion; malformed packets leave no partial flows.
+- Final local checks: Ruff pass; strict mypy pass for 57 source files; 108 pytest
+  tests passed with 0 failures/skips/xfails and 87.83% branch-aware coverage.
+- Focused Phase 3 runs: 25 parser/aggregation/feature tests and 7 integration/E2E tests passed.
+- Deterministic schema export matched the committed artifact byte-for-byte; SHA-256
+  is `11e6deb54239408157accc5e94858cbb06d072148cd553a3f4951ea6d538cbfa`.
+- Native `codex review --base main` could not launch because its packaged arm64
+  executable is missing (`ENOENT`). The equivalent read-only manual review found
+  no Blocking/High issue. One Medium UDP-test gap and one Low report-count error
+  were fixed in `242e1f3`, then all checks were rerun.
+- DEF-004 remains open and non-blocking: a complete database outage cannot write
+  its own failure record into that same unavailable database. Phase 3 introduces
+  no alternate queue/database dependency.
+- Cross-flow history/window features are deferred explicitly; Phase 4 datasets,
+  model training/inference, detections, alerts, correlation, and hypotheses are absent.
 
 ## Phase 0–2 integration verification
 

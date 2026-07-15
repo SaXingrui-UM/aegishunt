@@ -2,11 +2,11 @@
 
 ## Status and scope
 
-This document defines the target architecture and its phased realization. In
-Phase 2 adds safe telemetry upload/storage, bounded format adapters, controlled
-samples, and durable ingestion-job lifecycles to the Phase 1 data foundation.
-Flow construction, features, ML, detection, correlation, hunting workflows,
-cases, PCAP replay, and runtime workers remain planned for their roadmap phases.
+This document defines the target architecture and its phased realization. Phase
+3 adds bounded packet decoding, canonical bidirectional aggregation, deterministic
+feature schema `1.0.0`, and transactional `NetworkFlow` persistence to the Phase
+2 safe-ingestion boundary. Datasets, ML, detection, correlation, hunting workflows,
+cases, PCAP replay orchestration, and runtime workers remain planned.
 
 ## System context
 
@@ -35,7 +35,7 @@ One deployable Python application is divided by responsibility:
 | --- | --- | --- |
 | `config`, schemas, storage | Implemented settings, entity contracts, repositories, audit | 1 |
 | ingestion | Implemented safe adapters, storage, samples, and ingestion jobs | 2 |
-| flows, features | Packet-to-flow state and deterministic feature registry | 3 |
+| flows, features | Implemented packet state, timeouts, finalization, and feature registry | 3 |
 | datasets | Registry, conversion, split, manifests, leakage and quality | 4 |
 | ML supervised/anomaly/fusion/evaluation | Training, inference, thresholds, comparison | 5-7 |
 | detection and explainability | Results, risk, alerts, reasons, explanations | 8 |
@@ -70,8 +70,8 @@ flowchart TD
     Case --> Feedback["Analyst feedback export"]
 ```
 
-The Phase 2 boundary through `Job` is implemented. The remaining nodes are
-planned. IDs and provenance will be preserved across each later transition;
+The boundary through `Feature` is implemented for supported PCAP packets. The
+remaining nodes are planned. IDs and provenance are preserved across transitions;
 raw evidence, model inference, fusion, correlation, and analyst judgment remain
 distinguishable.
 
@@ -113,10 +113,11 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 2, Streamlit remains a
-truthful static status shell. FastAPI exposes `/health` plus typed ingestion,
-sample, and job endpoints; API lifespan startup initializes and verifies the
-empty or existing configured database.
+application services for batch workflows. In Phase 3, Streamlit remains a
+truthful static status shell rather than a flow explorer. FastAPI exposes
+`/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
+initializes and verifies the empty or existing configured database. PCAP upload
+uses the same service as the CLI and produces persistent flows synchronously.
 
 ## Planned storage approach
 
@@ -127,7 +128,14 @@ future PostgreSQL migration path. Schema version `1` is registered explicitly;
 an incompatible database is rejected rather than silently mutated. Core entity
 tables exist now. Phase 2 persists ingestion lifecycle state in
 `telemetry_sources` and writes an audit event in the same transaction as every
-create or transition. It deliberately creates no `network_flows` records.
+create or transition. Phase 3 parses a complete staged PCAP before committing its
+file, then creates all `network_flows` and the completed source transition in one
+database transaction. A packet failure therefore leaves no partial flow set.
+
+Each flow retains the first-observed direction, source provenance, capture-session
+reference, stable timestamps/counts, and a flat finite feature vector. The source
+metadata carries feature schema version `1.0.0`; the canonical schema export is
+`artifacts/feature_schema.json`.
 
 Untrusted uploads are written to private temporary files below the configured
 root in bounded chunks, hashed with SHA-256, format-validated, and atomically

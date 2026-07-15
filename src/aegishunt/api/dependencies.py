@@ -27,4 +27,5 @@ def get_ingestion_service(request: Request) -> IngestionService:
     return IngestionService(
         get_database(request),
         get_settings(request).ingestion,
+        flow_settings=get_settings(request).flows,
     )

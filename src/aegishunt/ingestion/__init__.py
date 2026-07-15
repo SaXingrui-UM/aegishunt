@@ -1,4 +1,4 @@
-"""Controlled telemetry ingestion without packet-to-flow processing."""
+"""Controlled telemetry ingestion with Phase 3 PCAP flow integration."""
 
 from aegishunt.ingestion.base import IngestorRegistry, TelemetryIngestor
 from aegishunt.ingestion.service import IngestionService

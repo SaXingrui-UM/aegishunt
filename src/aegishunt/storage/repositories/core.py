@@ -1,5 +1,7 @@
 """Small typed repository adapters for core entities."""
 
+from uuid import UUID
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -91,6 +93,16 @@ class NetworkFlowRepository(SqlAlchemyRepository[NetworkFlow, NetworkFlowRecord]
             id_attribute="flow_id",
             audit_log=audit_log,
         )
+
+    def list_by_source(self, source_id: UUID) -> list[NetworkFlow]:
+        """Return one source's flows in stable time and identifier order."""
+
+        rows = self._session.scalars(
+            select(NetworkFlowRecord)
+            .where(NetworkFlowRecord.source_id == source_id)
+            .order_by(NetworkFlowRecord.first_seen, NetworkFlowRecord.flow_id)
+        ).all()
+        return [NetworkFlow.model_validate(row) for row in rows]
 
 
 class DetectionResultRepository(SqlAlchemyRepository[DetectionResult, DetectionResultRecord]):

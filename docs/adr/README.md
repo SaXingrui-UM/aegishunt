@@ -12,3 +12,6 @@ decision. Phase 0 establishes:
 6. [Deterministic hypothesis engine](0006-deterministic-hypothesis-engine.md)
 7. [PCAP replay as primary demo](0007-pcap-replay-as-primary-demo.md)
 8. [No LLM core dependency](0008-no-llm-core-dependency.md)
+9. [Explicit schema versioning](0009-explicit-schema-versioning.md)
+10. [Durable safe-ingestion boundary](0010-durable-safe-ingestion-boundary.md)
+11. [Deterministic packet-to-flow contract](0011-deterministic-packet-to-flow-contract.md)

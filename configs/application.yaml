@@ -14,3 +14,10 @@ ingestion:
   max_upload_bytes: 52428800
   chunk_size_bytes: 65536
   max_records: 100000
+
+flows:
+  idle_timeout_seconds: 60.0
+  active_timeout_seconds: 300.0
+  max_packets_per_flow: 10000
+  max_active_flows: 100000
+  max_packet_bytes: 262144

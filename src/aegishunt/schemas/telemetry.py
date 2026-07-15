@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ipaddress
+import math
 import re
 from datetime import datetime
 from typing import Self
@@ -10,6 +11,7 @@ from uuid import UUID, uuid4
 
 from pydantic import AliasChoices, Field, field_validator, model_validator
 
+from aegishunt.flows.registry import FEATURE_DEFINITIONS, feature_names
 from aegishunt.schemas.base import (
     CoreSchema,
     JsonObject,
@@ -102,4 +104,25 @@ class NetworkFlow(CoreSchema):
     def validate_time_order(self) -> Self:
         if self.last_seen < self.first_seen:
             raise ValueError("last_seen must not precede first_seen")
+        expected_duration = (self.last_seen - self.first_seen).total_seconds()
+        if not math.isclose(self.duration, expected_duration, rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("duration must match the flow timestamp interval")
+        if self.behavioral_features and tuple(self.behavioral_features) != feature_names():
+            raise ValueError("behavioral feature names or order do not match the registry")
+        numeric_features: dict[str, float] = {}
+        for name, value in self.behavioral_features.items():
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"behavioral feature must be numeric: {name}")
+            numeric = float(value)
+            if not math.isfinite(numeric):
+                raise ValueError(f"behavioral feature must be finite: {name}")
+            numeric_features[name] = numeric
+        for definition in FEATURE_DEFINITIONS:
+            if not self.behavioral_features:
+                break
+            numeric = numeric_features[definition.name]
+            if definition.minimum is not None and numeric < definition.minimum:
+                raise ValueError(f"behavioral feature is below its minimum: {definition.name}")
+            if definition.maximum is not None and numeric > definition.maximum:
+                raise ValueError(f"behavioral feature is above its maximum: {definition.name}")
         return self

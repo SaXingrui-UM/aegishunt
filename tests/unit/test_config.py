@@ -40,6 +40,8 @@ database:
             "AEGISHUNT_DATABASE__URL": "sqlite:///environment.db",
             "AEGISHUNT_DATABASE__BUSY_TIMEOUT_MS": "7000",
             "AEGISHUNT_INGESTION__MAX_UPLOAD_BYTES": "4096",
+            "AEGISHUNT_FLOWS__IDLE_TIMEOUT_SECONDS": "15.5",
+            "AEGISHUNT_FLOWS__ACTIVE_TIMEOUT_SECONDS": "90",
         },
     )
 
@@ -47,6 +49,8 @@ database:
     assert settings.database.url == "sqlite:///environment.db"
     assert settings.database.busy_timeout_ms == 7000
     assert settings.ingestion.max_upload_bytes == 4096
+    assert settings.flows.idle_timeout_seconds == 15.5
+    assert settings.flows.active_timeout_seconds == 90.0
 
 
 def test_legacy_environment_label_remains_supported() -> None:
@@ -73,6 +77,11 @@ def test_invalid_yaml_has_explicit_error(tmp_path: Path, content: str, message: 
 def test_unknown_nested_environment_key_is_rejected() -> None:
     with pytest.raises(ConfigurationError, match="configuration validation failed"):
         load_settings(environ={"AEGISHUNT_DATABASE__UNKNOWN": "value"})
+
+
+def test_non_positive_flow_timeout_is_rejected() -> None:
+    with pytest.raises(ConfigurationError, match="configuration validation failed"):
+        load_settings(environ={"AEGISHUNT_FLOWS__IDLE_TIMEOUT_SECONDS": "0"})
 
 
 def test_database_credentials_are_redacted_from_repr_and_validation_errors() -> None:

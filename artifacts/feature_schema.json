@@ -1,0 +1,395 @@
+{
+  "schema_version": "1.0.0",
+  "feature_count": 43,
+  "ordering": "explicit",
+  "numeric_policy": "finite values only; no NaN or Infinity",
+  "features": [
+    {
+      "name": "total_packets",
+      "data_type": "integer",
+      "description": "Packets observed in both directions.",
+      "calculation": "forward + backward packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "total_bytes",
+      "data_type": "integer",
+      "description": "IP-layer bytes in both directions.",
+      "calculation": "forward + backward bytes",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "forward_packets",
+      "data_type": "integer",
+      "description": "Packets matching the first packet direction.",
+      "calculation": "forward count",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "backward_packets",
+      "data_type": "integer",
+      "description": "Packets opposite the first packet direction.",
+      "calculation": "backward count",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "forward_bytes",
+      "data_type": "integer",
+      "description": "IP-layer bytes in the forward direction.",
+      "calculation": "sum forward sizes",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "backward_bytes",
+      "data_type": "integer",
+      "description": "IP-layer bytes in the backward direction.",
+      "calculation": "sum backward sizes",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "packets_per_second",
+      "data_type": "number",
+      "description": "Total packet rate over flow duration.",
+      "calculation": "total_packets / duration; zero when duration is zero",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "bytes_per_second",
+      "data_type": "number",
+      "description": "Total IP-layer byte rate over flow duration.",
+      "calculation": "total_bytes / duration; zero when duration is zero",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "forward_backward_packet_ratio",
+      "data_type": "number",
+      "description": "Forward packets divided by backward packets.",
+      "calculation": "forward_packets / backward_packets; zero when backward is zero",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "forward_backward_byte_ratio",
+      "data_type": "number",
+      "description": "Forward bytes divided by backward bytes.",
+      "calculation": "forward_bytes / backward_bytes; zero when backward is zero",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "mean_packet_size",
+      "data_type": "number",
+      "description": "Mean IP packet size.",
+      "calculation": "population arithmetic mean",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "std_packet_size",
+      "data_type": "number",
+      "description": "Population standard deviation of IP packet sizes.",
+      "calculation": "pstdev",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "min_packet_size",
+      "data_type": "number",
+      "description": "Smallest IP packet size.",
+      "calculation": "minimum",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "max_packet_size",
+      "data_type": "number",
+      "description": "Largest IP packet size.",
+      "calculation": "maximum",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "median_packet_size",
+      "data_type": "number",
+      "description": "Median IP packet size.",
+      "calculation": "linear median",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "packet_size_q25",
+      "data_type": "number",
+      "description": "25th percentile IP packet size.",
+      "calculation": "linear interpolation q=0.25",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "packet_size_q75",
+      "data_type": "number",
+      "description": "75th percentile IP packet size.",
+      "calculation": "linear interpolation q=0.75",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "forward_mean_packet_size",
+      "data_type": "number",
+      "description": "Mean forward IP packet size.",
+      "calculation": "forward arithmetic mean",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "backward_mean_packet_size",
+      "data_type": "number",
+      "description": "Mean backward IP packet size.",
+      "calculation": "backward arithmetic mean; zero when absent",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "flow_duration",
+      "data_type": "number",
+      "description": "Seconds between earliest and latest packet.",
+      "calculation": "max time - min time",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "mean_inter_arrival_time",
+      "data_type": "number",
+      "description": "Mean non-negative inter-arrival time in seconds.",
+      "calculation": "mean of adjacent sorted timestamps",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "std_inter_arrival_time",
+      "data_type": "number",
+      "description": "Population standard deviation of inter-arrival times.",
+      "calculation": "pstdev of adjacent sorted timestamps",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "min_inter_arrival_time",
+      "data_type": "number",
+      "description": "Minimum inter-arrival time.",
+      "calculation": "minimum sorted IAT",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "max_inter_arrival_time",
+      "data_type": "number",
+      "description": "Maximum inter-arrival time.",
+      "calculation": "maximum sorted IAT",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "median_inter_arrival_time",
+      "data_type": "number",
+      "description": "Median inter-arrival time.",
+      "calculation": "linear median",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "iat_q25",
+      "data_type": "number",
+      "description": "25th percentile inter-arrival time.",
+      "calculation": "linear interpolation q=0.25",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "iat_q75",
+      "data_type": "number",
+      "description": "75th percentile inter-arrival time.",
+      "calculation": "linear interpolation q=0.75",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "forward_mean_iat",
+      "data_type": "number",
+      "description": "Mean inter-arrival time among forward packets.",
+      "calculation": "mean adjacent sorted forward timestamps",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "backward_mean_iat",
+      "data_type": "number",
+      "description": "Mean inter-arrival time among backward packets.",
+      "calculation": "mean adjacent sorted backward timestamps; zero when unavailable",
+      "minimum": 0.0,
+      "maximum": null,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "syn_count",
+      "data_type": "integer",
+      "description": "TCP packets with SYN set.",
+      "calculation": "bit count across packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "ack_count",
+      "data_type": "integer",
+      "description": "TCP packets with ACK set.",
+      "calculation": "bit count across packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "fin_count",
+      "data_type": "integer",
+      "description": "TCP packets with FIN set.",
+      "calculation": "bit count across packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "rst_count",
+      "data_type": "integer",
+      "description": "TCP packets with RST set.",
+      "calculation": "bit count across packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "psh_count",
+      "data_type": "integer",
+      "description": "TCP packets with PSH set.",
+      "calculation": "bit count across packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "urg_count",
+      "data_type": "integer",
+      "description": "TCP packets with URG set.",
+      "calculation": "bit count across packets",
+      "minimum": 0,
+      "maximum": null,
+      "empty_behavior": "0"
+    },
+    {
+      "name": "syn_ratio",
+      "data_type": "number",
+      "description": "Fraction of packets with SYN set.",
+      "calculation": "syn_count / total_packets",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "rst_ratio",
+      "data_type": "number",
+      "description": "Fraction of packets with RST set.",
+      "calculation": "rst_count / total_packets",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "ack_ratio",
+      "data_type": "number",
+      "description": "Fraction of packets with ACK set.",
+      "calculation": "ack_count / total_packets",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "completed_handshake_indicator",
+      "data_type": "integer",
+      "description": "Observed SYN, reverse SYN+ACK, then forward ACK in capture order.",
+      "calculation": "bounded evidence indicator; not a full TCP state-machine proof",
+      "minimum": 0,
+      "maximum": 1,
+      "empty_behavior": "0 for non-TCP or incomplete evidence"
+    },
+    {
+      "name": "asymmetry_score",
+      "data_type": "number",
+      "description": "Absolute directional byte imbalance.",
+      "calculation": "abs(forward_bytes - backward_bytes) / total_bytes",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "connection_burst_score",
+      "data_type": "number",
+      "description": "Largest share of packets observed in any one-second window.",
+      "calculation": "max one-second-window packet count / total_packets",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "periodicity_score",
+      "data_type": "number",
+      "description": "Regularity proxy from inter-arrival coefficient of variation.",
+      "calculation": "1 / (1 + IAT coefficient of variation); zero with fewer than three IATs",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "empty_behavior": "0.0"
+    },
+    {
+      "name": "failed_connection_indicator",
+      "data_type": "integer",
+      "description": "TCP reset or incomplete SYN evidence indicator.",
+      "calculation": "1 when TCP has RST, or SYN without the bounded handshake indicator",
+      "minimum": 0,
+      "maximum": 1,
+      "empty_behavior": "0 for non-TCP"
+    }
+  ]
+}

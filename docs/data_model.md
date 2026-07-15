@@ -1,11 +1,11 @@
-# Phase 1 Data Model
+# AegisHunt Data Model Through Phase 3
 
 ## Scope
 
-Phase 1 defines validated contracts and persistence for the Project Plan's core
-entities. It does not ingest telemetry, construct flows, run models, create
-alerts, correlate events, generate hypotheses, or manage investigations. Later
-services must enter through these schemas and repositories.
+Phase 1 defined the core contracts and tables. Phase 2 began persisting telemetry
+lifecycles, and Phase 3 now creates canonical `NetworkFlow` rows for supported
+PCAP packets. Dataset selection, models, detections, alerts, correlation,
+hypotheses, and investigations remain unimplemented.
 
 ## Contract layers
 
@@ -24,7 +24,7 @@ return naive values, so the storage type restores UTC awareness on reads.
 | Entity | Primary identifier | Key relationships and integrity rules |
 | --- | --- | --- |
 | `TelemetrySource` | `source_id` UUID | Source type, ingestion mode/status, timestamps, non-negative count, optional SHA-256, JSON metadata |
-| `NetworkFlow` | `flow_id` UUID | Foreign key to source; aware ordered timestamps; valid IPs/ports; non-negative packet/byte counts; JSON behavioral features |
+| `NetworkFlow` | `flow_id` UUID | Foreign key to source; first-observed direction; aware ordered timestamps; valid IPs/ports; non-negative counts; flat finite numeric features |
 | `DetectionResult` | `detection_id` UUID | Foreign key to flow; declared score ranges; model-version references; explanation JSON; detection time |
 | `SecurityAlert` | `alert_id` UUID | Foreign key to detection; severity/status; involved entities, evidence, and reason codes |
 | `AlertGroup` | `group_id` UUID | Referenced alert IDs, entity keys, bounded correlation score, ordered time window, summary |
@@ -39,6 +39,21 @@ for the local prototype where their internal shape evolves in later phases.
 Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
+
+## Phase 3 flow integrity
+
+- `source_id` identifies the durable ingestion source and its checksum/storage provenance.
+- `capture_session_id` identifies the source-scoped offline processing session.
+- `source_*` and `destination_*` preserve the first decoded packet direction,
+  independently of canonical-key endpoint sorting.
+- Duration must equal `last_seen - first_seen` and cannot be negative.
+- Feature values are flat integers/floats and must be finite; strings, booleans,
+  nested structures, NaN, and Infinity are rejected.
+- Feature names/order come from registry version `1.0.0`. The source metadata
+  records that version so no extra database column or migration is required.
+- Flow UUIDs are deterministic inside a source namespace from key, segment,
+  and time bounds. Re-ingesting the same bytes creates a new source and therefore
+  new source-scoped IDs while retaining equivalent flow evidence/features.
 
 ## Relationships
 
