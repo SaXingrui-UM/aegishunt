@@ -7,7 +7,9 @@ shared by later AegisHunt phases without implementing telemetry or ML workflows.
 
 ## Status
 
-Implementation complete — awaiting PR review.
+Phase complete.
+
+Completion date: 2026-07-15 (Asia/Shanghai).
 
 ## Completed scope
 
@@ -47,7 +49,7 @@ Implementation complete — awaiting PR review.
 - Repeat initialization: two successful runs; WAL, schema version `1`, and 11 tables verified.
 - FastAPI: live `/health` and `/docs` returned HTTP 200 on loopback.
 - Streamlit: live health returned `ok` and root returned HTTP 200 on loopback.
-- GitHub Actions: both `quality` checks passed at PR checkpoint `2acd246`.
+- GitHub Actions: both final `quality` checks passed before PR #3 was merged.
 
 The Codex macOS runtime repeatedly reapplied the hidden flag to the editable
 installation `.pth`. Manual CLI/server checks therefore used `PYTHONPATH=src`;
@@ -63,9 +65,10 @@ this runtime-specific issue does not change the package layout or CI commands.
 ## Version-control checkpoint
 
 - Branch: `phase/01-data-foundation`
-- Pull request: [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), Draft, base `main`, head `phase/01-data-foundation`
-- Merge commit: pending
-- Tag: not created; prohibited before merge and explicit user instruction
+- Pull request: [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), squash-merged into `main`
+- Merge commit: `a240805f53d7213bd4b0f074fa35964d5dfecc5b`
+- Tag: annotated `phase-01-complete`, pushed and remotely verified at the merge commit
+- Post-merge metadata branch: `docs/phase-01-post-merge-metadata`
 
 ## Migration notes
 
@@ -81,4 +84,6 @@ No dataset, PCAP, model, metric result, database, or other generated artifact is
 ## Next phase
 
 Phase 2 will implement controlled telemetry adapters and ingestion jobs. It has
-not started and must not start automatically.
+not started, and `phase/02-telemetry-ingestion` has not been created. After the
+post-merge metadata PR is reviewed and merged, the next action is to prepare that
+branch only when the user explicitly starts Phase 2.
