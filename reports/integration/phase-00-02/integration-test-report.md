@@ -4,11 +4,11 @@
 
 - Overall result: **PASS WITH LIMITATIONS**
 - Phase 3 recommendation: **CONDITIONALLY READY**
-- Open defects: Blocking 0, High 0, Medium 2, Low 1
-- Resolved during verification: High 2
-- Automated result: 72 passed, 0 failed, 0 skipped, 0 xfailed
-- Branch-aware coverage: 91.98% (configured minimum 85%)
-- Manual/traceable matrix: 77 cases — 71 PASS, 3 FAIL, 2 NOT_APPLICABLE,
+- Open defects: Blocking 0, High 0, Medium 1, Low 0
+- Resolved during verification and pre-Phase 3 cleanup: High 2, Medium 1, Low 1
+- Automated result: 75 passed, 0 failed, 0 skipped, 0 xfailed
+- Branch-aware coverage: 91.97% (configured minimum 85%)
+- Manual/traceable matrix: 77 cases — 73 PASS, 1 FAIL, 2 NOT_APPLICABLE,
   1 NOT_EXECUTED, 0 BLOCKED
 
 The install/configuration/database/repository/API/CLI/Streamlit/ingestion chain is
@@ -16,9 +16,9 @@ operational in a fresh Python 3.11 environment. PCAP, CSV, JSON, JSONL, and
 allowlisted sample ingestion persist jobs and audit records, survive application
 restart, and remain safe under the tested malformed-file and path attacks. Two
 High defects found in the first pass were fixed with regression coverage. The
-remaining Medium findings do not block Phase 3's packet-to-flow implementation,
-but should stay visible: `doctor` lacks configuration/database status and a total
-database outage cannot persist its own failure record.
+remaining Medium finding does not block Phase 3's packet-to-flow implementation,
+but must stay visible: a total database outage cannot persist its own failure
+record in the unavailable database. `doctor` and README findings are resolved.
 
 ## 2. Scope
 
@@ -91,9 +91,9 @@ Dependency versions and isolation details are in [environment.md](environment.md
 | --- | --- |
 | `ruff check .` | PASS |
 | `mypy src` | PASS; 46 source files |
-| `pytest` | PASS; 72 passed in 3.20 s in final clean Python 3.11 clone |
+| `pytest` | PASS; 75 passed in 2.93 s on the clean preflight branch |
 | Failed / skipped / xfailed | 0 / 0 / 0 |
-| Branch-aware coverage | 91.98% |
+| Branch-aware coverage | 91.97% |
 | Coverage threshold | 85%; met |
 | JUnit | Generated under `artifacts/test-reports/phase-00-02/junit.xml` |
 
@@ -102,28 +102,30 @@ Key module coverage from the final run:
 | Module | Coverage |
 | --- | ---: |
 | `api/app.py` | 100% |
-| `api/routes/ingestion.py` | 89% |
+| `api/routes/ingestion.py` | 83% |
+| `cli.py` | 94% |
 | `config.py` | 89% |
 | `ingestion/file_storage.py` | 90% |
 | `ingestion/pcap.py` | 82% |
 | `ingestion/flow_csv.py` | 82% |
 | `ingestion/json_events.py` | 82% |
 | `ingestion/service.py` | 94% |
-| `storage/database.py` | 86% |
+| `storage/database.py` | 92% |
 | `storage/repositories/core.py` | 95% |
 
-The same 72-test suite passed in the working project environment and in the
-second clean Python 3.11 clone. Machine reports are intentionally ignored by Git.
+The 72-test integration baseline passed in both the working environment and a
+clean Python 3.11 clone. The final pre-Phase 3 cleanup adds two doctor cases and
+passes all 75 tests in the project environment. Machine reports remain ignored by Git.
 
 ## 7. Phase 0 Results
 
 | IDs | Result | Evidence |
 | --- | --- | --- |
 | P0-001–002 | PASS | Installed import and CLI help work with no `PYTHONPATH`. |
-| P0-003 | FAIL | Doctor is safe/healthy but omits config and database status (DEF-003). |
+| P0-003 | PASS | Doctor reports sanitized configuration/database states and fails safely when unavailable. |
 | P0-004–006 | PASS | API import, `/health`, `/docs`, and `/openapi.json` succeeded. |
 | P0-007–008 | PASS | Frontend import and live headless health/root succeeded. |
-| P0-009 | FAIL | README implementation boundary is truthful, but its Phase 2 branch sentence is stale (DEF-005). |
+| P0-009 | PASS | README records Phase 2 complete on `main` and Phase 3 not started. |
 | P0-010 | PASS | No prohibited secret, database, upload, model, or large capture is tracked. |
 | P0-WHEEL-001 | NOT_EXECUTED | `build` is not a declared dependency; no ad-hoc install was performed. |
 
@@ -167,7 +169,9 @@ was verified at `1`. This is expected SQLite behavior, not a failed application 
   independently matched SHA-256, safe stored name, legal timestamps, and empty error.
 - Four mixed jobs produced 16 audit events; list/detail and a newly created Session
   returned the same objects; application restart returned byte-for-byte-equivalent JSON.
-- P2-NEG-001–018 and 020 pass. P2-NEG-019 is a partial fail recorded as DEF-004.
+- P2-NEG-001–018 and 020 pass. P2-NEG-019 remains a documented partial fail:
+  it now returns fixed HTTP 503, logs a sanitized fixed message, rolls back, and
+  creates no false completed job, but cannot write a durable record to the failed database.
 
 Independent SHA-256 evidence from the clean run:
 
@@ -221,9 +225,9 @@ The path requires neither root, a live interface, an external service, nor a fix
 | --- | --- | --- | --- | --- |
 | DEF-001 | High | Resolved | JSONL lost suffix during staging | `6042097`; final regression PASS |
 | DEF-002 | High | Resolved | Database URL credentials leaked in repr | `b20a467`; final regression PASS |
-| DEF-003 | Medium | Open | Doctor lacks config/database status | P0-003 |
-| DEF-004 | Medium | Open | DB outage cannot persist its own failed job | P2-NEG-019 |
-| DEF-005 | Low | Open | README says Phase 2 is on merged phase branch | P0-009 |
+| DEF-003 | Medium | Resolved | Doctor now reports safe config/database status | `45d29c4`; P0-003 PASS |
+| DEF-004 | Medium | Open | DB outage cannot persist its own failed job | Safe 503/log in `495e795`; P2-NEG-019 |
+| DEF-005 | Low | Resolved | README records merged Phase 2 status | `2a33b82`; P0-009 PASS |
 
 Detailed reproduction, expected/actual, root cause, and retest evidence are in
 [known-defects.md](known-defects.md). No failing test was removed, skipped, or weakened.
@@ -231,8 +235,8 @@ Detailed reproduction, expected/actual, root cause, and retest evidence are in
 ## 14. Limitations
 
 - Jobs execute synchronously; the concurrency check is functional, not a benchmark.
-- Total database loss is fail-closed but cannot be durably recorded in that database.
-- Doctor diagnostics do not yet include configuration/database status.
+- Total database loss is fail-closed with a fixed HTTP 503 and sanitized log but
+  cannot be durably recorded in that same unavailable database.
 - The manifest-controlled sample catalog includes PCAP and CSV; JSON/JSONL use
   controlled temporary fixtures.
 - PCAPNG is limited to one section as documented by Phase 2.
@@ -252,9 +256,9 @@ cross-phase restart chain, concurrency, and the Phase 3 exclusion boundary.
 
 Verdict: **CONDITIONALLY READY**.
 
-No Blocking or open High defect remains. DEF-003 and DEF-004 reduce diagnostics
-and failure observability but do not prevent Phase 3 from consuming completed,
-validated telemetry in an isolated transaction. DEF-005 is documentation-only.
+No Blocking or open High defect remains. DEF-003 and DEF-005 are resolved.
+DEF-004 limits outage observability but does not prevent Phase 3 from consuming
+completed, validated telemetry in an isolated transaction.
 
 Phase 3 will depend on these verified contracts:
 

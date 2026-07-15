@@ -18,13 +18,14 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 2 telemetry ingestion is implemented on `phase/02-telemetry-ingestion`.
-The repository now provides bounded PCAP/PCAPNG container inspection, canonical
-flow-CSV validation, structured JSON validation, checksum-addressed safe storage,
-durable ingestion jobs, controlled samples, API endpoints, and CLI commands on
-top of the Phase 1 data foundation. Packet-to-flow processing, feature extraction,
-detection, model training, correlation, hypotheses, replay, and case workflows
-are **not implemented**.
+Phase 2 telemetry ingestion is complete and merged into `main`. The repository
+provides bounded PCAP/PCAPNG container inspection, canonical flow-CSV validation,
+structured JSON validation, checksum-addressed safe storage, durable ingestion
+jobs, controlled samples, API endpoints, and CLI commands on top of the Phase 1
+data foundation. Phase 0–2 integration verification and its pre-Phase 3 cleanup
+are the current activity. Phase 3 has not started: packet-to-flow processing,
+feature extraction, detection, model training, correlation, hypotheses, replay,
+and case workflows are **not implemented**.
 
 ## Planned architecture
 
@@ -62,11 +63,14 @@ aegishunt api
 aegishunt frontend
 ```
 
-`doctor` checks Python compatibility, the operating system, and required local
-directories. `init-db` validates configuration and idempotently initializes the
-configured database without printing its URL. `ingest` validates and stores
-explicit local files; it does not replay traffic, capture an interface, or
-derive flows from packets.
+`doctor` checks Python compatibility, the operating system, required local
+directories, configuration loading, and configured database availability. It
+returns a non-zero exit code with fixed, sanitized diagnostics when configuration
+or database checks fail; it does not print the database URL, credentials, project
+path, or traceback. `init-db` validates configuration and idempotently initializes
+the configured database without printing its URL. `ingest` validates and stores
+explicit local files; it does not replay traffic, capture an interface, or derive
+flows from packets.
 
 ## Telemetry ingestion
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import struct
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -9,6 +10,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import SQLAlchemyError
 
 from aegishunt.api.app import create_app
 from aegishunt.config import ApplicationSettings, DatabaseSettings, IngestionSettings
@@ -220,6 +222,7 @@ def test_unavailable_storage_persists_safe_failed_job(tmp_path: Path) -> None:
 def test_database_failure_is_generic_and_never_commits_a_job(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Capture fail-closed behavior; missing durable traceability is reported separately."""
 
@@ -229,21 +232,33 @@ def test_database_failure_is_generic_and_never_commits_a_job(
 
     @contextmanager
     def failing_session() -> Iterator[None]:
-        raise RuntimeError("controlled database failure marker")
+        raise SQLAlchemyError("controlled database failure marker")
         yield
 
     try:
-        with TestClient(create_app(settings, database), raise_server_exceptions=False) as client:
+        with (
+            caplog.at_level(logging.ERROR, logger="aegishunt.api.routes.ingestion"),
+            TestClient(
+                create_app(settings, database), raise_server_exceptions=False
+            ) as client,
+        ):
             monkeypatch.setattr(database, "session", failing_session)
             response = client.post(
                 "/ingestion/pcap",
                 files={"file": ("capture.pcap", PCAP, "application/octet-stream")},
             )
-            assert response.status_code == 500
+            assert response.status_code == 503
+            assert response.json()["detail"] == {
+                "code": "database_unavailable",
+                "message": "database is unavailable; request was not completed",
+            }
             assert "controlled database failure marker" not in response.text
             assert str(tmp_path) not in response.text
             monkeypatch.setattr(database, "session", original_session)
             with database.session() as session:
                 assert TelemetrySourceRepository(session).list() == []
+        assert caplog.messages == ["database operation is unavailable; request was not completed"]
+        assert "controlled database failure marker" not in caplog.text
+        assert str(tmp_path) not in caplog.text
     finally:
         database.dispose()

@@ -9,22 +9,23 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Current phase | Phase 2 - Telemetry ingestion framework |
 | Status | Phase complete |
 | Phase 2 implementation | 100%; merged, validated, and checkpoint-tagged |
-| Current activity | Independent Phase 0–2 integration verification; Phase 3 is not started |
-| Verification status | Implementation complete — awaiting PR review |
-| Current branch | `test/phase-00-02-integration-verification` |
+| Current activity | Phase 3 preflight cleanup; Phase 3 is not started |
+| Verification status | Preflight implementation complete — awaiting PR review |
+| Current branch | `codex/phase-03-preflight-cleanup` |
 | Verification baseline | `main` at `45056b6c0b61ec78c39fca82ad8fea6da006577f` |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
-| Latest main commit | `45056b6c0b61ec78c39fca82ad8fea6da006577f` |
+| Latest main commit | `452a99880cb8de64b66e673b2717d7333e98a665` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), `[Phase 02] Telemetry ingestion framework`, merged into `main` from `phase/02-telemetry-ingestion` on 2026-07-16 00:00:35 (UTC+8) |
 | Post-merge metadata | PR #6 merged into `main` as `45056b6` |
-| Integration verification PR | [#7](https://github.com/SaXingrui-UM/aegishunt/pull/7), `[Test] Verify Phase 0–2 integration baseline`, Draft, `main` <- `test/phase-00-02-integration-verification` |
-| CI status | Phase 2 PR #5 passed; integration verification PR #7 `quality` check is pending |
+| Integration verification PR | [#7](https://github.com/SaXingrui-UM/aegishunt/pull/7), merged into `main` as `452a998` |
+| Preflight cleanup PR | [#8](https://github.com/SaXingrui-UM/aegishunt/pull/8), `[Fix] Resolve Phase 3 preflight findings`, Draft, `main` <- `codex/phase-03-preflight-cleanup` |
+| CI status | PR #7 passed; PR #8 `quality` check is pending |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
-| Working tree | Expected clean after the integration verification report commit |
-| Next action | Review the Phase 0–2 integration verification PR; Phase 3 remains not started |
+| Working tree | Expected clean after the preflight PR metadata commit |
+| Next action | Run CI, review, and merge PR #8; then synchronize a clean `main` before any Phase 3 branch is created |
 
 Phase 1 remains complete and its tags are unchanged. Phase 2 is complete: PR #5
 was squash-merged, its two GitHub Actions quality checks passed, and annotated tag
@@ -37,14 +38,19 @@ integration-verification branch does not change any completion tag.
 - Verified annotated tags `phase-00-complete`, `phase-01-complete`, and
   `phase-02-complete` at their merged `main` commits without modifying them.
 - Verified a fresh Python 3.11 editable installation with `PYTHONPATH` unset.
-- Re-ran Ruff, strict mypy, and 72 automated tests in both the project environment
-  and a second clean clone: all passed at 91.98% branch-aware coverage.
+- Re-ran the 72-test integration baseline in both the project environment and a
+  second clean clone, then passed the final 75-test pre-Phase 3 suite at 91.97%
+  branch-aware coverage in the project environment.
 - Added durable configuration/database/repository, cross-phase E2E, ingestion
   security, persistence/restart, and five-job concurrency verification.
 - Found and fixed two High defects: JSONL staging lost its suffix, and database
   credentials appeared in settings representations. Both have regression tests.
-- Recorded two open Medium findings (doctor diagnostic completeness and durable
-  traceability during total database failure) plus one Low README status issue.
+- Resolved DEF-003 by adding non-initializing, sanitized configuration/database
+  diagnostics to `doctor`, including safe unavailable-database behavior.
+- Resolved DEF-005 by recording Phase 2 as complete on `main` and Phase 3 as not started.
+- Kept DEF-004 Medium/Open: a complete database outage returns fixed HTTP 503,
+  rolls back, and emits a sanitized log, but cannot write a failure record into
+  that same unavailable database. It is explicitly non-blocking for Phase 3.
 - Produced the report, test matrix, requirement traceability, environment record,
   and defect register under `reports/integration/phase-00-02/`.
 - Final verdict: `CONDITIONALLY READY`; no Blocking or open High defect remains.
