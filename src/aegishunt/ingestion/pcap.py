@@ -32,6 +32,17 @@ def _read_exact(stream: BinaryIO, size: int, context: str) -> bytes:
     return data
 
 
+def _discard_exact(stream: BinaryIO, size: int, context: str) -> None:
+    """Consume an untrusted declared length without allocating it in one block."""
+
+    remaining = size
+    while remaining:
+        chunk = stream.read(min(remaining, 65_536))
+        if not chunk:
+            raise TelemetryFormatError(f"truncated PCAP while reading {context}")
+        remaining -= len(chunk)
+
+
 def _ensure_record_limit(count: int, max_records: int) -> None:
     if count > max_records:
         raise TelemetryFormatError(
@@ -67,7 +78,7 @@ def _inspect_classic(
         )
         if included_length > snaplen or included_length > original_length:
             raise TelemetryFormatError("classic PCAP packet lengths are inconsistent")
-        _read_exact(stream, included_length, "packet payload")
+        _discard_exact(stream, included_length, "packet payload")
         count += 1
         _ensure_record_limit(count, max_records)
 
@@ -94,14 +105,14 @@ def _inspect_pcapng(stream: BinaryIO, *, max_records: int) -> IngestionInspectio
     section_length = struct.unpack(f"{endian}I", prefix[4:8])[0]
     if section_length < 28 or section_length % 4 != 0:
         raise TelemetryFormatError("invalid PCAPNG section block length")
-    section_remainder = _read_exact(
-        stream, section_length - 12, "PCAPNG section block"
-    )
-    if struct.unpack(f"{endian}I", section_remainder[-4:])[0] != section_length:
-        raise TelemetryFormatError("PCAPNG section block length trailer does not match")
-    major, minor = struct.unpack(f"{endian}HH", section_remainder[:4])
+    section_fields = _read_exact(stream, 12, "PCAPNG section fields")
+    major, minor = struct.unpack(f"{endian}HH", section_fields[:4])
     if (major, minor) != (1, 0):
         raise TelemetryFormatError("unsupported PCAPNG version")
+    _discard_exact(stream, section_length - 28, "PCAPNG section options")
+    section_trailer = _read_exact(stream, 4, "PCAPNG section trailer")
+    if struct.unpack(f"{endian}I", section_trailer)[0] != section_length:
+        raise TelemetryFormatError("PCAPNG section block length trailer does not match")
 
     count = 0
     block_count = 1
@@ -116,8 +127,9 @@ def _inspect_pcapng(stream: BinaryIO, *, max_records: int) -> IngestionInspectio
         block_type, block_length = struct.unpack(f"{endian}II", header)
         if block_length < 12 or block_length % 4 != 0:
             raise TelemetryFormatError("invalid PCAPNG block length")
-        remainder = _read_exact(stream, block_length - 8, "PCAPNG block")
-        if struct.unpack(f"{endian}I", remainder[-4:])[0] != block_length:
+        _discard_exact(stream, block_length - 12, "PCAPNG block body")
+        block_trailer = _read_exact(stream, 4, "PCAPNG block trailer")
+        if struct.unpack(f"{endian}I", block_trailer)[0] != block_length:
             raise TelemetryFormatError("PCAPNG block length trailer does not match")
         block_count += 1
         if block_type in _PCAPNG_PACKET_BLOCKS:

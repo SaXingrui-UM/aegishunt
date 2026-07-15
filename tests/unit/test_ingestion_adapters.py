@@ -37,6 +37,14 @@ def test_pcap_inspector_rejects_truncation_and_record_overflow(tmp_path: Path) -
     with pytest.raises(TelemetryFormatError, match="record limit"):
         PcapIngestor().inspect(SAMPLE_ROOT / "phase2-benign.pcap", max_records=0)
 
+    forged_length = tmp_path / "forged-length.pcap"
+    forged_length.write_bytes(
+        struct.pack("<IHHIIII", 0xA1B2C3D4, 2, 4, 0, 0, 0xFFFFFFFF, 1)
+        + struct.pack("<IIII", 0, 0, 0xFFFFFFFE, 0xFFFFFFFE)
+    )
+    with pytest.raises(TelemetryFormatError, match="truncated"):
+        PcapIngestor().inspect(forged_length, max_records=1)
+
 
 def test_pcapng_inspector_counts_packet_blocks(tmp_path: Path) -> None:
     section = (
