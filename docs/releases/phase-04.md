@@ -9,10 +9,9 @@ machine-readable manifests without implementing any model.
 
 ## Implementation status
 
-Implementation and local verification are complete on
-`phase/04-dataset-quality`; the phase is awaiting final diff review, push, CI,
-and pull-request review. It is not `Phase complete` until the PR is merged and a
-later user-authorized checkpoint tag is created.
+`Implementation complete — awaiting PR review` on
+`phase/04-dataset-quality`. It is not `Phase complete` until the PR is merged
+and a later user-authorized checkpoint tag is created.
 
 ## Completed scope
 
@@ -101,14 +100,14 @@ classification metrics or operational-performance claims.
 
 ## Tests
 
-Pre-review local verification on 2026-07-16:
+Final local verification on 2026-07-16:
 
 - `ruff check .`: pass.
 - `mypy src`: pass across 73 source files.
-- `pytest`: 168 passed, 0 failed, 0 skipped, 0 xfailed.
-- Branch-aware coverage: 88.01% (project threshold: 85%).
+- `pytest`: 169 passed, 0 failed, 0 skipped, 0 xfailed.
+- Branch-aware coverage: 88.06% (project threshold: 85%).
 - Focused Phase 4 registry/conversion/quality/leakage/split/download/workflow/CLI
-  tests: 60 passed.
+  tests: 61 passed.
 - Offline build, validate, quality, deterministic restart, group resplit,
   manifest validation, manual raw-file verification, and archive safety tests:
   pass.
@@ -123,6 +122,10 @@ Pre-review local verification on 2026-07-16:
 The first read-only review found provenance, registry-gate, mapping-integrity,
 strict-type, duplicate-ID, checksum, non-overwrite, and partial-output gaps.
 Commit `9b0bdef` added the corresponding fail-closed guards and regression tests.
+The second review found that reloaded manifests did not strictly validate access
+dates/checksums or expose provisional conversion state; commit `4d63cd7` fixed
+the contract. A third read-only review found no remaining Blocking, High, or
+unhandled Medium findings.
 
 ## Generated artifacts
 

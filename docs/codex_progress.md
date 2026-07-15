@@ -7,13 +7,13 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 4 - Dataset registry, transformation, and quality control |
-| Status | Final local verification complete — review and publication pending |
-| Phase 4 implementation | 100%; local implementation and pre-review verification complete |
-| Current activity | Phase 4 final diff review, publication, and pull-request checkpoint |
-| Verification status | Ruff, strict mypy, 168 tests, controlled demo E2E, restart, and security checks passed locally |
+| Status | Implementation complete — awaiting PR review |
+| Phase 4 implementation | 100%; implementation, review fixes, and local verification complete |
+| Current activity | Phase 4 publication and pull-request checkpoint |
+| Verification status | Ruff, strict mypy, 169 tests, controlled demo E2E, restart, and security checks passed locally |
 | Current branch | `phase/04-dataset-quality` |
 | Phase 4 baseline | `main` at `21750914ab0da09a36b60972e6abdff5d565d454` |
-| Latest reviewed implementation commit | `9b0bdef` (first-review integrity fixes; second review pending) |
+| Latest reviewed implementation commit | `4d63cd7` (manifest contract fix; final review passed) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit / latest main | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
@@ -23,8 +23,8 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
-| Working tree | Expected clean after the Phase 4 release/progress documentation commit |
-| Next action | Complete review, push Phase 4 branch, create PR, and wait for user review; do not start Phase 5 |
+| Working tree | Expected clean after the final Phase 4 progress commit |
+| Next action | Push Phase 4 branch, create PR, and wait for user review; do not start Phase 5 |
 
 Phase 0 through Phase 3 remain complete and their annotated tags are unchanged.
 Phase 4 is implemented on its declared branch and has not been merged or tagged.
@@ -46,9 +46,9 @@ Phase 5 has not started.
   class-distribution and feature-statistics CSV, Typer commands, and EDA notebook.
 - Manual demo verification: 48 rows, 24 groups, quality pass, leakage pass,
   zero exact/feature/near duplicates, and 28/10/10 train/validation/test rows.
-- Post-fix checks: Ruff pass; strict mypy pass for 73 source files; 168 pytest
-  tests passed with 0 failures/skips/xfails and 88.01% branch-aware coverage.
-- Focused Phase 4 suite: 60 passed; two fixed-seed offline rebuilds were
+- Post-fix checks: Ruff pass; strict mypy pass for 73 source files; 169 pytest
+  tests passed with 0 failures/skips/xfails and 88.06% branch-aware coverage.
+- Focused Phase 4 suite: 61 passed; two fixed-seed offline rebuilds were
   byte-identical. Controlled split counts are 28/10/10 rows and 14/5/5 groups.
 - The current Codex/macOS runtime skips virtual-environment `.pth` files marked
   hidden, so standalone editable console verification required `PYTHONPATH=src`;
@@ -56,6 +56,9 @@ Phase 5 has not started.
 - First read-only review identified provenance, registry conversion/version,
   label mapping, strict-type, duplicate-ID, checksum, non-overwrite, and output
   preflight gaps. Commit `9b0bdef` fixed them with regression coverage.
+- Second review identified manifest date/checksum validation and provisional
+  status evidence gaps; commit `4d63cd7` fixed them. The third read-only review
+  found no remaining Blocking, High, or unhandled Medium findings.
 - No public network, root, live capture, external target, database migration,
   Phase 3 schema change, model, model metric, anomaly detector, fusion, alert, or
   hypothesis functionality was introduced.
