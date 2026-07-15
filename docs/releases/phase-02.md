@@ -50,14 +50,16 @@ explicitly requested and created.
 - `3acad60` - `feat: expose telemetry ingestion API and CLI`
 - `853bb2b` - `feat: add controlled Phase 2 sample telemetry`
 - `abb6c8d` - `test: cover Phase 2 telemetry ingestion`
-- Documentation checkpoint - this release-note commit.
+- `881851e` - `docs: document Phase 2 telemetry ingestion`
+- `20c1fd7` - `fix: bound PCAP declared-length reads`
+- Review metadata checkpoint - this release-note update.
 
 ## Tests
 
 - Ruff: passed.
 - Strict mypy: passed for 46 source files.
 - Pytest: 45 passed.
-- Branch-aware coverage: 90.38% (minimum 85%).
+- Branch-aware coverage: 90.34% (minimum 85%).
 - Deterministic sample regeneration: byte-identical, checksum verified.
 - Live loopback API: health/sample/upload returned HTTP 200/200/201.
 - Live loopback Streamlit: health `ok`, root HTTP 200.
@@ -69,6 +71,16 @@ Committed artifacts are limited to the reviewed 114-byte synthetic PCAP, a
 two-row synthetic flow CSV, their manifest, and generator. Temporary SQLite
 databases and stored uploads were removed. No model, evaluation result, runtime
 database, captured traffic, or fabricated metric is committed.
+
+## Review findings
+
+The first read-only review found one high-severity memory-exhaustion risk from
+passing forged PCAP/PCAPNG lengths to one-shot reads. Commit `20c1fd7` replaces
+those reads with bounded consumption and adds a forged-length regression test.
+The second review found no remaining blocking or high-severity issue. Secret,
+oversized-file, generated-artifact, scope-creep, and Phase 3 checks were clean.
+The local Codex CLI review command itself was unavailable because its packaged
+native executable is missing; the same review criteria were applied manually.
 
 ## Known limitations
 

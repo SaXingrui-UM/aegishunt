@@ -10,7 +10,7 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Status | Implementation complete - preparing phase review and pull request |
 | Phase 2 implementation | 100%; required local checks and manual verification passed |
 | Current branch | `phase/02-telemetry-ingestion` |
-| Latest phase commit | `abb6c8d` before the Phase 2 documentation checkpoint |
+| Latest phase commit | `20c1fd7` before the Phase 2 review-metadata checkpoint |
 | Latest main commit | `b501189037b963bc9d5081c57ec05377770bb6b6` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull request | Pending Phase 2 review and publication |
@@ -18,8 +18,8 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Not created; tags are prohibited before merge |
-| Working tree | Documentation checkpoint pending commit |
-| Next action | Commit documentation, review against `main`, push, and open the Phase 2 PR |
+| Working tree | Review metadata pending commit |
+| Next action | Commit review metadata, verify clean state, push, and open the Phase 2 PR |
 
 Phase 1 remains complete and its tags are unchanged. Phase 2 implementation and
 local validation are complete, but Phase 2 is not marked complete until its PR is
@@ -52,7 +52,7 @@ reviewed, merged, and a checkpoint tag is explicitly requested. Phase 3 has not 
 | Iterative Ruff, strict mypy, targeted pytest, and full pytest runs | Failures were corrected and rerun; none hidden |
 | Final `.venv/bin/ruff check .` | Exit 0 |
 | Final `.venv/bin/mypy src` | Exit 0; 46 source files |
-| Final `.venv/bin/pytest` | Exit 0; 45 passed, 90.38% branch-aware coverage |
+| Final `.venv/bin/pytest` | Exit 0; 45 passed, 90.34% branch-aware coverage |
 | Generate PCAP twice, `cmp`, and SHA-256 verification | Exit 0; deterministic digest `84aa8524...f2e9a` |
 | Bare `.venv/bin/aegishunt --help` | Exit 1 due to the previously recorded hidden editable `.pth` runtime issue |
 | CLI help, doctor, PCAP, CSV, sample, and expected-failure checks with `PYTHONPATH=src` | Passed; invalid suffix returned exit 1 safely |
@@ -63,7 +63,7 @@ reviewed, merged, and a checkpoint tag is explicitly requested. Phase 3 has not 
 
 ## Phase 2 tests
 
-- 45 tests passed with 90.38% branch-aware coverage; configured minimum is 85%.
+- 45 tests passed with 90.34% branch-aware coverage; configured minimum is 85%.
 - Ruff passes and strict mypy passes for 46 source files.
 - Tests cover traversal, type/size limits, checksum integrity and deduplication,
   PCAP and PCAPNG framing, CSV schema/non-finite values, JSON structure, sample
@@ -100,8 +100,19 @@ operational traffic is committed.
 
 ## Phase 2 review status
 
-The first formal review against `main` is pending after the documentation commit.
-No Phase 2 PR, merge, completion tag, or Phase 3 branch exists yet.
+The first read-only review against `main` covered correctness, security, roadmap
+scope, tests, typing, errors, data integrity, API/filesystem safety, secrets, and
+oversized artifacts. It found one high-severity denial-of-service risk: forged
+PCAP/PCAPNG length fields were passed to one-shot reads. Commit `20c1fd7` consumes
+declared payload lengths in bounded chunks and adds a forged 4 GiB-length
+regression fixture. Ruff, strict mypy, and all 45 tests pass after the fix at
+90.34% coverage. The second read-only review found no remaining blocking or
+high-severity finding.
+
+The installed Codex CLI review command could not start because its packaged
+native executable is missing (`ENOENT`); the full diff review and repository
+safety scans were completed manually under the same required criteria. No Phase
+2 PR, merge, completion tag, or Phase 3 branch exists yet.
 
 ## Phase 0 checkpoint
 
