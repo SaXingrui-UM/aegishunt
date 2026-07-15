@@ -72,6 +72,20 @@ def test_doctor_report_detects_missing_directory(tmp_path: Path) -> None:
     assert report.database_status == "not_checked"
 
 
+def test_doctor_fails_safely_when_configuration_is_unavailable(tmp_path: Path) -> None:
+    missing_config = tmp_path / "missing.yaml"
+
+    result = runner.invoke(cli.app, ["doctor", "--config", str(missing_config)])
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 1
+    assert payload["configuration_status"] == "error"
+    assert payload["database_status"] == "not_checked"
+    assert payload["diagnostics"] == ["configuration could not be loaded or validated"]
+    assert str(tmp_path) not in result.stdout
+    assert "Traceback" not in result.stdout
+
+
 def test_doctor_fails_safely_when_database_is_unavailable(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,

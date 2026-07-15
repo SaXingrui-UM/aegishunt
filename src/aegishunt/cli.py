@@ -184,7 +184,6 @@ def doctor(
         Path | None,
         typer.Option(
             "--config",
-            dir_okay=False,
             help="YAML configuration file; environment variables override its values.",
         ),
     ] = None,
