@@ -123,8 +123,9 @@ files, scope creep, and documentation accuracy. It found one acceptance-level
 test gap: repository reads occurred in the writing Session and could use its
 identity map. The fix verifies every entity and audit record after commit in a
 new Session. Two low-risk findings also clarified ORM registration and recorded
-the local editable-install limitation. Required checks and a second review follow
-the dedicated fix commit.
+the local editable-install limitation. Dedicated fix commit `e04234d` passes
+Ruff, strict mypy, and all 26 tests at 94.92% coverage. The second review found
+no remaining blocking or high-severity issue.
 
 ## Next phase
 
