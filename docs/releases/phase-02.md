@@ -8,7 +8,7 @@ starting packet-to-flow processing or any ML workflow.
 
 ## Status
 
-Implementation complete - preparing pull request review. This phase is not
+Implementation complete — awaiting PR review. This phase is not
 `Phase complete` until its PR is merged and its annotated checkpoint tag is
 explicitly requested and created.
 
@@ -52,7 +52,8 @@ explicitly requested and created.
 - `abb6c8d` - `test: cover Phase 2 telemetry ingestion`
 - `881851e` - `docs: document Phase 2 telemetry ingestion`
 - `20c1fd7` - `fix: bound PCAP declared-length reads`
-- Review metadata checkpoint - this release-note update.
+- `af7c2e0` - `docs: record Phase 2 review outcome`
+- Pull-request metadata checkpoint - this release-note update.
 
 ## Tests
 
@@ -102,7 +103,7 @@ databases are initialized and compatibility-checked as in Phase 1.
 ## Version-control checkpoint
 
 - Branch: `phase/02-telemetry-ingestion`
-- Pull request: pending
+- Pull request: [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), open and ready for review
 - Merge commit: pending
 - Tag: pending; must not be created before merge
 
