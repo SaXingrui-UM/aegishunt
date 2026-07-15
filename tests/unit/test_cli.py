@@ -22,6 +22,15 @@ def test_help_lists_foundation_commands() -> None:
     assert "api" in result.stdout
     assert "frontend" in result.stdout
     assert "init-db" in result.stdout
+    assert "ingest" in result.stdout
+
+
+def test_ingest_help_lists_only_phase_2_file_commands() -> None:
+    result = runner.invoke(cli.app, ["ingest", "--help"])
+
+    assert result.exit_code == 0
+    assert all(command in result.stdout for command in ("pcap", "csv", "json", "sample"))
+    assert "replay" not in result.stdout
 
 
 def test_doctor_succeeds_when_foundation_directories_exist(
@@ -131,3 +140,46 @@ def test_init_db_reports_configuration_failure(tmp_path: Path) -> None:
     result = runner.invoke(cli.app, ["init-db", "--config", str(missing)])
 
     assert result.exit_code != 0
+
+
+def test_ingest_pcap_command_runs_against_explicit_local_configuration(
+    tmp_path: Path,
+) -> None:
+    sample = Path(__file__).parents[2] / "data" / "sample" / "phase2-benign.pcap"
+    config_path = tmp_path / "application.yaml"
+    config_path.write_text(
+        f"""
+database:
+  url: sqlite:///{tmp_path / 'cli-ingestion.db'}
+ingestion:
+  storage_root: {tmp_path / 'raw'}
+  sample_root: {sample.parent}
+  max_upload_bytes: 1024
+  chunk_size_bytes: 16
+  max_records: 10
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        cli.app,
+        ["ingest", "pcap", str(sample), "--config", str(config_path)],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "completed"
+    assert payload["records_processed"] == 1
+
+
+def test_ingest_reports_configuration_failure_without_traceback(tmp_path: Path) -> None:
+    sample = Path(__file__).parents[2] / "data" / "sample" / "phase2-benign.pcap"
+
+    result = runner.invoke(
+        cli.app,
+        ["ingest", "pcap", str(sample), "--config", str(tmp_path / "missing.yaml")],
+    )
+
+    assert result.exit_code == 1
+    assert "Ingestion failed" in result.output
+    assert "Traceback" not in result.output
