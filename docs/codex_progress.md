@@ -9,22 +9,46 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Current phase | Phase 2 - Telemetry ingestion framework |
 | Status | Phase complete |
 | Phase 2 implementation | 100%; merged, validated, and checkpoint-tagged |
-| Current branch | `docs/phase-02-post-merge-metadata` |
+| Current activity | Independent Phase 0–2 integration verification; Phase 3 is not started |
+| Verification status | Implementation complete — awaiting PR review |
+| Current branch | `test/phase-00-02-integration-verification` |
+| Verification baseline | `main` at `45056b6c0b61ec78c39fca82ad8fea6da006577f` |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
-| Latest main commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
+| Latest main commit | `45056b6c0b61ec78c39fca82ad8fea6da006577f` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), `[Phase 02] Telemetry ingestion framework`, merged into `main` from `phase/02-telemetry-ingestion` on 2026-07-16 00:00:35 (UTC+8) |
+| Post-merge metadata | PR #6 merged into `main` as `45056b6`; the verification PR is pending creation from the current branch |
 | CI status | Passed; both PR #5 `quality` checks succeeded with zero failures or pending checks |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
-| Working tree | Clean after the post-merge metadata commit |
-| Next action | Review and squash-merge the Phase 2 post-merge metadata PR; Phase 3 remains not started |
+| Working tree | Expected clean after the integration verification report commit |
+| Next action | Review the Phase 0–2 integration verification PR; Phase 3 remains not started |
 
 Phase 1 remains complete and its tags are unchanged. Phase 2 is complete: PR #5
 was squash-merged, its two GitHub Actions quality checks passed, and annotated tag
 `phase-02-complete` was verified locally and remotely against the merged `main`.
-Phase 3 has not started, and no Phase 3 branch exists.
+Phase 3 has not started, and no Phase 3 branch exists. The independent
+integration-verification branch does not change any completion tag.
+
+## Phase 0–2 integration verification
+
+- Verified annotated tags `phase-00-complete`, `phase-01-complete`, and
+  `phase-02-complete` at their merged `main` commits without modifying them.
+- Verified a fresh Python 3.11 editable installation with `PYTHONPATH` unset.
+- Re-ran Ruff, strict mypy, and 72 automated tests in both the project environment
+  and a second clean clone: all passed at 91.98% branch-aware coverage.
+- Added durable configuration/database/repository, cross-phase E2E, ingestion
+  security, persistence/restart, and five-job concurrency verification.
+- Found and fixed two High defects: JSONL staging lost its suffix, and database
+  credentials appeared in settings representations. Both have regression tests.
+- Recorded two open Medium findings (doctor diagnostic completeness and durable
+  traceability during total database failure) plus one Low README status issue.
+- Produced the report, test matrix, requirement traceability, environment record,
+  and defect register under `reports/integration/phase-00-02/`.
+- Final verdict: `CONDITIONALLY READY`; no Blocking or open High defect remains.
+- Confirmed ingestion still creates zero `NetworkFlow` rows and implements no
+  packet-to-flow conversion, feature extraction, or other Phase 3 functionality.
 
 ## Phase 2 completed work
 
