@@ -7,17 +7,18 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 1 - Configuration, schemas, and database foundation |
-| Status | Implementation complete locally - GitHub checkpoint pending |
+| Status | Implementation complete — awaiting PR review |
 | Phase 1 implementation completion | 100% of implementation and local acceptance checks |
 | Current branch | `phase/01-data-foundation` |
 | Latest main commit | `b3d6b196168896affa8f88a4a8ddfb44d51f2f57` (Phase 0 metadata PR #2) |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | Pending after commits, review, and push |
-| CI status | Pending Phase 1 PR; local checks pass |
+| Latest Phase 1 implementation commit | `f11e3314e713f4b284c1896667dc871291e27832` (before this PR checkpoint metadata commit) |
+| Pull request | [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), Draft, open and mergeable; base `main`, head `phase/01-data-foundation` |
+| CI status | GitHub Actions `quality` check is active for PR #3; final head status is reported by GitHub, and all local checks pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Not created; prohibited before merge and explicit instruction |
 | Working tree | Clean after the Phase 1 implementation and documentation commits |
-| Next action | Review against `main`, push, create the Phase 1 PR, and wait for user review |
+| Next action | User reviews PR #3, confirms CI, and merges when satisfied; do not start Phase 2 automatically |
 
 Phase 1 does not become `Phase complete` before its PR is merged and a later
 explicit instruction authorizes a checkpoint tag. Phase 2 has not started.

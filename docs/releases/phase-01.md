@@ -7,7 +7,7 @@ shared by later AegisHunt phases without implementing telemetry or ML workflows.
 
 ## Status
 
-Implementation complete locally; GitHub checkpoint pending.
+Implementation complete — awaiting PR review.
 
 ## Completed scope
 
@@ -62,7 +62,7 @@ this runtime-specific issue does not change the package layout or CI commands.
 ## Version-control checkpoint
 
 - Branch: `phase/01-data-foundation`
-- Pull request: pending
+- Pull request: [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), Draft, base `main`, head `phase/01-data-foundation`
 - Merge commit: pending
 - Tag: not created; prohibited before merge and explicit user instruction
 
