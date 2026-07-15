@@ -10,16 +10,16 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 2 implementation | 100%; required local checks and manual verification passed |
 | Current branch | `phase/02-telemetry-ingestion` |
-| Latest phase commit | `af7c2e0` before the Phase 2 PR-metadata checkpoint |
+| Latest phase implementation/review commit | `20c1fd7`; PR checkpoint `e9516f2` |
 | Latest main commit | `b501189037b963bc9d5081c57ec05377770bb6b6` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), open and ready for review |
-| CI status | One `quality` check passed and one was in progress when PR #5 was inspected |
+| CI status | Passed; both PR #5 `quality` checks succeeded with zero failures or pending checks |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Not created; tags are prohibited before merge |
-| Working tree | PR metadata pending commit |
-| Next action | Push this metadata update, await CI, then user reviews and merges PR #5 |
+| Working tree | Clean after the final CI-status documentation commit |
+| Next action | User reviews and merges PR #5; do not start Phase 3 |
 
 Phase 1 remains complete and its tags are unchanged. Phase 2 implementation and
 local validation are complete, but Phase 2 is not marked complete until its PR is

@@ -53,7 +53,8 @@ explicitly requested and created.
 - `881851e` - `docs: document Phase 2 telemetry ingestion`
 - `20c1fd7` - `fix: bound PCAP declared-length reads`
 - `af7c2e0` - `docs: record Phase 2 review outcome`
-- Pull-request metadata checkpoint - this release-note update.
+- `e9516f2` - `docs: record Phase 2 pull request checkpoint`
+- CI-status checkpoint - this release-note update.
 
 ## Tests
 
@@ -65,6 +66,7 @@ explicitly requested and created.
 - Live loopback API: health/sample/upload returned HTTP 200/200/201.
 - Live loopback Streamlit: health `ok`, root HTTP 200.
 - Manual CLI: PCAP, CSV, and sample jobs completed; invalid suffix exited 1 safely.
+- GitHub Actions: both PR #5 `quality` checks passed with zero failures or pending checks.
 
 ## Generated artifacts
 
