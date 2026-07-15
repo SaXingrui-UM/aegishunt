@@ -18,14 +18,14 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 2 telemetry ingestion is complete and merged into `main`. The repository
-provides bounded PCAP/PCAPNG container inspection, canonical flow-CSV validation,
-structured JSON validation, checksum-addressed safe storage, durable ingestion
-jobs, controlled samples, API endpoints, and CLI commands on top of the Phase 1
-data foundation. Phase 0–2 integration verification and its pre-Phase 3 cleanup
-are the current activity. Phase 3 has not started: packet-to-flow processing,
-feature extraction, detection, model training, correlation, hypotheses, replay,
-and case workflows are **not implemented**.
+Phase 3 packet-to-flow and behavioral feature engineering is in implementation
+on `phase/03-flow-feature-engineering`. Validated PCAP data now becomes bounded,
+canonical bidirectional `NetworkFlow` records with first-packet direction,
+idle/active timeout segmentation, fixed feature schema `1.0.0`, finite numeric
+features, transactional persistence, and restart/replay tests. Phase 2 flow-CSV
+and JSON ingestion remain validation/storage contracts. Dataset construction,
+model training/inference, detections, alerts, correlation, hypotheses, replay
+orchestration, and cases are **not implemented**.
 
 ## Planned architecture
 
@@ -68,18 +68,20 @@ directories, configuration loading, and configured database availability. It
 returns a non-zero exit code with fixed, sanitized diagnostics when configuration
 or database checks fail; it does not print the database URL, credentials, project
 path, or traceback. `init-db` validates configuration and idempotently initializes
-the configured database without printing its URL. `ingest` validates and stores
-explicit local files; it does not replay traffic, capture an interface, or derive
-flows from packets.
+the configured database without printing its URL. `ingest pcap` validates,
+decodes supported packets, and persists deterministic flows; it does not replay
+traffic, capture an interface, open an external connection, or require root.
 
 ## Telemetry ingestion
 
-The Phase 2 API exposes `/ingestion/pcap`, `/ingestion/flow-csv`,
+The ingestion API exposes `/ingestion/pcap`, `/ingestion/flow-csv`,
 `/ingestion/json-events`, `/ingestion/jobs`, and `/ingestion/samples`. Uploads
 are streamed through configured byte and record limits, stored under a
 SHA-256-derived filename, and represented by durable status/error records.
 Reviewed samples are declared in `data/sample/manifest.yaml` and verified before
-use. See [`docs/ingestion.md`](docs/ingestion.md) for contracts and boundaries.
+use. PCAP job metadata records flow count and feature schema version. See
+[`docs/ingestion.md`](docs/ingestion.md) and
+[`docs/feature_dictionary.md`](docs/feature_dictionary.md).
 
 ## Configuration and database initialization
 
@@ -94,6 +96,11 @@ aegishunt init-db --config configs/application.yaml
 
 The default SQLite database uses WAL, foreign-key enforcement, a bounded busy
 timeout, and schema version `1`. Database files and WAL sidecars are ignored by Git.
+
+Flow segmentation is configuration-controlled. Defaults are 60-second idle and
+300-second active timeouts, with explicit per-flow packet, active-flow, and
+captured-packet byte bounds under the `flows` YAML section. Environment overrides
+use names such as `AEGISHUNT_FLOWS__IDLE_TIMEOUT_SECONDS`.
 
 ## Start the API
 
@@ -111,7 +118,7 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 2 page reports ingestion-foundation status and planned modules only.
+The Phase 3 page reports ingestion/flow-foundation status and planned modules only.
 It does not display invented flows, alerts, hypotheses, or model metrics.
 
 ## Quality checks
