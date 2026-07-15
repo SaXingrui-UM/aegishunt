@@ -9,7 +9,7 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Current phase | Phase 4 - Dataset registry, transformation, and quality control |
 | Status | Implementation complete — awaiting PR review |
 | Phase 4 implementation | 100%; implementation, review fixes, and local verification complete |
-| Current activity | Phase 4 publication and pull-request checkpoint |
+| Current activity | Phase 4 PR #11 is open and awaiting CI/user review |
 | Verification status | Ruff, strict mypy, 169 tests, controlled demo E2E, restart, and security checks passed locally |
 | Current branch | `phase/04-dataset-quality` |
 | Phase 4 baseline | `main` at `21750914ab0da09a36b60972e6abdff5d565d454` |
@@ -17,14 +17,14 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit / latest main | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | Phase 4 PR pending creation; base `main`, head `phase/04-dataset-quality` |
-| CI status | Local checks pass; Phase 4 GitHub Actions pending PR creation |
+| Pull request | PR #11, `[Phase 04] Dataset registry and quality`, open and ready for review; base `main`, head `phase/04-dataset-quality`; https://github.com/SaXingrui-UM/aegishunt/pull/11 |
+| CI status | Local checks pass; two GitHub Actions `quality` checks were in progress when this checkpoint was recorded |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
-| Working tree | Expected clean after the final Phase 4 progress commit |
-| Next action | Push Phase 4 branch, create PR, and wait for user review; do not start Phase 5 |
+| Working tree | Clean after the Phase 4 PR checkpoint commit |
+| Next action | Wait for CI, review PR #11, and Squash and merge only after checks pass; do not start Phase 5 |
 
 Phase 0 through Phase 3 remain complete and their annotated tags are unchanged.
 Phase 4 is implemented on its declared branch and has not been merged or tagged.

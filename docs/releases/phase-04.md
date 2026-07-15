@@ -187,7 +187,11 @@ validated defaults.
 
 - Branch: `phase/04-dataset-quality`
 - Baseline main: `21750914ab0da09a36b60972e6abdff5d565d454`
-- Pull request: pending
+- Pull request: PR #11, `[Phase 04] Dataset registry and quality`, open and ready
+  for review at https://github.com/SaXingrui-UM/aegishunt/pull/11
+- Pull request base/head: `main` <- `phase/04-dataset-quality`
+- CI at checkpoint: two GitHub Actions `quality` checks in progress; no passing
+  CI result is claimed before completion
 - Merge commit: pending
 - Completion tag: pending; must not be created before merge
 
