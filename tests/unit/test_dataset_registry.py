@@ -125,6 +125,29 @@ def test_label_mapper_normalizes_aliases_and_fails_unknown() -> None:
         mapper.map("new-unreviewed-label")
 
 
+@pytest.mark.parametrize(
+    ("mapping", "provider_label", "expected_family"),
+    (
+        ("cic-ids2017-v1.yaml", "Web Attack - Sql Injection", "sql_injection"),
+        ("cse-cic-ids2018-v1.yaml", "Bot", "botnet"),
+        ("unsw-nb15-v1.yaml", "Reconnaissance", "reconnaissance"),
+        ("ton-iot-v1.yaml", "Ransomware", "ransomware"),
+    ),
+)
+def test_public_mapping_preserves_reviewed_attack_family(
+    mapping: str,
+    provider_label: str,
+    expected_family: str,
+) -> None:
+    mapper = LabelMapper.load(LABEL_ROOT / mapping)
+
+    label = mapper.map(provider_label)
+
+    assert label.ground_truth_label == "malicious"
+    assert label.binary_label == 1
+    assert label.attack_family == expected_family
+
+
 def test_label_mapper_rejects_invalid_mapping(tmp_path: Path) -> None:
     path = tmp_path / "mapping.yaml"
     path.write_text(yaml.safe_dump({"dataset_id": "x"}), encoding="utf-8")

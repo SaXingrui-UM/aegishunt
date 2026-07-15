@@ -18,7 +18,27 @@ rules:
     ground_truth_label: malicious
     binary_label: 1
     attack_family: denial_of_service
-  - aliases: [bot, infiltration, heartbleed, web attack - brute force, web attack - xss, web attack - sql injection]
+  - aliases: [bot]
     ground_truth_label: malicious
     binary_label: 1
-    attack_family: other_attack
+    attack_family: botnet
+  - aliases: [infiltration]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: infiltration
+  - aliases: [heartbleed]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: heartbleed
+  - aliases: [web attack - brute force]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: web_brute_force
+  - aliases: [web attack - xss]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: cross_site_scripting
+  - aliases: [web attack - sql injection]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: sql_injection

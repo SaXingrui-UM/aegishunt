@@ -18,7 +18,23 @@ rules:
     ground_truth_label: malicious
     binary_label: 1
     attack_family: distributed_denial_of_service
-  - aliases: [bot, infiltration, sql injection, brute force -web, brute force -xss]
+  - aliases: [bot]
     ground_truth_label: malicious
     binary_label: 1
-    attack_family: other_attack
+    attack_family: botnet
+  - aliases: [infiltration]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: infiltration
+  - aliases: [sql injection]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: sql_injection
+  - aliases: [brute force -web]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: web_brute_force
+  - aliases: [brute force -xss]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: cross_site_scripting
