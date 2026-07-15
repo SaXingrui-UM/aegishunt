@@ -152,7 +152,20 @@ def test_core_entities_round_trip_without_business_sql(tmp_path: Path) -> None:
                 actor="integration-test",
             )
 
+        with database.session() as session:
+            audit = AuditLogRepository(session)
+            source_repository = TelemetrySourceRepository(session, audit)
+            flow_repository = NetworkFlowRepository(session, audit)
+            detection_repository = DetectionResultRepository(session, audit)
+            alert_repository = SecurityAlertRepository(session, audit)
+            group_repository = AlertGroupRepository(session, audit)
+            hypothesis_repository = ThreatHypothesisRepository(session, audit)
+            case_repository = InvestigationCaseRepository(session, audit)
+            feedback_repository = AnalystFeedbackRepository(session, audit)
+            model_repository = ModelVersionRepository(session, audit)
+
             assert source_repository.get(source.source_id) == source
+            assert source_repository.list() == [source]
             assert flow_repository.get(flow.flow_id) == flow
             assert detection_repository.get(detection.detection_id) == detection
             assert alert_repository.get(alert.alert_id) == alert

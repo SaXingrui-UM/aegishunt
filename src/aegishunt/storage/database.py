@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from aegishunt.config import DatabaseSettings
 from aegishunt.errors import DatabaseInitializationError, SchemaVersionError
-from aegishunt.storage import models as _models
+from aegishunt.storage import models  # noqa: F401  # Import registers every ORM table.
 from aegishunt.storage.base import Base
 from aegishunt.storage.schema_version import ensure_schema_version
 
@@ -114,6 +114,3 @@ class Database:
         """Release pooled connections."""
 
         self.engine.dispose()
-
-
-assert _models

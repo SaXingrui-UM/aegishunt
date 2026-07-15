@@ -71,16 +71,18 @@ explicit instruction authorizes a checkpoint tag. Phase 2 has not started.
 | Initial Phase 1 Ruff/mypy/test cycles | Found and fixed formatting, typing, and local environment issues; no failures hidden |
 | Final `.venv/bin/ruff check .` | Exit 0 |
 | Final `.venv/bin/mypy src` | Exit 0; 32 source files |
-| Final `.venv/bin/pytest` | Exit 0; 26 passed, 94.65% branch-aware coverage |
+| Final `.venv/bin/pytest` | Exit 0; 26 passed, 94.92% branch-aware coverage |
 | Repeat `init-db` twice on a temporary SQLite database | Both exit 0; WAL, schema version `1`, and 11 tables verified |
 | Live FastAPI `/health` and `/docs` on loopback | Both HTTP 200; database ready and schema version `1` |
 | Live Streamlit health and root on loopback | Health `ok`; root HTTP 200; process stopped manually |
+| Bare CLI after editable reinstall in the Codex macOS runtime | Failed when the runtime repeatedly restored the hidden flag on the editable `.pth`; failure was not treated as a product success |
+| CLI/API/Streamlit manual rerun with explicit `PYTHONPATH=src` | Passed; this bypassed only the runtime-specific hidden-file behavior |
 | Temporary PDF renders and SQLite databases | Removed after verification |
 
 ## Tests
 
 - 26 tests passed: 25 unit/smoke tests and one repository integration test.
-- Branch-aware coverage: 94.65% (required minimum 85%).
+- Branch-aware coverage: 94.92% (required minimum 85%).
 - Ruff passes.
 - Strict mypy passes for 32 source files.
 - Tests cover configuration precedence/failures, schema validation, repeatable initialization, WAL, version mismatch, unversioned-database refusal, all core repository round trips, audit events, CLI, API startup, and frontend truthfulness.
@@ -108,7 +110,21 @@ and removed them after inspection. Coverage output remains ignored.
 - SQLite is tested; PostgreSQL portability is not demonstrated.
 - JSON evidence/reference fields trade relational constraints for planned schema evolution.
 - Concurrent SQLite load and migration behavior require later hardening tests.
+- This Codex macOS runtime repeatedly hides editable-install `.pth` files; local
+  manual commands required `PYTHONPATH=src`, while pytest's declared `pythonpath`
+  and standard GitHub runners do not depend on that hidden-file state.
 - No performance result is claimed.
+
+## Review outcome
+
+The first read-only review covered correctness, security, requirements, tests,
+typing, error handling, data integrity, API/filesystem safety, secrets, oversized
+files, scope creep, and documentation accuracy. It found one acceptance-level
+test gap: repository reads occurred in the writing Session and could use its
+identity map. The fix verifies every entity and audit record after commit in a
+new Session. Two low-risk findings also clarified ORM registration and recorded
+the local editable-install limitation. Required checks and a second review follow
+the dedicated fix commit.
 
 ## Next phase
 

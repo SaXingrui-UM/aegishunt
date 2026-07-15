@@ -43,10 +43,14 @@ Implementation complete locally; GitHub checkpoint pending.
 - Ruff: passed.
 - Mypy: passed for 32 source files.
 - Pytest: 26 passed.
-- Branch-aware coverage: 94.65%.
+- Branch-aware coverage: 94.92%.
 - Repeat initialization: two successful runs; WAL, schema version `1`, and 11 tables verified.
 - FastAPI: live `/health` and `/docs` returned HTTP 200 on loopback.
 - Streamlit: live health returned `ok` and root returned HTTP 200 on loopback.
+
+The Codex macOS runtime repeatedly reapplied the hidden flag to the editable
+installation `.pth`. Manual CLI/server checks therefore used `PYTHONPATH=src`;
+this runtime-specific issue does not change the package layout or CI commands.
 
 ## Known limitations
 
