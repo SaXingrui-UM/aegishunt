@@ -47,7 +47,9 @@ class QualityReport(DatasetModel):
     all_zero_features: tuple[str, ...]
     invalid_features: tuple[str, ...]
     binary_class_distribution: dict[str, int]
+    binary_class_percentages: dict[str, float]
     attack_family_distribution: dict[str, int]
+    attack_family_percentages: dict[str, float]
     group_class_distribution: dict[str, dict[str, int]]
     findings: tuple[QualityFinding, ...]
 
@@ -69,6 +71,7 @@ class LeakageReport(DatasetModel):
     timestamp_leakage: tuple[str, ...]
     record_id_leakage: tuple[str, ...]
     correlation_warnings: tuple[str, ...]
+    unique_value_label_warnings: tuple[str, ...]
     attack_family_considerations: tuple[str, ...]
     findings: tuple[QualityFinding, ...]
 
@@ -88,6 +91,7 @@ class SplitManifest(DatasetModel):
     validation_groups: tuple[str, ...]
     test_groups: tuple[str, ...]
     row_counts: dict[str, int]
+    group_counts: dict[str, int]
     class_distributions: dict[str, dict[str, int]]
     attack_family_distributions: dict[str, dict[str, int]]
     overlap_validation_result: Literal["pass", "fail"]

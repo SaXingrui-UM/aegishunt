@@ -47,8 +47,10 @@ def test_demo_quality_reports_schema_classes_and_constant_features() -> None:
     assert report.status == "pass"
     assert report.row_count == 48
     assert report.group_count == 24
-    assert report.missing_counts["features"] == 0
+    assert all(report.missing_counts[f"features.{name}"] == 0 for name in feature_names())
     assert report.binary_class_distribution == {"0": 18, "1": 30}
+    assert report.binary_class_percentages == {"0": 0.375, "1": 0.625}
+    assert sum(report.attack_family_percentages.values()) == pytest.approx(1.0)
     assert report.conflicting_label_fingerprint_count == 0
     assert report.invalid_features == ()
     assert "urg_count" in report.constant_features

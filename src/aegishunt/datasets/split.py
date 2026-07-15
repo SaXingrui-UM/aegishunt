@@ -129,6 +129,9 @@ def group_aware_split(
         validation_groups=group_partitions["validation"],
         test_groups=group_partitions["test"],
         row_counts=row_counts,
+        group_counts={
+            split: len(groups) for split, groups in group_partitions.items()
+        },
         class_distributions={
             split: dict(
                 sorted(Counter(str(row.labels.binary_label) for row in partition).items())

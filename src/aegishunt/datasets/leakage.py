@@ -133,6 +133,32 @@ def _correlation_warnings(assignments: Sequence[SplitAssignment]) -> tuple[str, 
     return tuple(sorted(warnings))
 
 
+def _unique_value_label_warnings(
+    assignments: Sequence[SplitAssignment],
+) -> tuple[str, ...]:
+    """Flag low-cardinality values that deterministically partition known labels."""
+
+    rows = [assignment.row for assignment in assignments]
+    if len(rows) < 4 or any(row.labels.binary_label is None for row in rows):
+        return ()
+    cardinality_limit = max(2, min(20, math.isqrt(len(rows))))
+    warnings: list[str] = []
+    for index, name in enumerate(rows[0].features.names):
+        labels_by_value: dict[float, set[int]] = defaultdict(set)
+        for row in rows:
+            label = row.labels.binary_label
+            if label is not None:
+                labels_by_value[row.features.values[index]].add(label)
+        represented_labels = set().union(*labels_by_value.values())
+        if (
+            1 < len(labels_by_value) <= cardinality_limit
+            and len(represented_labels) > 1
+            and all(len(labels) == 1 for labels in labels_by_value.values())
+        ):
+            warnings.append(f"{name}:{len(labels_by_value)}-value deterministic association")
+    return tuple(sorted(warnings))
+
+
 def _token_leakage(assignments: Sequence[SplitAssignment], attribute: str) -> tuple[str, ...]:
     values = {str(getattr(assignment.row.metadata, attribute)) for assignment in assignments}
     return tuple(
@@ -165,6 +191,7 @@ def analyze_leakage(
     filename_leakage = _token_leakage(assignments, "source_file")
     record_id_leakage = _token_leakage(assignments, "record_id")
     correlation_warnings = _correlation_warnings(assignments)
+    unique_value_label_warnings = _unique_value_label_warnings(assignments)
     observed_dates: dict[str, set[int]] = defaultdict(set)
     for assignment in assignments:
         observed = assignment.row.metadata.observed_at
@@ -209,6 +236,20 @@ def analyze_leakage(
                 ),
             )
         )
+    if unique_value_label_warnings:
+        findings.append(
+            QualityFinding(
+                code="L-UNIQUE-LABEL-ASSOCIATION",
+                severity="medium",
+                message=(
+                    "low-cardinality feature values have a deterministic label association"
+                ),
+                evidence=unique_value_label_warnings,
+                remediation=(
+                    "audit feature provenance; treat this as a risk signal, not causal proof"
+                ),
+            )
+        )
     return LeakageReport(
         report_schema_version=LEAKAGE_REPORT_SCHEMA_VERSION,
         status="fail" if any(blockers) else "pass",
@@ -224,6 +265,7 @@ def analyze_leakage(
         timestamp_leakage=timestamp_leakage,
         record_id_leakage=record_id_leakage,
         correlation_warnings=correlation_warnings,
+        unique_value_label_warnings=unique_value_label_warnings,
         attack_family_considerations=(
             "Attack-family metadata remains outside features for group-isolated evaluation.",
             (

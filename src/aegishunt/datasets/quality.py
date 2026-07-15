@@ -108,7 +108,7 @@ def analyze_quality(
         "labels.ground_truth_label": sum(not row.labels.ground_truth_label for row in rows),
         "labels.binary_label": sum(row.labels.binary_label is None for row in rows),
         "labels.attack_family": sum(not row.labels.attack_family for row in rows),
-        "features": 0,
+        **{f"features.{name}": 0 for name in feature_names()},
     }
     findings: list[QualityFinding] = []
     conflicting = sum(len(labels) > 1 for labels in label_by_feature.values())
@@ -170,7 +170,13 @@ def analyze_quality(
         all_zero_features=all_zero,
         invalid_features=tuple(sorted(set(invalid))),
         binary_class_distribution=dict(sorted(binary.items())),
+        binary_class_percentages={
+            label: count / len(rows) for label, count in sorted(binary.items())
+        },
         attack_family_distribution=dict(sorted(families.items())),
+        attack_family_percentages={
+            label: count / len(rows) for label, count in sorted(families.items())
+        },
         group_class_distribution={
             group: dict(sorted(counts.items())) for group, counts in sorted(group_classes.items())
         },

@@ -44,6 +44,7 @@ def test_group_split_is_deterministic_exclusive_and_frozen() -> None:
     assert manifest.frozen_test is True
     assert manifest.overlap_validation_result == "pass"
     assert sum(manifest.row_counts.values()) == len(rows)
+    assert sum(manifest.group_counts.values()) == 24
     assert set(manifest.train_groups).isdisjoint(manifest.validation_groups)
     assert set(manifest.train_groups).isdisjoint(manifest.test_groups)
     assert set(manifest.validation_groups).isdisjoint(manifest.test_groups)
@@ -130,3 +131,24 @@ def test_leakage_detects_label_derived_feature_and_filename_signal() -> None:
     assert "failed_connection_indicator" in report.label_derived_features
     assert report.filename_leakage
     assert any(value.startswith("scenario_id:scan-") for value in report.suspicious_metadata)
+
+
+def test_leakage_reports_low_cardinality_unique_value_label_association() -> None:
+    rows: list[CanonicalDatasetRow] = []
+    target_index = feature_names().index("mean_packet_size")
+    for row in demo_rows():
+        payload = row.model_dump(mode="python")
+        values = list(payload["features"]["values"])
+        values[target_index] = 100.0 if row.labels.binary_label == 0 else 200.0
+        payload["features"]["values"] = values
+        rows.append(CanonicalDatasetRow.model_validate(payload))
+    assignments, _ = _split(tuple(rows))
+
+    report = analyze_leakage(assignments, near_duplicate_tolerance=1e-6)
+
+    assert report.status == "pass"
+    assert any(
+        warning.startswith("mean_packet_size:2-value")
+        for warning in report.unique_value_label_warnings
+    )
+    assert any(finding.code == "L-UNIQUE-LABEL-ASSOCIATION" for finding in report.findings)
