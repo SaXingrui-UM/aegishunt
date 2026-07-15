@@ -8,9 +8,10 @@ vector without starting dataset or model work.
 
 ## Status
 
-Implementation in progress on `phase/03-flow-feature-engineering`. It must remain
-`Implementation complete — awaiting PR review` after the Phase 3 PR is created;
-it is not Phase complete until a later user-reviewed merge and checkpoint tag.
+Implementation complete — awaiting PR review on
+`phase/03-flow-feature-engineering` in PR
+[#9](https://github.com/SaXingrui-UM/aegishunt/pull/9). It is not Phase complete
+until a later user-reviewed merge and explicitly authorized checkpoint tag.
 
 ## Completed scope
 
@@ -57,8 +58,18 @@ Pre-review validation on 2026-07-16 passed:
 - Deterministic replay, restart persistence, schema export, timeout boundaries,
   malformed/truncated captures, and no-partial-flow rollback are covered and pass.
 
-The final post-review run and GitHub Actions result will be recorded at the PR
-checkpoint; no unexecuted CI result is claimed here.
+The post-review run passed. At this checkpoint the initial branch `quality` check
+passed and the latest PR `quality` check is in progress; no pending result is
+reported as successful.
+
+## Review outcome
+
+Native `codex review --base main` could not launch because its packaged arm64
+executable is missing (`ENOENT`). The equivalent read-only manual review found no
+Blocking or High issue. One Medium gap (no explicit bidirectional UDP aggregation
+test) and one Low documentation-count mismatch were fixed in `242e1f3`; all local
+checks then passed again. The second manual pass found no remaining blocking,
+high, or unhandled medium finding.
 
 ## Generated artifacts
 
@@ -90,7 +101,9 @@ repository contract.
 ## Version-control checkpoint
 
 - Branch: `phase/03-flow-feature-engineering`
-- Pull request: pending
+- Baseline main: `5d4b26f91e9bdae118de26ddb71c11b6fda08ccb`
+- Latest reviewed implementation commit: `242e1f35dabfe936c36dce485d0403fcf5e10249`
+- Pull request: [#9](https://github.com/SaXingrui-UM/aegishunt/pull/9), open and ready for review
 - Merge commit: pending
 - Tag: pending; `phase-03-complete` must not be created before merge
 
