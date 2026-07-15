@@ -14,7 +14,7 @@ Last updated: 2026-07-15 (Asia/Shanghai)
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Latest Phase 1 implementation commit | `f11e3314e713f4b284c1896667dc871291e27832` (before this PR checkpoint metadata commit) |
 | Pull request | [#3](https://github.com/SaXingrui-UM/aegishunt/pull/3), Draft, open and mergeable; base `main`, head `phase/01-data-foundation` |
-| CI status | GitHub Actions `quality` check is active for PR #3; final head status is reported by GitHub, and all local checks pass |
+| CI status | Passed; both GitHub Actions `quality` checks succeeded at PR checkpoint `2acd246`; the documentation-only CI-record update runs the same checks |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Not created; prohibited before merge and explicit instruction |
 | Working tree | Clean after the Phase 1 implementation and documentation commits |
@@ -78,6 +78,7 @@ explicit instruction authorizes a checkpoint tag. Phase 2 has not started.
 | Live Streamlit health and root on loopback | Health `ok`; root HTTP 200; process stopped manually |
 | Bare CLI after editable reinstall in the Codex macOS runtime | Failed when the runtime repeatedly restored the hidden flag on the editable `.pth`; failure was not treated as a product success |
 | CLI/API/Streamlit manual rerun with explicit `PYTHONPATH=src` | Passed; this bypassed only the runtime-specific hidden-file behavior |
+| `gh pr checks 3 --watch --interval 10` at `2acd246` | Exit 0; two `quality` checks passed, zero failed or pending |
 | Temporary PDF renders and SQLite databases | Removed after verification |
 
 ## Tests

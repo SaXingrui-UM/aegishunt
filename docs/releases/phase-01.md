@@ -47,6 +47,7 @@ Implementation complete — awaiting PR review.
 - Repeat initialization: two successful runs; WAL, schema version `1`, and 11 tables verified.
 - FastAPI: live `/health` and `/docs` returned HTTP 200 on loopback.
 - Streamlit: live health returned `ok` and root returned HTTP 200 on loopback.
+- GitHub Actions: both `quality` checks passed at PR checkpoint `2acd246`.
 
 The Codex macOS runtime repeatedly reapplied the hidden flag to the editable
 installation `.pth`. Manual CLI/server checks therefore used `PYTHONPATH=src`;
