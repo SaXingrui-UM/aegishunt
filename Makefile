@@ -1,4 +1,4 @@
-.PHONY: install check lint typecheck test coverage doctor api frontend
+.PHONY: install check lint typecheck test coverage doctor init-db api frontend
 
 install:
 	python -m pip install -e ".[dev]"
@@ -19,6 +19,9 @@ check: lint typecheck test
 
 doctor:
 	aegishunt doctor
+
+init-db:
+	aegishunt init-db
 
 api:
 	aegishunt api
