@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from aegishunt.errors import ConfigurationError
 
@@ -80,6 +80,36 @@ class FlowSettings(BaseModel):
     max_packet_bytes: int = Field(default=262_144, ge=64, le=16_777_216)
 
 
+class DatasetSettings(BaseModel):
+    """Filesystem and deterministic-policy settings for Phase 4 datasets."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    registry_path: Path = Path("configs/datasets/registry.yaml")
+    label_mapping_root: Path = Path("configs/label_mappings")
+    raw_root: Path = Path("data/raw/datasets")
+    interim_root: Path = Path("data/interim/datasets")
+    processed_root: Path = Path("data/processed/datasets")
+    reports_root: Path = Path("reports/datasets")
+    max_download_bytes: int = Field(default=10_737_418_240, ge=1)
+    max_archive_members: int = Field(default=10_000, ge=1, le=1_000_000)
+    max_extracted_bytes: int = Field(default=21_474_836_480, ge=1)
+    near_duplicate_tolerance: float = Field(default=1e-6, gt=0.0, le=1.0)
+    demo_seed: int = 4_204
+    train_ratio: float = Field(default=0.6, gt=0.0, lt=1.0)
+    validation_ratio: float = Field(default=0.2, gt=0.0, lt=1.0)
+    test_ratio: float = Field(default=0.2, gt=0.0, lt=1.0)
+
+    @model_validator(mode="after")
+    def validate_split_ratios(self) -> DatasetSettings:
+        """Require a complete partition without hidden row-level fallback."""
+
+        total = self.train_ratio + self.validation_ratio + self.test_ratio
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError("dataset split ratios must sum to 1.0")
+        return self
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -89,6 +119,7 @@ class ApplicationSettings(BaseModel):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
     flows: FlowSettings = Field(default_factory=FlowSettings)
+    datasets: DatasetSettings = Field(default_factory=DatasetSettings)
 
     @property
     def environment(self) -> str:

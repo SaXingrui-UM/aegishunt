@@ -21,3 +21,19 @@ flows:
   max_packets_per_flow: 10000
   max_active_flows: 100000
   max_packet_bytes: 262144
+
+datasets:
+  registry_path: configs/datasets/registry.yaml
+  label_mapping_root: configs/label_mappings
+  raw_root: data/raw/datasets
+  interim_root: data/interim/datasets
+  processed_root: data/processed/datasets
+  reports_root: reports/datasets
+  max_download_bytes: 10737418240
+  max_archive_members: 10000
+  max_extracted_bytes: 21474836480
+  near_duplicate_tolerance: 0.000001
+  demo_seed: 4204
+  train_ratio: 0.6
+  validation_ratio: 0.2
+  test_ratio: 0.2

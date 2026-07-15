@@ -1,0 +1,24 @@
+dataset_id: cic-ids2017
+mapping_version: 1.0.0
+unknown_label_policy: fail
+rules:
+  - aliases: [benign]
+    ground_truth_label: benign
+    binary_label: 0
+    attack_family: benign
+  - aliases: [ftp-patator, ssh-patator]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: brute_force
+  - aliases: [portscan]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: reconnaissance
+  - aliases: [dos slowloris, dos slowhttptest, dos hulk, dos goldeneye, ddos]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: denial_of_service
+  - aliases: [bot, infiltration, heartbleed, web attack - brute force, web attack - xss, web attack - sql injection]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: other_attack

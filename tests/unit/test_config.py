@@ -42,6 +42,7 @@ database:
             "AEGISHUNT_INGESTION__MAX_UPLOAD_BYTES": "4096",
             "AEGISHUNT_FLOWS__IDLE_TIMEOUT_SECONDS": "15.5",
             "AEGISHUNT_FLOWS__ACTIVE_TIMEOUT_SECONDS": "90",
+            "AEGISHUNT_DATASETS__DEMO_SEED": "99",
         },
     )
 
@@ -51,6 +52,7 @@ database:
     assert settings.ingestion.max_upload_bytes == 4096
     assert settings.flows.idle_timeout_seconds == 15.5
     assert settings.flows.active_timeout_seconds == 90.0
+    assert settings.datasets.demo_seed == 99
 
 
 def test_legacy_environment_label_remains_supported() -> None:
