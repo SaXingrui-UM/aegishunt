@@ -50,10 +50,10 @@ Pre-review validation on 2026-07-16 passed:
 
 - `ruff check .`: pass.
 - `mypy src`: pass across 57 source files.
-- `pytest`: 107 passed, 0 failed, 0 skipped, 0 xfailed.
+- `pytest`: 108 passed, 0 failed, 0 skipped, 0 xfailed after review fixes.
 - Branch-aware coverage: 87.83% (project threshold: 85%).
-- Focused packet/parser/aggregation/feature tests: 29 passed.
-- PCAP-to-flow integration and E2E tests: 22 passed.
+- Focused packet/parser/aggregation/feature tests: 25 passed.
+- PCAP-to-flow integration and E2E tests: 7 passed.
 - Deterministic replay, restart persistence, schema export, timeout boundaries,
   malformed/truncated captures, and no-partial-flow rollback are covered and pass.
 

@@ -163,6 +163,31 @@ def test_first_packet_defines_forward_for_bidirectional_flow() -> None:
     assert state.backward_packet_count == 1
 
 
+def test_udp_packets_in_both_directions_share_one_flow() -> None:
+    first = packet(
+        0,
+        source_port=53_000,
+        destination_port=53,
+        protocol=NetworkProtocol.UDP,
+        protocol_number=17,
+        size=40,
+    )
+    second = reverse(first, 0.5)
+    flow_aggregator = aggregator()
+
+    assert flow_aggregator.process(first) == []
+    assert flow_aggregator.process(second) == []
+    finalized = flow_aggregator.flush_capture_end()
+
+    assert len(finalized) == 1
+    state = finalized[0].state
+    assert state.protocol is NetworkProtocol.UDP
+    assert state.forward_packet_count == 1
+    assert state.backward_packet_count == 1
+    assert state.forward_bytes == 40
+    assert state.backward_bytes == 40
+
+
 def test_directional_tcp_flag_counts_track_forward_and_backward() -> None:
     first = packet(0, flags=0x02)
     flow_aggregator = aggregator()
