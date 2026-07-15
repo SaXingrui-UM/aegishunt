@@ -8,7 +8,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 Probability = Annotated[float, Field(ge=0.0, le=1.0)]
-NonNegativeFloat = Annotated[float, Field(ge=0.0)]
+NonNegativeFloat = Annotated[float, Field(ge=0.0, allow_inf_nan=False)]
 NonNegativeInt = Annotated[int, Field(ge=0)]
 Port = Annotated[int, Field(ge=0, le=65_535)]
 JsonObject = dict[str, JsonValue]
