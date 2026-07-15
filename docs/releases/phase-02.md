@@ -8,9 +8,9 @@ starting packet-to-flow processing or any ML workflow.
 
 ## Status
 
-Implementation complete — awaiting PR review. This phase is not
-`Phase complete` until its PR is merged and its annotated checkpoint tag is
-explicitly requested and created.
+Phase complete. PR #5 was squash-merged into `main` on 2026-07-16 00:00:35
+(UTC+8), and annotated checkpoint tag `phase-02-complete` was pushed and
+verified against the merge commit.
 
 ## Completed scope
 
@@ -22,6 +22,7 @@ explicitly requested and created.
   atomic storage, and cleanup after validation failures.
 - Durable audited `TelemetrySource` job lifecycles with progress and safe errors.
 - Manifest/checksum-controlled deterministic synthetic PCAP and CSV samples.
+- Structured JSON/JSONL ingestion validated with controlled temporary test fixtures.
 - FastAPI upload/sample/job endpoints and Typer ingestion commands.
 - Unit, integration, target-free E2E, CLI, API, and frontend status tests.
 
@@ -54,7 +55,8 @@ explicitly requested and created.
 - `20c1fd7` - `fix: bound PCAP declared-length reads`
 - `af7c2e0` - `docs: record Phase 2 review outcome`
 - `e9516f2` - `docs: record Phase 2 pull request checkpoint`
-- CI-status checkpoint - this release-note update.
+- `40405df` - `docs: record Phase 2 CI result`
+- `d5e1ba6` - squash merge, `[Phase 02] Telemetry ingestion framework (#5)`
 
 ## Tests
 
@@ -75,6 +77,9 @@ two-row synthetic flow CSV, their manifest, and generator. Temporary SQLite
 databases and stored uploads were removed. No model, evaluation result, runtime
 database, captured traffic, or fabricated metric is committed.
 
+JSON and JSONL ingestion uses controlled temporary fixtures in the test suite;
+the committed sample manifest contains the PCAP and CSV fixtures only.
+
 ## Review findings
 
 The first read-only review found one high-severity memory-exhaustion risk from
@@ -92,6 +97,8 @@ native executable is missing; the same review criteria were applied manually.
 - Jobs are synchronous; worker scheduling and replay belong to Phase 11.
 - API authentication/authorization and concurrency hardening remain later work.
 - PCAPNG validation supports one section and rejects multiple sections explicitly.
+- The packaged sample catalog has no manifest-controlled JSON sample; JSON and
+  JSONL contracts are instead exercised by controlled temporary test fixtures.
 - No performance result is claimed.
 - Bare editable CLI execution is affected by the already-recorded Codex/macOS
   hidden-`.pth` behavior; explicit `PYTHONPATH=src` manual validation passed.
@@ -105,11 +112,19 @@ databases are initialized and compatibility-checked as in Phase 1.
 ## Version-control checkpoint
 
 - Branch: `phase/02-telemetry-ingestion`
-- Pull request: [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), open and ready for review
-- Merge commit: pending
-- Tag: pending; must not be created before merge
+- Pull request: [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5)
+- PR title: `[Phase 02] Telemetry ingestion framework`
+- PR status: `MERGED`
+- Base/head: `main` <- `phase/02-telemetry-ingestion`
+- Merge date: 2026-07-16 00:00:35 (UTC+8)
+- Merge commit: `d5e1ba6b4df7614977a0330a4c38a56cec051241`
+- Completion date: 2026-07-16 (Asia/Shanghai)
+- Tag: annotated `phase-02-complete`, remotely verified at the merge commit
+- Post-merge metadata branch: `docs/phase-02-post-merge-metadata`
 
 ## Next phase
 
-Phase 3 remains unstarted. After the Phase 2 PR is reviewed and merged, a user may
-explicitly authorize `phase/03-flow-feature-engineering`; this release does not do so.
+Phase 3 - Packet-to-Flow and Behavioral Feature Extraction is `Not started`.
+Its planned branch is `phase/03-flow-feature-engineering`, which has not been
+created. Starting Phase 3 still requires explicit user authorization after the
+post-merge metadata PR is reviewed and merged.

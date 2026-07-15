@@ -1,29 +1,30 @@
 # Codex Progress
 
-Last updated: 2026-07-15 (Asia/Shanghai)
+Last updated: 2026-07-16 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 2 - Telemetry ingestion framework |
-| Status | Implementation complete — awaiting PR review |
-| Phase 2 implementation | 100%; required local checks and manual verification passed |
-| Current branch | `phase/02-telemetry-ingestion` |
-| Latest phase implementation/review commit | `20c1fd7`; PR checkpoint `e9516f2` |
-| Latest main commit | `b501189037b963bc9d5081c57ec05377770bb6b6` |
+| Status | Phase complete |
+| Phase 2 implementation | 100%; merged, validated, and checkpoint-tagged |
+| Current branch | `docs/phase-02-post-merge-metadata` |
+| Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
+| Latest main commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), open and ready for review |
+| Pull request | [#5](https://github.com/SaXingrui-UM/aegishunt/pull/5), `[Phase 02] Telemetry ingestion framework`, merged into `main` from `phase/02-telemetry-ingestion` on 2026-07-16 00:00:35 (UTC+8) |
 | CI status | Passed; both PR #5 `quality` checks succeeded with zero failures or pending checks |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
-| Phase 2 tag | Not created; tags are prohibited before merge |
-| Working tree | Clean after the final CI-status documentation commit |
-| Next action | User reviews and merges PR #5; do not start Phase 3 |
+| Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
+| Working tree | Clean after the post-merge metadata commit |
+| Next action | Review and squash-merge the Phase 2 post-merge metadata PR; Phase 3 remains not started |
 
-Phase 1 remains complete and its tags are unchanged. Phase 2 implementation and
-local validation are complete, but Phase 2 is not marked complete until its PR is
-reviewed, merged, and a checkpoint tag is explicitly requested. Phase 3 has not started.
+Phase 1 remains complete and its tags are unchanged. Phase 2 is complete: PR #5
+was squash-merged, its two GitHub Actions quality checks passed, and annotated tag
+`phase-02-complete` was verified locally and remotely against the merged `main`.
+Phase 3 has not started, and no Phase 3 branch exists.
 
 ## Phase 2 completed work
 
@@ -60,6 +61,11 @@ reviewed, merged, and a checkpoint tag is explicitly requested. Phase 3 has not 
 | Live FastAPI `/health`, sample list, and PCAP upload on loopback | HTTP 200, 200, and 201; server stopped cleanly |
 | Live Streamlit health and root on loopback | `ok` and HTTP 200; server stopped cleanly |
 | Temporary databases, uploads, and regenerated PCAP | Removed after verification |
+| `gh pr view 5` and `gh pr checks 5` after merge | PR #5 confirmed `MERGED`; two `quality` checks passed |
+| `git checkout main` and `git pull --ff-only origin main` | Exit 0; fast-forwarded to merge commit `d5e1ba6` with a clean tree |
+| Phase 2 code, tests, samples, documentation, and Phase 3 scope audit on merged `main` | Completed; Phase 2 ingestion boundary present and no Phase 3 implementation found |
+| Local and remote `phase-02-complete` absence checks | Confirmed absent before creation |
+| Create, push, and verify annotated `phase-02-complete` | Exit 0; local and remote peeled target equals `d5e1ba6` |
 
 ## Phase 2 tests
 
@@ -86,6 +92,10 @@ synthetic flow CSV, their manifest/checksums, and the deterministic PCAP generat
 No runtime database, uploaded telemetry, model, evaluation, metric, or captured
 operational traffic is committed.
 
+The structured JSON adapter is covered with controlled temporary JSON and JSONL
+test fixtures. The packaged sample manifest itself intentionally contains only
+the reviewed PCAP and CSV fixtures; it does not contain a third JSON sample file.
+
 ## Phase 2 known limitations and risks
 
 - PCAP inspection validates framing and counts only; it does not decode packets.
@@ -93,6 +103,8 @@ operational traffic is committed.
 - Jobs execute synchronously; worker scheduling, replay, pause/resume, and recovery are later phases.
 - API authentication/authorization is not yet implemented; default listeners remain loopback.
 - The committed PCAPNG support accepts one section; multi-section files fail explicitly.
+- The packaged sample catalog contains PCAP and CSV fixtures; JSON ingestion is
+  validated by controlled tests but has no committed manifest sample.
 - Large uploads within configured limits occupy one request worker until runtime orchestration.
 - The Codex macOS runtime still hides editable-install `.pth` files; manual commands
   used `PYTHONPATH=src`, while pytest and standard CI use the declared source layout.
@@ -111,8 +123,9 @@ high-severity finding.
 
 The installed Codex CLI review command could not start because its packaged
 native executable is missing (`ENOENT`); the full diff review and repository
-safety scans were completed manually under the same required criteria. PR #5 is
-open for review; no merge, completion tag, or Phase 3 branch exists yet.
+safety scans were completed manually under the same required criteria. PR #5 was
+squash-merged as `d5e1ba6`, and annotated tag `phase-02-complete` points to that
+merged `main` commit. No Phase 3 branch or Phase 3 implementation exists.
 
 ## Phase 0 checkpoint
 
