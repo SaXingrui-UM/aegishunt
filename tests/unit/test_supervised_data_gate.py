@@ -73,3 +73,17 @@ def test_dataset_gate_rejects_missing_partition(tmp_path: Path) -> None:
 
     with pytest.raises(DatasetGateError, match="partition is unavailable"):
         SupervisedDatasetGate(data_root, report_root)
+
+
+def test_dataset_gate_rejects_incomplete_checksum_inventory(tmp_path: Path) -> None:
+    data_root, report_root = build_phase4_bundle(tmp_path)
+    manifest_path = report_root / "dataset_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload["processed_checksums"].pop("test.jsonl")
+    manifest_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DatasetGateError, match="checksum inventory"):
+        SupervisedDatasetGate(data_root, report_root)

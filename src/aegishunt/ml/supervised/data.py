@@ -177,6 +177,8 @@ class SupervisedDatasetGate:
         expected_names = set(REQUIRED_DATA_FILES)
         if set(dataset.processed_files) != expected_names:
             raise DatasetGateError("dataset manifest partition inventory is incomplete")
+        if set(dataset.processed_checksums) != expected_names:
+            raise DatasetGateError("dataset manifest checksum inventory is incomplete")
         for filename, expected_checksum in dataset.processed_checksums.items():
             path = PurePosixPath(filename)
             if path.is_absolute() or ".." in path.parts or len(path.parts) != 1:
