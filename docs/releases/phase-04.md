@@ -9,9 +9,9 @@ machine-readable manifests without implementing any model.
 
 ## Implementation status
 
-`Implementation complete — awaiting PR review` on
-`phase/04-dataset-quality`. It is not `Phase complete` until the PR is merged
-and a later user-authorized checkpoint tag is created.
+`Phase complete`. PR #11 was squash-merged into `main` on 2026-07-16, merged
+`main` was reverified, and the user-authorized annotated checkpoint tag
+`phase-04-complete` was pushed. Phase 5 has not started.
 
 ## Completed scope
 
@@ -119,6 +119,19 @@ Final local verification on 2026-07-16:
   recorded as a workaround, not counted as a standard-install pass; direct
   imports, Typer CLI tests, and the full offline workflow passed.
 
+Post-merge verification on synchronized `main` repeated the same quality gates:
+
+- `ruff check .`: pass;
+- `mypy src`: pass across 73 source files;
+- `pytest`: 169 passed, 0 failed, 0 skipped, 0 xfailed;
+- branch-aware coverage: 88.06%;
+- focused Phase 4 suite: 61 passed;
+- two independent offline demo builds: byte-identical canonical, dataset
+  manifest, and split manifest outputs;
+- quality and leakage status: pass, with zero group/source/session/scenario,
+  exact-duplicate, or near-duplicate split overlap;
+- both GitHub Actions `quality` checks for PR #11: pass.
+
 The first read-only review found provenance, registry-gate, mapping-integrity,
 strict-type, duplicate-ID, checksum, non-overwrite, and partial-output gaps.
 Commit `9b0bdef` added the corresponding fail-closed guards and regression tests.
@@ -187,16 +200,18 @@ validated defaults.
 
 - Branch: `phase/04-dataset-quality`
 - Baseline main: `21750914ab0da09a36b60972e6abdff5d565d454`
-- Pull request: PR #11, `[Phase 04] Dataset registry and quality`, open and ready
-  for review at https://github.com/SaXingrui-UM/aegishunt/pull/11
+- Pull request: PR #11, `[Phase 04] Dataset registry and quality`, merged on
+  2026-07-16 at https://github.com/SaXingrui-UM/aegishunt/pull/11
 - Pull request base/head: `main` <- `phase/04-dataset-quality`
-- CI at checkpoint: two GitHub Actions `quality` checks in progress; no passing
-  CI result is claimed before completion
-- Merge commit: pending
-- Completion tag: pending; must not be created before merge
+- CI at merge: two GitHub Actions `quality` checks passed
+- Merge commit: `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0`
+- Completion date: 2026-07-16
+- Completion tag: annotated `phase-04-complete`, locally and remotely verified
+  at the merge commit
 
 ## Next phase
 
-Phase 5 — Supervised Detection is not started. It must consume only a reviewed,
-quality-approved, group-exclusive manifest and must not begin before the Phase 4
-PR is reviewed and merged and the user explicitly authorizes it.
+Phase 5 — Supervised Detection Engine is not started. Its planned branch is
+`phase/05-supervised-detection`. It must consume only a reviewed,
+quality-approved, group-exclusive manifest and must not begin until the user
+explicitly authorizes it.

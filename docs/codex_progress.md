@@ -7,27 +7,30 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 4 - Dataset registry, transformation, and quality control |
-| Status | Implementation complete — awaiting PR review |
-| Phase 4 implementation | 100%; implementation, review fixes, and local verification complete |
-| Current activity | Phase 4 PR #11 is open and awaiting CI/user review |
-| Verification status | Ruff, strict mypy, 169 tests, controlled demo E2E, restart, and security checks passed locally |
-| Current branch | `phase/04-dataset-quality` |
+| Status | Phase complete |
+| Phase 4 implementation | 100%; merged to `main`, post-merge verified, and checkpoint tagged |
+| Current activity | Phase 4 post-merge metadata checkpoint; Phase 5 has not started |
+| Verification status | On merged `main`: Ruff, strict mypy, 169 tests, controlled demo E2E, deterministic rebuild, and security checks passed |
+| Current branch | `docs/phase-04-post-merge-metadata` |
 | Phase 4 baseline | `main` at `21750914ab0da09a36b60972e6abdff5d565d454` |
 | Latest reviewed implementation commit | `4d63cd7` (manifest contract fix; final review passed) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
-| Phase 3 merge commit / latest main | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
+| Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
+| Phase 4 merge commit / latest main | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | PR #11, `[Phase 04] Dataset registry and quality`, open and ready for review; base `main`, head `phase/04-dataset-quality`; https://github.com/SaXingrui-UM/aegishunt/pull/11 |
-| CI status | Local checks pass; two GitHub Actions `quality` checks were in progress when this checkpoint was recorded |
+| Pull request | PR #11, `[Phase 04] Dataset registry and quality`, merged from `phase/04-dataset-quality` into `main` on 2026-07-16; https://github.com/SaXingrui-UM/aegishunt/pull/11 |
+| CI status | Two GitHub Actions `quality` checks passed for PR #11; merged-main verification also passed locally |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
-| Working tree | Clean after the Phase 4 PR checkpoint commit |
-| Next action | Wait for CI, review PR #11, and Squash and merge only after checks pass; do not start Phase 5 |
+| Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
+| Working tree | Expected clean after the Phase 4 post-merge metadata commit |
+| Next action | Review and merge the Phase 4 metadata-only PR; Phase 5 remains not started until explicitly authorized |
 
-Phase 0 through Phase 3 remain complete and their annotated tags are unchanged.
-Phase 4 is implemented on its declared branch and has not been merged or tagged.
+Phase 0 through Phase 4 are complete and their annotated tags point to their
+merged `main` commits. Phase 4 PR #11 was squash-merged as `2ecaaae`, and
+`phase-04-complete` was created only after merged-main verification.
 Phase 5 has not started.
 
 ## Phase 4 implementation checkpoint
@@ -64,6 +67,14 @@ Phase 5 has not started.
   hypothesis functionality was introduced.
 - DEF-004 remains open and non-blocking; Phase 4 does not add an alternate queue
   or database merely to record a total database outage.
+- Post-merge verification on synchronized `main` repeated Ruff, strict mypy,
+  all 169 tests, the 61-test Phase 4 suite, and two independent offline demo
+  builds. The builds were byte-identical, quality/leakage passed, all split
+  overlap counts were zero, and the canonical checksum remained
+  `75c584dbee56cf985864fabeb3d01a0975122276a31c2acbb45b0323c4f885ad`.
+- PR #11 was merged on 2026-07-16 with both GitHub Actions `quality` checks
+  successful. Annotated tag `phase-04-complete` points to the merged `main`
+  commit `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0`.
 
 ## Phase 3 implementation checkpoint
 
