@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from aegishunt.ml.supervised.errors import TrainingError
 
 CONFIG_SCHEMA_VERSION = "1.0.0"
+CORRECTIVE_CONFIG_SCHEMA_VERSION = "1.1.0"
 Algorithm = Literal[
     "dummy",
     "logistic_regression",
@@ -55,6 +56,15 @@ class CandidateConfig(TrainingModel):
         )
 
 
+class CorrectiveRunConfig(TrainingModel):
+    """Explicit audit link for a defect-authorized evidence rerun."""
+
+    defect_id: str = Field(pattern=r"^[A-Z][A-Z0-9-]{2,63}$")
+    supersedes_experiment_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{2,63}$")
+    supersedes_model_version: str = Field(pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$")
+    reason: str = Field(min_length=10, max_length=500)
+
+
 class SupervisedTrainingConfig(TrainingModel):
     """Complete Phase 5 experiment and model-selection policy."""
 
@@ -71,6 +81,7 @@ class SupervisedTrainingConfig(TrainingModel):
     bootstrap_iterations: int = Field(ge=1_000, le=100_000)
     selection_policy_version: str
     candidates: tuple[CandidateConfig, ...]
+    corrective_run: CorrectiveRunConfig | None = None
 
     @field_validator("threshold_candidates")
     @classmethod
@@ -83,8 +94,18 @@ class SupervisedTrainingConfig(TrainingModel):
 
     @model_validator(mode="after")
     def validate_policy(self) -> SupervisedTrainingConfig:
-        if self.config_schema_version != CONFIG_SCHEMA_VERSION:
+        supported_versions = {CONFIG_SCHEMA_VERSION, CORRECTIVE_CONFIG_SCHEMA_VERSION}
+        if self.config_schema_version not in supported_versions:
             raise ValueError("unsupported supervised configuration schema")
+        if self.corrective_run is None and self.config_schema_version != CONFIG_SCHEMA_VERSION:
+            raise ValueError("corrective configuration schema requires corrective-run metadata")
+        if self.corrective_run is not None:
+            if self.config_schema_version != CORRECTIVE_CONFIG_SCHEMA_VERSION:
+                raise ValueError("corrective runs require configuration schema 1.1.0")
+            if self.experiment_id == self.corrective_run.supersedes_experiment_id:
+                raise ValueError("corrective run must use a new experiment ID")
+            if self.model_version == self.corrective_run.supersedes_model_version:
+                raise ValueError("corrective run must use a new model version")
         algorithms = [candidate.algorithm for candidate in self.candidates]
         required: set[Algorithm] = {
             "dummy",
