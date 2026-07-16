@@ -8,7 +8,7 @@ from aegishunt.ml.supervised.errors import TrainingError
 
 
 def maximize_optional_metric(value: float | None, *, name: str) -> float:
-    """Return a finite score for maximization, ranking missing evidence last."""
+    """Return a ranking score for maximization, placing missing evidence last."""
 
     if value is None:
         return -math.inf
@@ -19,7 +19,7 @@ def maximize_optional_metric(value: float | None, *, name: str) -> float:
 
 
 def minimize_optional_metric(value: float | None, *, name: str) -> float:
-    """Return a finite score for minimization, ranking missing evidence last."""
+    """Return a ranking score for minimization, placing missing evidence last."""
 
     if value is None:
         return math.inf

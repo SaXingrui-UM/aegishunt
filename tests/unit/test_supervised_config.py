@@ -38,6 +38,23 @@ def test_corrective_config_versions_evidence_without_changing_training_policy() 
     assert corrective.calibration_methods == original.calibration_methods
     assert corrective.threshold_candidates == original.threshold_candidates
     assert corrective.candidates == original.candidates
+    assert corrective.model_dump(
+        exclude={
+            "config_schema_version",
+            "experiment_id",
+            "model_version",
+            "selection_policy_version",
+            "corrective_run",
+        }
+    ) == original.model_dump(
+        exclude={
+            "config_schema_version",
+            "experiment_id",
+            "model_version",
+            "selection_policy_version",
+            "corrective_run",
+        }
+    )
 
 
 def test_corrective_config_rejects_reused_evidence_identity(tmp_path: Path) -> None:

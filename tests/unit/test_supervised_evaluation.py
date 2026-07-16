@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from aegishunt.ml.supervised.calibration import select_calibration
 from aegishunt.ml.supervised.config import SupervisedTrainingConfig
+from aegishunt.ml.supervised.contracts import CalibrationResult
 from aegishunt.ml.supervised.errors import EvaluationError, TrainingError
 from aegishunt.ml.supervised.metrics import (
     evaluate_binary_classification,
@@ -102,6 +104,8 @@ def test_optional_metric_ranking_preserves_zero_and_rejects_non_finite() -> None
             minimize_optional_metric(invalid, name="Brier")
         with pytest.raises(TrainingError, match="finite"):
             maximize_optional_metric(invalid, name="PR-AUC")
+        with pytest.raises(ValidationError, match="finite_number"):
+            CalibrationResult(method="isotonic", status="passed", brier_score=invalid)
 
 
 def test_calibration_rejects_single_class_validation() -> None:
