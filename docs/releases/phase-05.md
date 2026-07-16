@@ -148,7 +148,9 @@ predictions.
 - Existing tag: annotated `phase-05-complete`, unchanged at the PR #13 merge
   commit. It was not moved, deleted, overwritten, or recreated.
 - Corrective branch: `fix/phase-05-zero-brier-selection`.
-- Corrective PR: pending creation; must not be auto-merged.
+- Corrective PR: [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14),
+  `[Phase 05] Fix zero-Brier model selection`, open as a draft with base `main`
+  and head `fix/phase-05-zero-brier-selection`; it must not be auto-merged.
 - Corrective checkpoint/tag: pending user instruction after corrective merge.
 
 ## Next phase

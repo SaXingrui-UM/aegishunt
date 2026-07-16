@@ -9,7 +9,7 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Current phase | Phase 5 - Supervised Detection Engine |
 | Status | Phase 5 corrective implementation complete — awaiting PR review |
 | Phase 5 implementation | PR #13 merged; PM-DEF-001 corrected on a dedicated branch with immutable corrective evidence |
-| Current activity | Corrective PR preparation; Phase 6 has not started |
+| Current activity | Corrective PR #14 is open as a draft; Phase 6 has not started |
 | Verification status | Ruff and strict mypy pass; 202 tests pass with 86.90% branch-aware coverage; 33 focused Phase 5 and 61 dataset-integrity tests pass |
 | Current branch | `fix/phase-05-zero-brier-selection` |
 | Phase 5 merged baseline | `main` at `2510c295f9bf82d90e8c82a072187808651980dc` |
@@ -18,8 +18,8 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | PR #13 merged; corrective PR pending creation from `fix/phase-05-zero-brier-selection` |
-| CI status | Both PR #13 `quality` checks passed; corrective PR CI not started |
+| Pull request | Corrective PR [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14) is open as a draft; base `main`, head `fix/phase-05-zero-brier-selection` |
+| CI status | Both PR #13 `quality` checks passed; PR #14 `quality` is pending |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -27,7 +27,7 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
 | Phase 5 tag | Existing annotated `phase-05-complete`, unchanged at merge commit `2510c295`; it predates the corrective PR |
 | Working tree | Clean after the corrective checkpoint commit |
-| Next action | Create and review the corrective PR; do not start Phase 6 |
+| Next action | Wait for PR #14 CI, review it, mark it ready, then merge only with user approval; do not start Phase 6 |
 
 Phase 0 through Phase 4 remain complete. Phase 5 PR #13 was merged and its
 existing annotated tag remains unchanged, but PM-DEF-001 invalidated the affected
