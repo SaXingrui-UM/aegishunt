@@ -15,6 +15,10 @@ from aegishunt.ml.supervised.data import TrainingValidationData
 from aegishunt.ml.supervised.errors import TrainingError
 from aegishunt.ml.supervised.metrics import evaluate_binary_classification
 from aegishunt.ml.supervised.operational import measure_operational_metrics
+from aegishunt.ml.supervised.ranking import (
+    maximize_optional_metric,
+    minimize_optional_metric,
+)
 from aegishunt.ml.supervised.thresholding import select_threshold
 
 
@@ -96,11 +100,11 @@ def selection_rank(
     fold_variance = result.cv_std_metrics.get("macro_f1")
     return (
         metrics.macro_f1,
-        metrics.pr_auc or 0.0,
+        maximize_optional_metric(metrics.pr_auc, name="validation PR-AUC"),
         metrics.recall,
         -metrics.false_positive_rate,
-        -(metrics.brier_score or 1.0),
-        -float(fold_variance or 0.0),
+        -minimize_optional_metric(metrics.brier_score, name="validation Brier score"),
+        -minimize_optional_metric(fold_variance, name="CV Macro F1 variance"),
         -result.operational_metrics.per_sample_latency_p50_ms,
         -float(result.operational_metrics.serialized_size_bytes),
         result.algorithm,

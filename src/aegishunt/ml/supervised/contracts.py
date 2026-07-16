@@ -16,7 +16,7 @@ SUPERVISED_CONTRACT_VERSION = "1.0.0"
 class SupervisedModel(BaseModel):
     """Strict immutable base for auditable experiment evidence."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
 
 
 class PerClassMetrics(SupervisedModel):

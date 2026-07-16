@@ -14,6 +14,7 @@ from sklearn.metrics import brier_score_loss
 from aegishunt.ml.supervised.config import SupervisedTrainingConfig
 from aegishunt.ml.supervised.contracts import CalibrationResult
 from aegishunt.ml.supervised.errors import TrainingError
+from aegishunt.ml.supervised.ranking import minimize_optional_metric
 
 CalibrationMethod = Literal["sigmoid", "isotonic"]
 
@@ -110,6 +111,9 @@ def select_calibration(
         raise TrainingError("all calibration methods failed or were inapplicable")
     selected, _ = min(
         candidates,
-        key=lambda item: (float(item[1].brier_score or 1.0), item[1].method),
+        key=lambda item: (
+            minimize_optional_metric(item[1].brier_score, name="calibration Brier score"),
+            item[1].method,
+        ),
     )
     return selected, tuple(evidence)
