@@ -18,15 +18,16 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 4 dataset registration, transformation, and quality control is implemented
-on `phase/04-dataset-quality` and awaiting review. Phase 3 is complete: validated
-PCAP data becomes bounded canonical bidirectional `NetworkFlow` records with
-feature schema `1.0.0`. Phase 4 adds an evidence-based public benchmark registry,
-strict canonical dataset rows, versioned labels, an offline controlled demo,
-quality/leakage gates, group-exclusive frozen splits, and deterministic
-manifests/reports. No public benchmark data is committed or claimed downloaded.
-Model training/inference, model metrics, detections, alerts, correlation,
-hypotheses, replay orchestration, and cases are **not implemented**.
+Phase 5 supervised detection is implemented on `phase/05-supervised-detection`
+and awaits PR review. Phases 0–4 are complete on `main`. Phase 5 enforces the
+Phase 4 data-quality/leakage boundary, compares five configured supervised
+candidates with train-only group CV, freezes validation-selected calibration and
+thresholds before one explicit test evaluation, and saves integrity-checked
+versioned bundles. The checked run uses only the small synthetic controlled demo
+and is **pipeline verification only**, not a public-benchmark, research, or
+deployment result. No public benchmark is committed or claimed downloaded.
+Anomaly detection, fusion, alerts, correlation, hypotheses, replay orchestration,
+and cases are **not implemented**.
 
 ## Planned architecture
 
@@ -65,6 +66,11 @@ aegishunt dataset list
 aegishunt dataset describe cse-cic-ids2018
 aegishunt dataset build-demo
 aegishunt dataset validate data/processed/datasets/aegishunt-controlled-demo/1.0.0/canonical.jsonl
+aegishunt model --help
+aegishunt model train --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
+aegishunt model test --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
+aegishunt model list
+aegishunt model verify 1.0.0
 aegishunt api
 aegishunt frontend
 ```
@@ -85,6 +91,22 @@ license for the operator and the selected CSE-CIC-IDS2018 benchmark remains a
 manual, checksum-recorded workflow. See
 [`docs/dataset_selection.md`](docs/dataset_selection.md) and
 [`docs/dataset_schema.md`](docs/dataset_schema.md).
+
+## Supervised model workflow
+
+The model workflow does not automatically read the test split. `model train`
+uses train/group-CV and validation evidence, then writes an immutable selection
+record with `test_data_accessed: false`. The separate `model test` command
+performs the one permitted frozen evaluation and refuses a repeat. Controlled
+demo use requires the explicit flag shown above.
+
+Bundles include preprocessing, estimator, calibration, threshold, fixed feature
+order/schema, provenance checksums, metrics, and environment metadata. Loading
+is restricted to the configured model root and verifies SHA-256 plus an exact
+skops type inventory; arbitrary pickle/joblib is rejected. Prediction returns
+only supervised label/score/probability metadata and does not create alerts or
+risk. See [`docs/supervised_experiment_protocol.md`](docs/supervised_experiment_protocol.md)
+and [`docs/model_card.md`](docs/model_card.md).
 
 ## Telemetry ingestion
 
@@ -136,8 +158,8 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 4 page reports the implemented data-quality foundation and planned modules only.
-It does not display invented flows, alerts, hypotheses, or model metrics.
+The Phase 5 page reports the implemented supervised pipeline boundary and planned
+modules only. It does not display invented flows, alerts, hypotheses, or metrics.
 
 ## Quality checks
 

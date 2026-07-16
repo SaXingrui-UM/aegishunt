@@ -15,3 +15,5 @@ decision. Phase 0 establishes:
 9. [Explicit schema versioning](0009-explicit-schema-versioning.md)
 10. [Durable safe-ingestion boundary](0010-durable-safe-ingestion-boundary.md)
 11. [Deterministic packet-to-flow contract](0011-deterministic-packet-to-flow-contract.md)
+12. [File-based dataset quality boundary](0012-file-based-dataset-quality-boundary.md)
+13. [Validation-frozen supervised model bundles](0013-validation-frozen-supervised-model-bundles.md)
