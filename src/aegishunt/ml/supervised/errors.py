@@ -19,6 +19,10 @@ class EvaluationError(SupervisedError):
     """Metrics or frozen-test evaluation inputs are invalid."""
 
 
+class ArtifactError(SupervisedError):
+    """A supervised experiment or model artifact cannot be safely used."""
+
+
 class BundleIntegrityError(SupervisedError):
     """A system-generated model bundle failed authenticity or integrity checks."""
 

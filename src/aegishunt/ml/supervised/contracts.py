@@ -138,6 +138,9 @@ class ModelSelectionRecord(SupervisedModel):
     label_mapping_version: str
     random_seed: int
     training_config_checksum: str
+    selection_artifact_filename: Literal["selection.skops"]
+    selection_artifact_checksum: str
+    trusted_types: tuple[str, ...]
     validation_metrics: ClassificationMetrics
     cv_mean_metrics: dict[str, float | None]
     cv_std_metrics: dict[str, float | None]
@@ -150,6 +153,7 @@ class ModelSelectionRecord(SupervisedModel):
         "dataset_manifest_checksum",
         "split_manifest_checksum",
         "training_config_checksum",
+        "selection_artifact_checksum",
     )
     @classmethod
     def validate_checksum(cls, value: str) -> str:

@@ -24,6 +24,18 @@ def test_help_lists_foundation_commands() -> None:
     assert "init-db" in result.stdout
     assert "ingest" in result.stdout
     assert "dataset" in result.stdout
+    assert "model" in result.stdout
+
+
+def test_model_help_lists_explicit_phase_5_boundaries() -> None:
+    result = runner.invoke(cli.app, ["model", "--help"])
+
+    assert result.exit_code == 0
+    assert all(
+        command in result.stdout
+        for command in ("train", "test", "list", "describe", "predict", "verify")
+    )
+    assert "anomaly-detect" not in result.stdout
 
 
 def test_ingest_help_lists_only_phase_2_file_commands() -> None:
