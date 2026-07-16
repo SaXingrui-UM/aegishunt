@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
@@ -14,12 +15,14 @@ from aegishunt.ml.supervised.config import SupervisedTrainingConfig
 from aegishunt.ml.supervised.contracts import CalibrationResult
 from aegishunt.ml.supervised.errors import TrainingError
 
+CalibrationMethod = Literal["sigmoid", "isotonic"]
+
 
 @dataclass(frozen=True, slots=True)
 class ProbabilityCalibrator:
     """Stored validation-fitted mapping from raw score to calibrated probability."""
 
-    method: str
+    method: CalibrationMethod
     estimator: object
 
     def transform(self, raw_scores: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -42,7 +45,7 @@ class ProbabilityCalibrator:
 
 
 def _fit_method(
-    method: str,
+    method: CalibrationMethod,
     raw_scores: NDArray[np.float64],
     labels: NDArray[np.int64],
     *,
