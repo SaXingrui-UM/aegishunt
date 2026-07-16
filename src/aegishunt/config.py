@@ -110,6 +110,16 @@ class DatasetSettings(BaseModel):
         return self
 
 
+class SupervisedSettings(BaseModel):
+    """Configured Phase 5 policy and ignored artifact roots."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    training_config_path: Path = Path("configs/models/supervised.yaml")
+    artifact_root: Path = Path("artifacts/models/supervised")
+    reports_root: Path = Path("reports/models/supervised")
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -120,6 +130,7 @@ class ApplicationSettings(BaseModel):
     ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
     flows: FlowSettings = Field(default_factory=FlowSettings)
     datasets: DatasetSettings = Field(default_factory=DatasetSettings)
+    supervised: SupervisedSettings = Field(default_factory=SupervisedSettings)
 
     @property
     def environment(self) -> str:

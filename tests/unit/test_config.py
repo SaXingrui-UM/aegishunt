@@ -43,6 +43,7 @@ database:
             "AEGISHUNT_FLOWS__IDLE_TIMEOUT_SECONDS": "15.5",
             "AEGISHUNT_FLOWS__ACTIVE_TIMEOUT_SECONDS": "90",
             "AEGISHUNT_DATASETS__DEMO_SEED": "99",
+            "AEGISHUNT_SUPERVISED__ARTIFACT_ROOT": "tmp/models",
         },
     )
 
@@ -53,6 +54,7 @@ database:
     assert settings.flows.idle_timeout_seconds == 15.5
     assert settings.flows.active_timeout_seconds == 90.0
     assert settings.datasets.demo_seed == 99
+    assert settings.supervised.artifact_root == Path("tmp/models")
 
 
 def test_legacy_environment_label_remains_supported() -> None:

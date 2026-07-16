@@ -44,6 +44,9 @@ artifacts/test-reports/*
 reports/datasets/*
 !reports/datasets/.gitkeep
 
+reports/models/*
+!reports/models/.gitkeep
+
 *.db
 *.sqlite
 *.sqlite3
@@ -51,6 +54,7 @@ reports/datasets/*
 *.pcapng
 *.joblib
 *.pkl
+*.skops
 
 # Explicitly reviewed, deterministic Phase 2 demonstration inputs.
 !data/sample/phase2-benign.pcap

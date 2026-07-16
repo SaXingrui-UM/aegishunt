@@ -37,3 +37,8 @@ datasets:
   train_ratio: 0.6
   validation_ratio: 0.2
   test_ratio: 0.2
+
+supervised:
+  training_config_path: configs/models/supervised.yaml
+  artifact_root: artifacts/models/supervised
+  reports_root: reports/models/supervised
