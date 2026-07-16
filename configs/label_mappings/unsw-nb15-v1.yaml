@@ -1,0 +1,44 @@
+dataset_id: unsw-nb15
+mapping_version: 1.0.0
+unknown_label_policy: fail
+rules:
+  - aliases: [normal]
+    ground_truth_label: benign
+    binary_label: 0
+    attack_family: benign
+  - aliases: [fuzzers]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: fuzzers
+  - aliases: [analysis]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: analysis
+  - aliases: [backdoors]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: backdoor
+  - aliases: [dos]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: denial_of_service
+  - aliases: [exploits]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: exploit
+  - aliases: [generic]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: generic_attack
+  - aliases: [reconnaissance]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: reconnaissance
+  - aliases: [shellcode]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: shellcode
+  - aliases: [worms]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: worm

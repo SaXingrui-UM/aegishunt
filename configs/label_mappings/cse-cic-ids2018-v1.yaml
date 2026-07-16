@@ -1,0 +1,40 @@
+dataset_id: cse-cic-ids2018
+mapping_version: 1.0.0
+unknown_label_policy: fail
+rules:
+  - aliases: [benign]
+    ground_truth_label: benign
+    binary_label: 0
+    attack_family: benign
+  - aliases: [ftp-bruteforce, ssh-bruteforce]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: brute_force
+  - aliases: [dos-goldeneye, dos-slowloris, dos-slowhttptest, dos-hulk]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: denial_of_service
+  - aliases: [ddos-hoic, ddos-loic-http, ddos-loic-udp]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: distributed_denial_of_service
+  - aliases: [bot]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: botnet
+  - aliases: [infiltration]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: infiltration
+  - aliases: [sql injection]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: sql_injection
+  - aliases: [brute force -web]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: web_brute_force
+  - aliases: [brute force -xss]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: cross_site_scripting

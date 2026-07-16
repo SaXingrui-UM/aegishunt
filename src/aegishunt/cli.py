@@ -16,6 +16,7 @@ from sqlalchemy import make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from aegishunt.config import DatabaseSettings, load_settings
+from aegishunt.datasets.cli import dataset_app
 from aegishunt.errors import AegisHuntError
 from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
@@ -27,6 +28,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(ingest_app)
+app.add_typer(dataset_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 

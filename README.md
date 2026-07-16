@@ -18,14 +18,15 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 3 packet-to-flow and behavioral feature engineering is in implementation
-on `phase/03-flow-feature-engineering`. Validated PCAP data now becomes bounded,
-canonical bidirectional `NetworkFlow` records with first-packet direction,
-idle/active timeout segmentation, fixed feature schema `1.0.0`, finite numeric
-features, transactional persistence, and restart/replay tests. Phase 2 flow-CSV
-and JSON ingestion remain validation/storage contracts. Dataset construction,
-model training/inference, detections, alerts, correlation, hypotheses, replay
-orchestration, and cases are **not implemented**.
+Phase 4 dataset registration, transformation, and quality control is implemented
+on `phase/04-dataset-quality` and awaiting review. Phase 3 is complete: validated
+PCAP data becomes bounded canonical bidirectional `NetworkFlow` records with
+feature schema `1.0.0`. Phase 4 adds an evidence-based public benchmark registry,
+strict canonical dataset rows, versioned labels, an offline controlled demo,
+quality/leakage gates, group-exclusive frozen splits, and deterministic
+manifests/reports. No public benchmark data is committed or claimed downloaded.
+Model training/inference, model metrics, detections, alerts, correlation,
+hypotheses, replay orchestration, and cases are **not implemented**.
 
 ## Planned architecture
 
@@ -59,6 +60,11 @@ aegishunt ingest --help
 aegishunt ingest pcap data/sample/phase2-benign.pcap
 aegishunt ingest csv data/sample/phase2-flows.csv
 aegishunt ingest sample phase2-benign-pcap
+aegishunt dataset --help
+aegishunt dataset list
+aegishunt dataset describe cse-cic-ids2018
+aegishunt dataset build-demo
+aegishunt dataset validate data/processed/datasets/aegishunt-controlled-demo/1.0.0/canonical.jsonl
 aegishunt api
 aegishunt frontend
 ```
@@ -71,6 +77,14 @@ path, or traceback. `init-db` validates configuration and idempotently initializ
 the configured database without printing its URL. `ingest pcap` validates,
 decodes supported packets, and persists deterministic flows; it does not replay
 traffic, capture an interface, open an external connection, or require root.
+
+`dataset build-demo` runs entirely offline and creates ignored processed data and
+machine reports under configured roots. The demo is controlled synthetic data,
+not a benchmark or real enterprise capture. `dataset download` never accepts a
+license for the operator and the selected CSE-CIC-IDS2018 benchmark remains a
+manual, checksum-recorded workflow. See
+[`docs/dataset_selection.md`](docs/dataset_selection.md) and
+[`docs/dataset_schema.md`](docs/dataset_schema.md).
 
 ## Telemetry ingestion
 
@@ -102,6 +116,10 @@ Flow segmentation is configuration-controlled. Defaults are 60-second idle and
 captured-packet byte bounds under the `flows` YAML section. Environment overrides
 use names such as `AEGISHUNT_FLOWS__IDLE_TIMEOUT_SECONDS`.
 
+Dataset registry, label mapping, raw/interim/processed/report roots, download and
+archive limits, near-duplicate tolerance, demo seed, and split ratios are under
+the `datasets` YAML section. Raw and generated dataset files remain Git-ignored.
+
 ## Start the API
 
 ```bash
@@ -118,7 +136,7 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 3 page reports ingestion/flow-foundation status and planned modules only.
+The Phase 4 page reports the implemented data-quality foundation and planned modules only.
 It does not display invented flows, alerts, hypotheses, or model metrics.
 
 ## Quality checks

@@ -1,0 +1,44 @@
+dataset_id: ton-iot
+mapping_version: 1.0.0
+unknown_label_policy: fail
+rules:
+  - aliases: [normal]
+    ground_truth_label: benign
+    binary_label: 0
+    attack_family: benign
+  - aliases: [backdoor]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: backdoor
+  - aliases: [ddos]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: distributed_denial_of_service
+  - aliases: [dos]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: denial_of_service
+  - aliases: [injection]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: injection
+  - aliases: [mitm]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: man_in_the_middle
+  - aliases: [password]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: credential_attack
+  - aliases: [ransomware]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: ransomware
+  - aliases: [scanning]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: reconnaissance
+  - aliases: [xss]
+    ground_truth_label: malicious
+    binary_label: 1
+    attack_family: cross_site_scripting

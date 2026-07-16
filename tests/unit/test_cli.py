@@ -23,6 +23,7 @@ def test_help_lists_foundation_commands() -> None:
     assert "frontend" in result.stdout
     assert "init-db" in result.stdout
     assert "ingest" in result.stdout
+    assert "dataset" in result.stdout
 
 
 def test_ingest_help_lists_only_phase_2_file_commands() -> None:

@@ -41,6 +41,9 @@ artifacts/test-reports/*
 !artifacts/evaluations/.gitkeep
 !artifacts/figures/.gitkeep
 
+reports/datasets/*
+!reports/datasets/.gitkeep
+
 *.db
 *.sqlite
 *.sqlite3

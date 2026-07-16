@@ -1,0 +1,148 @@
+registry_schema_version: 1.0.0
+datasets:
+  - dataset_id: cse-cic-ids2018
+    name: CSE-CIC-IDS2018
+    version: "2018"
+    dataset_type: public_benchmark
+    source_url: https://www.unb.ca/cic/datasets/ids-2018.html
+    official_page: https://www.unb.ca/cic/datasets/ids-2018.html
+    provider: Canadian Institute for Cybersecurity, University of New Brunswick
+    license_name: CIC redistribution with mandatory citation
+    license_url: https://www.unb.ca/cic/datasets/ids-2018.html
+    academic_use_status: permitted
+    expected_format: [pcap, csv, archive]
+    expected_files: []
+    expected_checksum: null
+    locally_computed_checksum: null
+    raw_schema_reference: https://www.unb.ca/cic/datasets/ids-2018.html#3-feature-extraction
+    canonical_schema_version: 1.0.0
+    feature_schema_version: 1.0.0
+    label_schema: configs/label_mappings/cse-cic-ids2018-v1.yaml
+    group_fields: [capture_session_id, scenario_id, source_file]
+    download_status: manual_required
+    conversion_status: provisional
+    known_limitations:
+      - The AWS collection is large and the official page publishes no file-level SHA-256 list.
+      - CICFlowMeter CSV semantics are not identical to the AegisHunt Phase 3 feature contract.
+      - Raw PCAP extraction and official schedule-based label joining require operator validation.
+    citation: "Sharafaldin, Lashkari, and Ghorbani (2018), Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization."
+    created_at: 2026-07-16T00:00:00Z
+    updated_at: 2026-07-16T00:00:00Z
+
+  - dataset_id: cic-ids2017
+    name: CIC-IDS2017
+    version: "2017"
+    dataset_type: public_benchmark
+    source_url: https://www.unb.ca/cic/datasets/ids-2017.html
+    official_page: https://www.unb.ca/cic/datasets/ids-2017.html
+    provider: Canadian Institute for Cybersecurity, University of New Brunswick
+    license_name: CIC redistribution with mandatory citation
+    license_url: https://www.unb.ca/cic/datasets/ids-2017.html
+    academic_use_status: permitted
+    expected_format: [pcap, csv, archive]
+    expected_files: []
+    expected_checksum: null
+    locally_computed_checksum: null
+    raw_schema_reference: https://www.unb.ca/cic/datasets/ids-2017.html
+    canonical_schema_version: 1.0.0
+    feature_schema_version: 1.0.0
+    label_schema: configs/label_mappings/cic-ids2017-v1.yaml
+    group_fields: [capture_session_id, scenario_id, source_file]
+    download_status: manual_required
+    conversion_status: provisional
+    known_limitations:
+      - Approximately five capture days total about 51 GB before derived files.
+      - Official file-level checksums are not published on the dataset page.
+      - CICFlowMeter columns do not completely implement the Phase 3 schema.
+    citation: "Sharafaldin, Lashkari, and Ghorbani (2018), Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization."
+    created_at: 2026-07-16T00:00:00Z
+    updated_at: 2026-07-16T00:00:00Z
+
+  - dataset_id: unsw-nb15
+    name: UNSW-NB15
+    version: "2015"
+    dataset_type: public_benchmark
+    source_url: https://research.unsw.edu.au/projects/unsw-nb15-dataset
+    official_page: https://research.unsw.edu.au/projects/unsw-nb15-dataset
+    provider: UNSW Canberra Cyber Range Lab
+    license_name: Free academic research use with citation; commercial use by agreement
+    license_url: https://research.unsw.edu.au/projects/unsw-nb15-dataset
+    academic_use_status: permitted
+    expected_format: [pcap, csv, archive]
+    expected_files: []
+    expected_checksum: null
+    locally_computed_checksum: null
+    raw_schema_reference: https://research.unsw.edu.au/projects/unsw-nb15-dataset
+    canonical_schema_version: 1.0.0
+    feature_schema_version: 1.0.0
+    label_schema: configs/label_mappings/unsw-nb15-v1.yaml
+    group_fields: [capture_session_id, source_file]
+    download_status: manual_required
+    conversion_status: blocked
+    known_limitations:
+      - The raw capture is about 100 GB and processed tables contain about 2.54 million rows.
+      - The 49 Argus/Bro-derived features are not a complete semantic match for Phase 3.
+      - The published train/test files do not establish AegisHunt group isolation.
+    citation: "Moustafa and Slay (2015), UNSW-NB15: a comprehensive data set for network intrusion detection systems."
+    created_at: 2026-07-16T00:00:00Z
+    updated_at: 2026-07-16T00:00:00Z
+
+  - dataset_id: ton-iot
+    name: TON_IoT
+    version: "2020"
+    dataset_type: public_benchmark
+    source_url: https://research.unsw.edu.au/projects/toniot-datasets
+    official_page: https://research.unsw.edu.au/projects/toniot-datasets
+    provider: UNSW Canberra Cyber Range and IoT Labs
+    license_name: Free academic research use with citation; commercial use by agreement
+    license_url: https://research.unsw.edu.au/projects/toniot-datasets
+    academic_use_status: permitted
+    expected_format: [pcap, csv, archive]
+    expected_files: []
+    expected_checksum: null
+    locally_computed_checksum: null
+    raw_schema_reference: https://research.unsw.edu.au/projects/toniot-datasets
+    canonical_schema_version: 1.0.0
+    feature_schema_version: 1.0.0
+    label_schema: configs/label_mappings/ton-iot-v1.yaml
+    group_fields: [capture_session_id, scenario_id, source_file]
+    download_status: manual_required
+    conversion_status: blocked
+    known_limitations:
+      - The collection combines heterogeneous IoT, operating-system, and network datasets.
+      - Published processed network fields are not a complete Phase 3 feature mapping.
+      - Official file-level checksums are not published on the project page.
+    citation: "Moustafa (2021), A new distributed architecture for evaluating AI-based security systems at the edge: Network TON_IoT datasets."
+    created_at: 2026-07-16T00:00:00Z
+    updated_at: 2026-07-16T00:00:00Z
+
+  - dataset_id: aegishunt-controlled-demo
+    name: AegisHunt Controlled Demo Dataset
+    version: "1.0.0"
+    dataset_type: controlled_demo
+    source_url: null
+    official_page: null
+    provider: AegisHunt project
+    license_name: Project-internal synthetic research fixture
+    license_url: null
+    academic_use_status: not_applicable
+    expected_format: [jsonl]
+    expected_files:
+      - filename: canonical.jsonl
+        checksum_sha256: null
+        required: true
+    expected_checksum: null
+    locally_computed_checksum: null
+    raw_schema_reference: docs/dataset_schema.md
+    canonical_schema_version: 1.0.0
+    feature_schema_version: 1.0.0
+    label_schema: configs/label_mappings/aegishunt-controlled-demo-v1.yaml
+    group_fields: [capture_session_id, scenario_id, source_file]
+    download_status: generated_offline
+    conversion_status: supported
+    known_limitations:
+      - Synthetic flows are generated from controlled packet observations, not captured enterprise traffic.
+      - The dataset is for pipeline demonstrations and must not support real-world performance claims.
+    citation: AegisHunt Phase 4 controlled demo generator, version 1.0.0.
+    created_at: 2026-07-16T00:00:00Z
+    updated_at: 2026-07-16T00:00:00Z
