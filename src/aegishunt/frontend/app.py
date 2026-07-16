@@ -22,7 +22,7 @@ def main() -> None:
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
-    st.info("Current status: Phase 5 supervised pipeline awaiting PR review")
+    st.info("Current status: Phase 5 corrective fix — awaiting PR review")
     st.success("Quality-gated supervised training and safe model bundles are available.")
     st.subheader("Planned system modules")
     for module in PLANNED_MODULES:

@@ -20,7 +20,7 @@ def test_frontend_renders_phase_status_without_fake_results(monkeypatch: Any) ->
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 5 supervised pipeline awaiting PR review" in content
+    assert "Phase 5 corrective fix — awaiting PR review" in content
     assert "safe model bundles" in content
     assert "Research prototype only" in content
     assert "Accuracy" not in content
