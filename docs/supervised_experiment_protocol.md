@@ -103,7 +103,7 @@ aegishunt model train --data-dir <data> --dataset-report-dir <dataset-reports> \
   --allow-controlled-demo --config <config>
 aegishunt model test --data-dir <data> --dataset-report-dir <dataset-reports> \
   --allow-controlled-demo --config <config>
-aegishunt model verify 1.0.0 --config <config>
+aegishunt model verify <model-version> --config <config>
 ```
 
 The `--allow-controlled-demo` gate is mandatory for synthetic pipeline metrics.

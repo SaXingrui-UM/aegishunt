@@ -7,34 +7,74 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 5 - Supervised Detection Engine |
-| Status | Implementation complete — awaiting PR review |
-| Phase 5 implementation | 100% of declared code/test/documentation scope; PR #13 awaiting user review |
-| Current activity | Phase 5 PR review checkpoint; Phase 6 has not started |
-| Verification status | Ruff and strict mypy pass; 197 tests pass with 86.88% branch-aware coverage; controlled offline E2E and bundle security pass |
-| Current branch | `phase/05-supervised-detection` |
-| Phase 5 baseline | `main` at `ab73ffd7cdb3c749cc3b4ee4ed93ab4d30c44160` |
-| Latest implementation commit | `d4cd57f` (review integrity and evidence-gate fixes) |
-| Latest pre-PR branch commit | `1e93a9c` (final verification and review documentation) |
+| Status | Phase 5 corrective implementation complete — awaiting PR review |
+| Phase 5 implementation | PR #13 merged; PM-DEF-001 corrected on a dedicated branch with immutable corrective evidence |
+| Current activity | Corrective PR preparation; Phase 6 has not started |
+| Verification status | Ruff and strict mypy pass; 202 tests pass with 86.90% branch-aware coverage; 33 focused Phase 5 and 61 dataset-integrity tests pass |
+| Current branch | `fix/phase-05-zero-brier-selection` |
+| Phase 5 merged baseline | `main` at `2510c295f9bf82d90e8c82a072187808651980dc` |
+| Latest corrective implementation commit | `f93a5b4` (retain original and corrective E2E paths) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | PR #13 open and ready for review: `https://github.com/SaXingrui-UM/aegishunt/pull/13`; base `main`, head `phase/05-supervised-detection` |
-| CI status | GitHub Actions `quality` completed successfully for PR #13 |
+| Pull request | PR #13 merged; corrective PR pending creation from `fix/phase-05-zero-brier-selection` |
+| CI status | Both PR #13 `quality` checks passed; corrective PR CI not started |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
-| Working tree | Clean after the Phase 5 PR checkpoint commit |
-| Next action | User reviews PR #13 and, if satisfied, uses Squash and merge; do not start Phase 6 |
+| Phase 5 tag | Existing annotated `phase-05-complete`, unchanged at merge commit `2510c295`; it predates the corrective PR |
+| Working tree | Clean after the corrective checkpoint commit |
+| Next action | Create and review the corrective PR; do not start Phase 6 |
 
-Phase 0 through Phase 4 are complete and their annotated tags point to their
-merged `main` commits. Phase 5 implementation is complete on its declared branch
-but is not Phase complete until its PR is merged and a later user-authorized tag
-is created. Phase 6 has not started.
+Phase 0 through Phase 4 remain complete. Phase 5 PR #13 was merged and its
+existing annotated tag remains unchanged, but PM-DEF-001 invalidated the affected
+selection evidence as final evidence. The corrective implementation is awaiting
+review and merge; Phase 6 has not started.
 
 ## Phase 5 implementation checkpoint
+
+- PM-DEF-001 was reproduced before correction: sigmoid Brier
+  `0.19178394648427863` was selected over valid isotonic Brier `0.0` because
+  optional numeric evidence used truthiness fallbacks.
+- Selection policy `1.0.1` now preserves zero, ranks `None` after every finite
+  value, and rejects NaN/Infinity without changing the documented tie-break order.
+- Candidate Brier and equivalent CV optional-metric fallbacks use the same typed
+  handling; regression tests cover zero, missing, non-finite, and deterministic
+  repeated selection.
+- The original experiment/model `phase-05-controlled-demo` / `1.0.0` remain
+  immutable. Corrective experiment `phase-05-controlled-demo-pm-def-001` and
+  model `1.0.1` record PM-DEF-001, the superseded IDs, reason, and code commit.
+  New artifact directories refuse overwrite, and a second frozen test still fails.
+- Actual corrected controlled run: Random Forest, isotonic calibration, threshold
+  `0.5`; validation Macro F1 `1.0`, Brier `0.0`; frozen Macro F1 `0.7619`,
+  ROC-AUC `0.9583`, PR-AUC `0.9524`, Brier `0.1091`, confusion matrix 2/2/0/6.
+  This is pipeline verification only, not public-benchmark or real-world evidence.
+- Compared with the affected run, candidate, calibration, probability metrics,
+  model payload, and checksum changed. Threshold, frozen Accuracy/Macro F1, and
+  confusion matrix did not. Bundle SHA-256 is
+  `9b403dd20ca77322983a175980081399414219f3cc6a2ceac7acff0bec3d17a5`.
+- Controlled-demo provenance explicitly states project-generated synthetic data,
+  project-internal fixture status, and no claimed external/public license.
+- Final checks before PR: Ruff pass; strict mypy pass for 96 source files; 202
+  tests pass, zero failures/skips/xfails, 86.90% branch-aware coverage; 33 focused
+  Phase 5 tests and 61 Phase 4 dataset-integrity tests pass.
+- Native `codex review --base main` remains unavailable because the installed
+  arm64 binary is missing (`ENOENT`). Equivalent read-only review found one
+  Medium regression-coverage issue: the corrective E2E had replaced the original
+  E2E path. Commit `f93a5b4` restored the original path and added a separate
+  corrective E2E; no Blocking or High issue remains.
+- `phase-05-complete` was not moved, deleted, overwritten, or recreated. A later
+  user-authorized post-merge corrective checkpoint remains pending.
+- Phase 6 anomaly detection, fusion, alerts, and related functionality are absent.
+
+### Original merged implementation record
+
+The following records the scope and checks that entered PR #13. Its selection
+and frozen-test values are retained for audit but are affected by PM-DEF-001 and
+must not be presented as final evidence.
 
 - Enforced Phase 4 file, checksum, schema, label, quality, leakage, conversion,
   frozen-test, group, metadata, and finite-feature gates before fitting.
@@ -54,20 +94,20 @@ is created. Phase 6 has not started.
   corruption, schema drift, empty/non-finite input, and version collisions fail closed.
 - Added Typer model train/test/list/describe/predict/verify commands and a
   truthful Phase 5 Streamlit shell without invented metrics.
-- The real checked run used the controlled demo only: 48 rows/24 groups,
+- The affected PR #13 run used the controlled demo only: 48 rows/24 groups,
   train/validation/test 28/10/10 rows and 14/5/5 groups, quality/leakage pass.
   It selected HistGradientBoosting from validation evidence with sigmoid
   calibration and threshold 0.5. This is pipeline verification only.
 - Controlled validation Macro F1 was 1.0; frozen-test Macro F1 was 0.7619 with
   confusion matrix 2/2/0/6 and wide group-bootstrap intervals. These values are
   not public-benchmark, research, production, or real-world conclusions.
-- Final regression run: Ruff pass; strict mypy pass for 95 source files; 197
+- PR #13 pre-merge checks: Ruff pass; strict mypy pass for 95 source files; 197
   pytest tests passed, zero failures/skips/xfails, 86.88% branch-aware coverage;
   the 44-test focused Phase 5 suite also passed.
 - Independent-process reload, repeated numeric predictions, checksum/type/path
   rejection, one-time test refusal, no-root/no-network operation, and absence of
   Phase 6 anomaly/fusion/alert functionality are tested.
-- Actual machine reports and the 639,387-byte controlled model bundle were
+- The affected machine reports and 639,387-byte controlled model bundle were
   generated under temporary ignored storage and are not committed. The reviewed
   protocol, ADR, release notes, and model card are committed.
 - First read-only review found one High bundle-integrity gap, two Medium

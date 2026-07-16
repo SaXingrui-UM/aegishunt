@@ -2,107 +2,157 @@
 
 ## Objective and status
 
-Implement the supervised detection research engine with strict Phase 4 evidence
-gates, group-aware training, validation-only selection, a one-time frozen test,
-secure versioned bundles, and deterministic prediction interfaces.
+Deliver the validation-frozen supervised detection engine, then correct
+PM-DEF-001 without erasing its historical evidence or weakening frozen-test
+protection.
 
-Status: **Implementation complete — awaiting PR review**. Phase 5 is not Phase
-complete until its PR is merged and the user later authorizes a checkpoint tag.
-Phase 6 has not started.
+Status: **Phase 5 corrective implementation complete — awaiting PR review**.
+PR #13 was merged into `main`; the corrective PR has not yet been merged. Phase
+6 has not started.
 
-## Completed scope
+## Original completed scope
 
-- Exact Phase 4 dataset/split/checksum/schema/label/quality/leakage/frozen-test gate.
-- Fixed feature/metadata separation and finite float64 matrices.
+- Exact Phase 4 dataset, checksum, schema, label, quality, leakage, group, and
+  frozen-test evidence gates.
 - Dummy, Logistic Regression, Decision Tree, Random Forest, and
-  HistGradientBoosting pipelines from finite configured search spaces.
-- Train-only deterministic group CV with fold identity/class evidence and no fallback.
-- Sigmoid/isotonic validation calibration and validation threshold curves.
-- Full classification, fold stability, Brier, latency, throughput, size, memory,
-  and deterministic-prediction metrics.
-- Versioned validation-only selection policy that excludes Accuracy and test results as keys.
-- Immutable pre-test selection record and explicit one-time frozen-test gate.
-- Fixed-seed 1,000-draw group-bootstrap confidence intervals.
-- Exact-inventory skops bundle with independent model/manifest/model-card
-  checksums, preprocessing, estimator, calibrator, threshold, schema,
-  provenance, metrics, environment, and model card.
-- Strict batch prediction plus Typer train/test/list/describe/predict/verify commands.
-- Machine JSON/CSV artifacts and committed protocol, ADR, and controlled model card.
+  HistGradientBoosting candidates with train-only deterministic GroupKFold.
+- Validation-only sigmoid/isotonic calibration, threshold curves, full metrics,
+  operational evidence, and a selection policy excluding Accuracy/test metrics.
+- Immutable pre-test selection record and one-time frozen-test evaluation with
+  1,000-draw group bootstrap intervals.
+- Exact-inventory skops bundles with outer checksums, type allowlists, provenance,
+  fixed feature schema/order/dtype, model card, CLI, and prediction interfaces.
 
-## Architecture decisions
+## PM-DEF-001 root cause and correction
 
-ADR 0013 records the train/validation/test boundary and safe bundle design. The
-final estimator remains train-only; validation fits calibration and chooses the
-threshold. This avoids an ambiguous train-plus-validation refit. Configured files
-serve as the Phase 5 model registry, avoiding a premature database migration.
+`select_calibration()` and candidate ranking used truthiness fallbacks for
+optional numeric metrics. Python treated a valid Brier score of `0.0` as false,
+so the calibration reproduction selected sigmoid Brier
+`0.19178394648427863` instead of isotonic Brier `0.0`.
 
-## Controlled verification result
+Selection policy `1.0.1` keeps the existing ordering but uses typed explicit
+missing-value handling:
 
-The public benchmark remains unavailable/provisional. The actual run therefore
-uses `aegishunt-controlled-demo` `1.0.0` and is **pipeline verification only**.
-It selected HistGradientBoosting from validation results, with sigmoid
-calibration and threshold 0.5. Validation Macro F1 was 1.0; frozen-test Macro F1
-was 0.7619 with TN/FP/FN/TP = 2/2/0/6. These are not research conclusions.
-See `docs/model_card.md` for the complete metrics, operational evidence, and limits.
+- finite zero remains zero;
+- `None` ranks after all finite evidence;
+- NaN and positive/negative Infinity are rejected;
+- candidate Brier and equivalent CV optional metrics follow the same rule;
+- validation remains the only source for calibration, threshold, and model
+  selection; test metrics remain excluded.
 
-## Review outcome
+## Corrective evidence strategy
 
-The first read-only review found one High integrity gap (the manifest and model
-card were not independently checksummed), two Medium evidence/test gaps (Phase 4
-quality/split cross-checks and failed-hyperparameter recording), and one Low
-bundle-inventory gap. Commit `d4cd57f` added exact four-file bundle inventory,
-outer checksums, strict allowed skops types, evidence count/schema/distribution
-cross-checks, and regression tests. Targeted Ruff, mypy, and 15 tests passed
-after the fix. The final 197-test suite and 44-test focused suite passed; the
-second review found no remaining Blocking, High, or unhandled Medium issue.
+- Original experiment/model: `phase-05-controlled-demo` / `1.0.0`.
+- Corrective experiment/model: `phase-05-controlled-demo-pm-def-001` / `1.0.1`.
+- Corrective configuration schema: `1.1.0`.
+- Corrective selection policy: `1.0.1`.
+- Selection and bundle metadata record PM-DEF-001, superseded IDs, correction
+  reason, and the exact code commit.
+- Experiment and bundle directories are non-overwriting. Existing selection,
+  frozen report, and bundle remain unchanged.
+- The corrective experiment independently permits exactly one frozen-test
+  evaluation; a second attempt was rejected with exit code 1.
+
+## Controlled corrective result
+
+The dataset remains the project-generated controlled synthetic demo. It is a
+pipeline fixture, not a public benchmark or research/production performance
+claim. Quality and leakage gates passed for 48 rows/24 groups with 28/10/10
+train/validation/test rows and 14/5/5 groups.
+
+| Evidence | Affected run | Corrective run |
+| --- | --- | --- |
+| Candidate | HistGradientBoosting | Random Forest |
+| Calibration | sigmoid | isotonic |
+| Threshold | 0.5 | 0.5 |
+| Validation Macro F1 | 1.0 | 1.0 |
+| Validation Brier | 0.1151926 | 0.0 |
+| Frozen Accuracy | 0.8 | 0.8 |
+| Frozen Macro F1 | 0.7619048 | 0.7619048 |
+| Frozen ROC-AUC | 0.6666667 | 0.9583333 |
+| Frozen PR-AUC | 0.8333333 | 0.9523810 |
+| Frozen Brier | 0.1917839 | 0.1090712 |
+| Confusion matrix TN/FP/FN/TP | 2/2/0/6 | 2/2/0/6 |
+| Model SHA-256 | `adc950ef…` | `9b403dd2…` |
+
+The selected candidate, calibration, probability-ranking evidence, serialized
+model, and checksum changed. The threshold and label-derived frozen metrics did
+not. These comparisons must not be used to retune against the test set.
+
+Corrective model artifact SHA-256:
+`9b403dd20ca77322983a175980081399414219f3cc6a2ceac7acff0bec3d17a5`.
+Corrective selection-record SHA-256:
+`31c1421eb3d37b6fd5e204a12483243f91d6c20cdba97b28189e0806da599d91`.
+
+## Data integrity and provenance
+
+- Canonical data SHA-256 remained
+  `75c584dbee56cf985864fabeb3d01a0975122276a31c2acbb45b0323c4f885ad`.
+- Split manifest SHA-256 remained
+  `a2949d3ef88381119616c5c352e39c30c7c98371edc0101614c230e0c7b8a1e0`.
+- Corrective dataset-manifest SHA-256 is
+  `523026c44c0c1d42473a34df3f3504aa8d03066e5082456d986c872856040294`;
+  the manifest changed because it records the corrective Git commit, not because
+  canonical rows or split membership changed.
+- Provenance states AegisHunt-generated controlled synthetic demo data,
+  `Project-internal synthetic research fixture`, no downloaded public benchmark,
+  and no implied external dataset license.
 
 ## Tests
 
 - Ruff: pass.
-- Strict mypy: pass across 95 source files.
-- Pytest: 197 passed, 0 failed, 0 skipped, 0 xfailed.
-- Branch-aware coverage: 86.88% (required minimum 85%).
-- Focused Phase 5 suite: 44 passed in 28.63 seconds.
-- Unit, integration, offline E2E, group isolation, five-model comparison,
-  selection/test separation, bootstrap determinism, independent-process reload,
-  checksum corruption, arbitrary pickle, path containment, schema rejection,
-  duplicate test, and Phase 0–4 regressions pass.
+- Strict mypy: pass across 96 source files.
+- Pytest: 202 passed, 0 failed, 0 skipped, 0 xfailed.
+- Branch-aware coverage: 86.90% (minimum 85%).
+- Focused Phase 5 suite: 33 passed.
+- Phase 4 dataset-integrity suite: 61 passed.
+- Zero-Brier calibration/candidate, missing-value, non-finite, deterministic
+  selection, original/non-corrective E2E, corrective non-overwrite, one-time
+  frozen test, GroupKFold, threshold, bootstrap, independent reload, checksum,
+  extra-file, pickle/joblib, path, schema, and corruption checks pass.
+
+## Review outcome
+
+The native `codex review --base main` command could not start because the local
+Codex arm64 executable is missing (`ENOENT`). An equivalent first read-only
+review found one Medium test-regression issue: the corrective E2E had replaced
+the original Phase 5 E2E path. Commit `f93a5b4` restored the original full path
+and added a separate corrective audit E2E. Low documentation/test-strength gaps
+were addressed in `c152679`. No Blocking or High finding remains.
 
 ## Generated artifacts
 
-The actual temporary run generated all required training/CV/tuning/validation/
-calibration/threshold/comparison/latency/selection/frozen-test/classification
-reports, `selection.skops`, the final bundle, manifest, and model card under
-`/tmp`. Machine reports and model binaries are ignored and not committed. Only
-the reviewed human protocol, ADR, release notes, and model card are committed.
+The corrective run created dataset reports, selection evidence, frozen metrics,
+confidence intervals, `selection.skops`, and a four-file model bundle under a
+temporary `/tmp` root. No model binary, generated dataset, database, or temporary
+report is committed. Independent-process reload produced identical numeric
+predictions.
 
 ## Known limitations
 
-- Public benchmark acquisition/conversion remains provisional, so no research
-  main-model or real-world performance claim is made.
-- Five validation and five test groups yield unstable calibration/threshold and
-  wide confidence intervals; the observed frozen-test FPR is 0.5.
-- In-memory Phase 4 loading and finite grid search have not been benchmarked on a full corpus.
-- Skops loading is integrity/type/version checked but still depends on compatible
-  recorded Python/scikit-learn versions.
-- Multi-file experiment writes are exclusive but not a transactional filesystem;
-  a partial directory fails closed and requires an explicit new version.
-- DEF-004 remains open and non-blocking: a total database outage cannot write to itself.
+- The demo is small, synthetic, and not a public benchmark; calibration and
+  threshold evidence are unstable and not a final research claim.
+- Runtime latency is a late tie-break and may vary by development host load.
+- Full-corpus memory/runtime behavior remains unbenchmarked.
+- The public benchmark acquisition/conversion remains provisional.
+- DEF-004 remains open and non-blocking: total database unavailability cannot
+  persist a failure record into that same unavailable database.
 - Anomaly detection, fusion, alerts, explanations, correlation, hypotheses, and
-  cases remain Phase 6+ and are absent.
+  cases are Phase 6+ and absent.
 
 ## Version-control checkpoint
 
-- Branch: `phase/05-supervised-detection`
-- Baseline main: `ab73ffd7cdb3c749cc3b4ee4ed93ab4d30c44160`
-- Pull request: [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13),
-  `[Phase 05] Supervised detection engine`, open and ready for user review
-- GitHub Actions: `quality` completed successfully
-- Merge commit: pending
-- Tag: pending; `phase-05-complete` must not be created before merge
+- Original Phase 5 branch: `phase/05-supervised-detection`.
+- Original PR: [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13), merged
+  into `main` as `2510c295f9bf82d90e8c82a072187808651980dc` on 2026-07-16.
+- Existing tag: annotated `phase-05-complete`, unchanged at the PR #13 merge
+  commit. It was not moved, deleted, overwritten, or recreated.
+- Corrective branch: `fix/phase-05-zero-brier-selection`.
+- Corrective PR: pending creation; must not be auto-merged.
+- Corrective checkpoint/tag: pending user instruction after corrective merge.
 
 ## Next phase
 
-Phase 6 — Anomaly Detection is not started. Its planned branch is
-`phase/06-anomaly-detection`; it must not start before user review and merge of
-the Phase 5 PR.
+Phase 6 — Anomaly Detection is **Not started**. Do not create
+`phase/06-anomaly-detection` or implement anomaly/fusion work before the
+corrective PR is reviewed and merged and the user authorizes the next step.
