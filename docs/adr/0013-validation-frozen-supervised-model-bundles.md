@@ -24,10 +24,12 @@ command performs one frozen-test evaluation. It cannot change the selected
 algorithm, hyperparameters, calibration, or threshold, and a second official
 evaluation is refused.
 
-Final bundles use a version directory containing `model.skops`, `manifest.json`,
-and `model_card.md`. The loader accepts only paths under the configured model
-root, verifies SHA-256 and the exact skops type inventory, permits only required
-scikit-learn internal types, and rejects pickle/joblib files. The manifest binds
+Final bundles use a version directory containing exactly `model.skops`,
+`manifest.json`, `model_card.md`, and `checksums.json`. The loader accepts only
+paths under the configured model root, verifies outer SHA-256 values for every
+content file and the exact skops type inventory, permits only required
+scikit-learn internal types, and rejects pickle/joblib or extra files. The
+manifest binds
 feature names/order/schema, float64 dtype, preprocessing version, dataset and
 split checksums, label mapping, threshold, software versions, and metrics.
 

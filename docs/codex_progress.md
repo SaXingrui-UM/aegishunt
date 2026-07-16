@@ -10,10 +10,10 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 5 implementation | 100% of declared code/test/documentation scope; PR pending |
 | Current activity | Final Phase 5 review, publication, and PR checkpoint; Phase 6 has not started |
-| Verification status | Ruff and strict mypy pass; 194 tests pass with 86.97% branch-aware coverage; controlled offline E2E and bundle security pass |
+| Verification status | Ruff and strict mypy pass; 197 tests pass with 86.88% branch-aware coverage; controlled offline E2E and bundle security pass |
 | Current branch | `phase/05-supervised-detection` |
 | Phase 5 baseline | `main` at `ab73ffd7cdb3c749cc3b4ee4ed93ab4d30c44160` |
-| Latest implementation commit | `6280bb9` (report persistence refactor; review pending) |
+| Latest implementation commit | `d4cd57f` (review integrity and evidence-gate fixes) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
@@ -46,10 +46,11 @@ is created. Phase 6 has not started.
   and a versioned selection policy that does not use Accuracy or test metrics as keys.
 - Froze an immutable model selection and checksummed selected artifact before an
   explicit one-time frozen test; generated 1,000-draw group-bootstrap intervals.
-- Added configured-root checksummed skops bundles with exact type inventories,
-  fixed schema/order/dtype, preprocessing, calibration, threshold, provenance,
-  metrics, environment, and model card. Pickle/joblib, path escape, corruption,
-  schema drift, empty/non-finite input, and version collisions fail closed.
+- Added configured-root skops bundles with exact four-file inventories, outer
+  model/manifest/model-card checksums, exact type allowlists, fixed
+  schema/order/dtype, preprocessing, calibration, threshold, provenance,
+  metrics, environment, and model card. Pickle/joblib, path escape, extra files,
+  corruption, schema drift, empty/non-finite input, and version collisions fail closed.
 - Added Typer model train/test/list/describe/predict/verify commands and a
   truthful Phase 5 Streamlit shell without invented metrics.
 - The real checked run used the controlled demo only: 48 rows/24 groups,
@@ -59,14 +60,20 @@ is created. Phase 6 has not started.
 - Controlled validation Macro F1 was 1.0; frozen-test Macro F1 was 0.7619 with
   confusion matrix 2/2/0/6 and wide group-bootstrap intervals. These values are
   not public-benchmark, research, production, or real-world conclusions.
-- Final regression run: Ruff pass; strict mypy pass for 95 source files; 194
-  pytest tests passed, zero failures/skips/xfails, 86.97% branch-aware coverage.
+- Final regression run: Ruff pass; strict mypy pass for 95 source files; 197
+  pytest tests passed, zero failures/skips/xfails, 86.88% branch-aware coverage;
+  the 44-test focused Phase 5 suite also passed.
 - Independent-process reload, repeated numeric predictions, checksum/type/path
   rejection, one-time test refusal, no-root/no-network operation, and absence of
   Phase 6 anomaly/fusion/alert functionality are tested.
 - Actual machine reports and the 639,387-byte controlled model bundle were
   generated under temporary ignored storage and are not committed. The reviewed
   protocol, ADR, release notes, and model card are committed.
+- First read-only review found one High bundle-integrity gap, two Medium
+  evidence/test gaps, and one Low inventory gap. Commit `d4cd57f` fixed them;
+  the targeted post-fix run passed Ruff, mypy for 21 supervised source files,
+  and 15 tests. The final full suite passed, and the second review found no
+  remaining Blocking, High, or unhandled Medium issue.
 - DEF-004 remains open and non-blocking: a total database outage cannot write a
   failure record into that same unavailable database. Phase 5 adds no broker.
 

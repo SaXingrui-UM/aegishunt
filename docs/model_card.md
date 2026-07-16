@@ -26,7 +26,7 @@ Quality and leakage reports passed with no group, source, capture-session,
 scenario, exact-duplicate, or near-duplicate overlap. The public benchmark was
 not downloaded or used.
 
-- Dataset manifest SHA-256: `994b2cc54d946279c2749bb6110b8670168c7daa9ac2737c294d6750f40173e1`
+- Dataset manifest SHA-256: `0a92ef8308493fdf95e20469c3917f48412bef4007c9fcb1fd0fb77ff9d4c0f1`
 - Split manifest SHA-256: `a2949d3ef88381119616c5c352e39c30c7c98371edc0101614c230e0c7b8a1e0`
 
 Train-only three-fold GroupKFold tuned five required candidates. Validation only
@@ -74,7 +74,7 @@ Frozen confusion matrix: TN 2, FP 2, FN 0, TP 6. Fixed-seed group-bootstrap
 This instability is a limitation, not evidence to revisit the frozen selection.
 
 Train-CV Macro F1 was `0.8317 ± 0.1195`. On the recorded development host, the
-selected model measured 1.0353 ms p50 per sample, 10.3534/12.5234/14.3631 ms
+selected model measured 0.9262 ms p50 per sample, 9.2620/10.8713/11.3069 ms
 p50/p95/p99 for a batch of 10 over 50 repetitions, and a 639,387-byte serialized
 preprocessing/model/calibration artifact. These values are not production SLAs.
 
@@ -85,9 +85,12 @@ unseen protocols, enterprise traffic, or novel attacks. Validation is reused for
 comparison, calibration, and thresholding, so overfitting is possible. The high
 test FPR and wide confidence intervals must be reported as observed.
 
-The bundle is loaded only below its configured root after SHA-256 and exact
-skops type-inventory verification; arbitrary pickle/joblib and schema drift are
-rejected. The artifact records Python and scikit-learn versions. Retraining needs
+The bundle is loaded only below its configured root after its exact four-file
+inventory, model/manifest/model-card SHA-256 values, and exact skops type
+inventory are verified; arbitrary pickle/joblib, extra files, corruption, and
+schema drift are rejected. The selected model artifact SHA-256 for this checked
+run is `adc950ef954b25906107547799397a15760135b6ccffc9bd012b27541a691618`.
+The artifact records Python and scikit-learn versions. Retraining needs
 an approved new version after feature-schema, label, dependency, or material
 distribution changes. The existing DEF-004 database-outage limitation remains
 open and non-blocking; Phase 5 adds no alternate broker.

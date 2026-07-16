@@ -23,8 +23,9 @@ Phase 6 has not started.
 - Versioned validation-only selection policy that excludes Accuracy and test results as keys.
 - Immutable pre-test selection record and explicit one-time frozen-test gate.
 - Fixed-seed 1,000-draw group-bootstrap confidence intervals.
-- Checksummed skops bundle containing preprocessing, estimator, calibrator,
-  threshold, schema, provenance, metrics, environment, and model card.
+- Exact-inventory skops bundle with independent model/manifest/model-card
+  checksums, preprocessing, estimator, calibrator, threshold, schema,
+  provenance, metrics, environment, and model card.
 - Strict batch prediction plus Typer train/test/list/describe/predict/verify commands.
 - Machine JSON/CSV artifacts and committed protocol, ADR, and controlled model card.
 
@@ -44,12 +45,24 @@ calibration and threshold 0.5. Validation Macro F1 was 1.0; frozen-test Macro F1
 was 0.7619 with TN/FP/FN/TP = 2/2/0/6. These are not research conclusions.
 See `docs/model_card.md` for the complete metrics, operational evidence, and limits.
 
+## Review outcome
+
+The first read-only review found one High integrity gap (the manifest and model
+card were not independently checksummed), two Medium evidence/test gaps (Phase 4
+quality/split cross-checks and failed-hyperparameter recording), and one Low
+bundle-inventory gap. Commit `d4cd57f` added exact four-file bundle inventory,
+outer checksums, strict allowed skops types, evidence count/schema/distribution
+cross-checks, and regression tests. Targeted Ruff, mypy, and 15 tests passed
+after the fix. The final 197-test suite and 44-test focused suite passed; the
+second review found no remaining Blocking, High, or unhandled Medium issue.
+
 ## Tests
 
 - Ruff: pass.
 - Strict mypy: pass across 95 source files.
-- Pytest: 194 passed, 0 failed, 0 skipped, 0 xfailed.
-- Branch-aware coverage: 86.97% (required minimum 85%).
+- Pytest: 197 passed, 0 failed, 0 skipped, 0 xfailed.
+- Branch-aware coverage: 86.88% (required minimum 85%).
+- Focused Phase 5 suite: 44 passed in 28.63 seconds.
 - Unit, integration, offline E2E, group isolation, five-model comparison,
   selection/test separation, bootstrap determinism, independent-process reload,
   checksum corruption, arbitrary pickle, path containment, schema rejection,

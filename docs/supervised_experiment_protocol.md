@@ -77,9 +77,11 @@ These development-host measurements are not production SLAs.
 ## Bundle and inference
 
 The final versioned bundle contains the fitted preprocessing/estimator,
-validation calibrator, threshold, strict manifest, and model card. SHA-256,
-configured-root containment, exact skops type inventory, and schema checks run
-before loading. Arbitrary pickle/joblib input is never accepted.
+validation calibrator, threshold, strict manifest, model card, and outer checksum
+inventory. Exact bundle-file inventory, SHA-256 for the model/manifest/model
+card, configured-root containment, exact skops type inventory, version-directory
+identity, and schema checks run before loading. Arbitrary pickle/joblib input is
+never accepted.
 
 Prediction requires a non-empty finite float64 matrix plus the exact feature
 schema version, names, and order. It returns only label, raw classifier score,
