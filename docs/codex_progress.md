@@ -6,32 +6,69 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 4 - Dataset registry, transformation, and quality control |
-| Status | Phase complete |
-| Phase 4 implementation | 100%; merged to `main`, post-merge verified, and checkpoint tagged |
-| Current activity | Phase 4 post-merge metadata checkpoint; Phase 5 has not started |
-| Verification status | On merged `main`: Ruff, strict mypy, 169 tests, controlled demo E2E, deterministic rebuild, and security checks passed |
-| Current branch | `docs/phase-04-post-merge-metadata` |
-| Phase 4 baseline | `main` at `21750914ab0da09a36b60972e6abdff5d565d454` |
-| Latest reviewed implementation commit | `4d63cd7` (manifest contract fix; final review passed) |
+| Current phase | Phase 5 - Supervised Detection Engine |
+| Status | Implementation complete — awaiting PR review |
+| Phase 5 implementation | 100% of declared code/test/documentation scope; PR pending |
+| Current activity | Final Phase 5 review, publication, and PR checkpoint; Phase 6 has not started |
+| Verification status | Ruff and strict mypy pass; 194 tests pass with 86.97% branch-aware coverage; controlled offline E2E and bundle security pass |
+| Current branch | `phase/05-supervised-detection` |
+| Phase 5 baseline | `main` at `ab73ffd7cdb3c749cc3b4ee4ed93ab4d30c44160` |
+| Latest implementation commit | `6280bb9` (report persistence refactor; review pending) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
-| Phase 4 merge commit / latest main | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
+| Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | PR #11, `[Phase 04] Dataset registry and quality`, merged from `phase/04-dataset-quality` into `main` on 2026-07-16; https://github.com/SaXingrui-UM/aegishunt/pull/11 |
-| CI status | Two GitHub Actions `quality` checks passed for PR #11; merged-main verification also passed locally |
+| Pull request | Phase 5 PR pending; base `main`, head `phase/05-supervised-detection` |
+| CI status | Phase 5 local checks pass; GitHub Actions pending PR creation |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
-| Working tree | Expected clean after the Phase 4 post-merge metadata commit |
-| Next action | Review and merge the Phase 4 metadata-only PR; Phase 5 remains not started until explicitly authorized |
+| Working tree | Expected clean after Phase 5 documentation/review commits |
+| Next action | Complete read-only review, push Phase 5, create PR, then wait for user review; do not start Phase 6 |
 
 Phase 0 through Phase 4 are complete and their annotated tags point to their
-merged `main` commits. Phase 4 PR #11 was squash-merged as `2ecaaae`, and
-`phase-04-complete` was created only after merged-main verification.
-Phase 5 has not started.
+merged `main` commits. Phase 5 implementation is complete on its declared branch
+but is not Phase complete until its PR is merged and a later user-authorized tag
+is created. Phase 6 has not started.
+
+## Phase 5 implementation checkpoint
+
+- Enforced Phase 4 file, checksum, schema, label, quality, leakage, conversion,
+  frozen-test, group, metadata, and finite-feature gates before fitting.
+- Added configured Dummy, Logistic Regression, Decision Tree, Random Forest,
+  and HistGradientBoosting candidates with model-specific sklearn pipelines.
+- Added train-only deterministic GroupKFold, bounded exhaustive tuning, complete
+  candidate/fold/failure evidence, and fixed seeds.
+- Added validation-only sigmoid/isotonic calibration, Brier evidence, complete
+  threshold curves, full classification metrics, operational timing/size/memory,
+  and a versioned selection policy that does not use Accuracy or test metrics as keys.
+- Froze an immutable model selection and checksummed selected artifact before an
+  explicit one-time frozen test; generated 1,000-draw group-bootstrap intervals.
+- Added configured-root checksummed skops bundles with exact type inventories,
+  fixed schema/order/dtype, preprocessing, calibration, threshold, provenance,
+  metrics, environment, and model card. Pickle/joblib, path escape, corruption,
+  schema drift, empty/non-finite input, and version collisions fail closed.
+- Added Typer model train/test/list/describe/predict/verify commands and a
+  truthful Phase 5 Streamlit shell without invented metrics.
+- The real checked run used the controlled demo only: 48 rows/24 groups,
+  train/validation/test 28/10/10 rows and 14/5/5 groups, quality/leakage pass.
+  It selected HistGradientBoosting from validation evidence with sigmoid
+  calibration and threshold 0.5. This is pipeline verification only.
+- Controlled validation Macro F1 was 1.0; frozen-test Macro F1 was 0.7619 with
+  confusion matrix 2/2/0/6 and wide group-bootstrap intervals. These values are
+  not public-benchmark, research, production, or real-world conclusions.
+- Final regression run: Ruff pass; strict mypy pass for 95 source files; 194
+  pytest tests passed, zero failures/skips/xfails, 86.97% branch-aware coverage.
+- Independent-process reload, repeated numeric predictions, checksum/type/path
+  rejection, one-time test refusal, no-root/no-network operation, and absence of
+  Phase 6 anomaly/fusion/alert functionality are tested.
+- Actual machine reports and the 639,387-byte controlled model bundle were
+  generated under temporary ignored storage and are not committed. The reviewed
+  protocol, ADR, release notes, and model card are committed.
+- DEF-004 remains open and non-blocking: a total database outage cannot write a
+  failure record into that same unavailable database. Phase 5 adds no broker.
 
 ## Phase 4 implementation checkpoint
 
