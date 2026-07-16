@@ -16,7 +16,7 @@ from aegishunt.ml.supervised.data import SupervisedDatasetGate
 from aegishunt.ml.supervised.errors import ArtifactError, PredictionError
 from aegishunt.ml.supervised.prediction import PredictionBatch
 from aegishunt.ml.supervised.service import SupervisedTrainingService
-from tests.fixtures.supervised import TRAINING_CONFIG_PATH, build_phase4_bundle
+from tests.fixtures.supervised import CORRECTIVE_CONFIG_PATH, build_phase4_bundle
 
 
 def _service(root: Path) -> tuple[SupervisedTrainingService, Path, Path, Path, Path]:
@@ -26,7 +26,7 @@ def _service(root: Path) -> tuple[SupervisedTrainingService, Path, Path, Path, P
     service = SupervisedTrainingService(
         data_root=data_root,
         dataset_report_root=dataset_reports,
-        training_config_path=TRAINING_CONFIG_PATH,
+        training_config_path=CORRECTIVE_CONFIG_PATH,
         artifact_root=model_root,
         reports_root=experiment_root,
     )
@@ -35,13 +35,29 @@ def _service(root: Path) -> tuple[SupervisedTrainingService, Path, Path, Path, P
 
 def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -> None:
     service, data_root, dataset_reports, model_root, experiment_root = _service(tmp_path)
+    legacy_experiment = experiment_root / "phase-05-controlled-demo"
+    legacy_bundle = model_root / "1.0.0"
+    legacy_experiment.mkdir(parents=True)
+    legacy_bundle.mkdir(parents=True)
+    (legacy_experiment / "immutable.marker").write_text("legacy evidence\n", encoding="utf-8")
+    (legacy_bundle / "immutable.marker").write_text("legacy bundle\n", encoding="utf-8")
 
     training = service.train(allow_controlled_demo=True)
     experiment_dir = experiment_root / training.experiment_id
 
     assert training.pipeline_verification_only is True
     assert training.selection.test_data_accessed is False
+    assert training.selection.corrective_evidence is not None
+    assert training.selection.corrective_evidence.defect_id == "PM-DEF-001"
+    assert training.selection.corrective_evidence.supersedes_experiment_id == (
+        "phase-05-controlled-demo"
+    )
+    assert training.selection.corrective_evidence.supersedes_model_version == "1.0.0"
+    assert len(training.selection.corrective_evidence.code_commit_sha) == 40
     assert not (experiment_dir / "frozen_test_metrics.json").exists()
+    assert (legacy_experiment / "immutable.marker").read_text(encoding="utf-8") == (
+        "legacy evidence\n"
+    )
     comparison = (experiment_dir / "model_comparison.csv").read_text(encoding="utf-8")
     assert all(
         algorithm in comparison
@@ -74,6 +90,10 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
     assert frozen.report.pipeline_verification_only is True
     assert len(frozen.report.confidence_intervals) >= 11
     assert manifest.frozen_test_metrics == frozen.report.metrics
+    assert manifest.corrective_evidence == training.selection.corrective_evidence
+    assert (legacy_bundle / "immutable.marker").read_text(encoding="utf-8") == (
+        "legacy bundle\n"
+    )
     assert [
         result.model_dump(exclude={"prediction_timestamp"}) for result in first
     ] == [result.model_dump(exclude={"prediction_timestamp"}) for result in second]
@@ -82,6 +102,10 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
     assert "PIPELINE VERIFICATION ONLY" in (experiment_dir / "model_card.md").read_text(
         encoding="utf-8"
     )
+    model_card = (experiment_dir / "model_card.md").read_text(encoding="utf-8")
+    assert "PM-DEF-001" in model_card
+    assert "project-internal synthetic research fixture" in model_card
+    assert "no public benchmark or external dataset license is claimed" in model_card
     with pytest.raises(ArtifactError, match="already exists"):
         service.evaluate_test(allow_controlled_demo=True)
 
