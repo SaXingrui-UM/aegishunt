@@ -95,7 +95,9 @@ the reviewed human protocol, ADR, release notes, and model card are committed.
 
 - Branch: `phase/05-supervised-detection`
 - Baseline main: `ab73ffd7cdb3c749cc3b4ee4ed93ab4d30c44160`
-- Pull request: pending
+- Pull request: [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13),
+  `[Phase 05] Supervised detection engine`, open and ready for user review
+- GitHub Actions: `quality` completed successfully
 - Merge commit: pending
 - Tag: pending; `phase-05-complete` must not be created before merge
 

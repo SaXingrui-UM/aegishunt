@@ -8,25 +8,26 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 | --- | --- |
 | Current phase | Phase 5 - Supervised Detection Engine |
 | Status | Implementation complete — awaiting PR review |
-| Phase 5 implementation | 100% of declared code/test/documentation scope; PR pending |
-| Current activity | Final Phase 5 review, publication, and PR checkpoint; Phase 6 has not started |
+| Phase 5 implementation | 100% of declared code/test/documentation scope; PR #13 awaiting user review |
+| Current activity | Phase 5 PR review checkpoint; Phase 6 has not started |
 | Verification status | Ruff and strict mypy pass; 197 tests pass with 86.88% branch-aware coverage; controlled offline E2E and bundle security pass |
 | Current branch | `phase/05-supervised-detection` |
 | Phase 5 baseline | `main` at `ab73ffd7cdb3c749cc3b4ee4ed93ab4d30c44160` |
 | Latest implementation commit | `d4cd57f` (review integrity and evidence-gate fixes) |
+| Latest pre-PR branch commit | `1e93a9c` (final verification and review documentation) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | Phase 5 PR pending; base `main`, head `phase/05-supervised-detection` |
-| CI status | Phase 5 local checks pass; GitHub Actions pending PR creation |
+| Pull request | PR #13 open and ready for review: `https://github.com/SaXingrui-UM/aegishunt/pull/13`; base `main`, head `phase/05-supervised-detection` |
+| CI status | GitHub Actions `quality` completed successfully for PR #13 |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
-| Working tree | Expected clean after Phase 5 documentation/review commits |
-| Next action | Complete read-only review, push Phase 5, create PR, then wait for user review; do not start Phase 6 |
+| Working tree | Clean after the Phase 5 PR checkpoint commit |
+| Next action | User reviews PR #13 and, if satisfied, uses Squash and merge; do not start Phase 6 |
 
 Phase 0 through Phase 4 are complete and their annotated tags point to their
 merged `main` commits. Phase 5 implementation is complete on its declared branch
