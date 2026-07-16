@@ -87,3 +87,19 @@ def test_dataset_gate_rejects_incomplete_checksum_inventory(tmp_path: Path) -> N
 
     with pytest.raises(DatasetGateError, match="checksum inventory"):
         SupervisedDatasetGate(data_root, report_root)
+
+
+def test_dataset_gate_rejects_inconsistent_quality_evidence(tmp_path: Path) -> None:
+    data_root, report_root = build_phase4_bundle(tmp_path)
+    _rewrite_json(report_root / "quality_report.json", {"row_count": 47})
+
+    with pytest.raises(DatasetGateError, match="quality report counts"):
+        SupervisedDatasetGate(data_root, report_root)
+
+
+def test_dataset_gate_rejects_inconsistent_evidence_schema(tmp_path: Path) -> None:
+    data_root, report_root = build_phase4_bundle(tmp_path)
+    _rewrite_json(report_root / "quality_report.json", {"feature_schema_version": "9.9.9"})
+
+    with pytest.raises(DatasetGateError, match="feature schemas"):
+        SupervisedDatasetGate(data_root, report_root)

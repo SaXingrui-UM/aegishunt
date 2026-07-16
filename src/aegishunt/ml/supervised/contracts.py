@@ -270,3 +270,20 @@ class BundleManifest(SupervisedModel):
     @classmethod
     def validate_bundle_timestamp(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
+
+
+class BundleChecksums(SupervisedModel):
+    """Outer integrity inventory for every file that defines one bundle."""
+
+    checksum_schema_version: Literal["1.0.0"]
+    model_checksum: str
+    manifest_checksum: str
+    model_card_checksum: str
+
+    @field_validator("model_checksum", "manifest_checksum", "model_card_checksum")
+    @classmethod
+    def validate_bundle_file_checksum(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("bundle file checksum must be SHA-256")
+        return normalized

@@ -111,10 +111,22 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
 
     corrupt = model_root / "corrupt"
     shutil.copytree(model_root / training.model_version, corrupt)
+    corrupt_manifest = corrupt / "manifest.json"
+    corrupt_manifest.write_bytes(corrupt_manifest.read_bytes() + b" ")
+    with pytest.raises(ArtifactError, match="manifest checksum"):
+        load_bundle(corrupt, artifact_root=model_root)
+    shutil.rmtree(corrupt)
+    shutil.copytree(model_root / training.model_version, corrupt)
     artifact = corrupt / "model.skops"
     artifact.write_bytes(artifact.read_bytes() + b"corrupt")
     with pytest.raises(ArtifactError, match="checksum"):
         load_bundle(corrupt, artifact_root=model_root)
+
+    unknown = model_root / training.model_version / "unexpected.bin"
+    unknown.write_bytes(b"unexpected")
+    with pytest.raises(ArtifactError, match="file inventory"):
+        service.verify(training.model_version)
+    unknown.unlink()
 
     arbitrary = model_root / "arbitrary.pkl"
     arbitrary.write_bytes(b"not a model")

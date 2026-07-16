@@ -16,14 +16,30 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
 from aegishunt.ml.supervised.calibration import ProbabilityCalibrator
-from aegishunt.ml.supervised.contracts import BundleManifest, ModelSelectionRecord
+from aegishunt.ml.supervised.contracts import (
+    BundleChecksums,
+    BundleManifest,
+    ModelSelectionRecord,
+)
 from aegishunt.ml.supervised.errors import ArtifactError
 from aegishunt.ml.supervised.selection import FittedCandidate
 
 MODEL_FILENAME = "model.skops"
 MANIFEST_FILENAME = "manifest.json"
+BUNDLE_CHECKSUMS_FILENAME = "checksums.json"
 SELECTION_FILENAME = "selection.skops"
-_ALLOWED_UNTRUSTED_PREFIXES = ("sklearn.",)
+_ALLOWED_UNTRUSTED_TYPES = frozenset(
+    {
+        "sklearn._loss.link.Interval",
+        "sklearn._loss.link.LogitLink",
+        "sklearn._loss.loss.HalfBinomialLoss",
+        "sklearn.ensemble._hist_gradient_boosting.binning._BinMapper",
+        "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
+    }
+)
+_BUNDLE_FILES = frozenset(
+    {MODEL_FILENAME, MANIFEST_FILENAME, BUNDLE_CHECKSUMS_FILENAME, "model_card.md"}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,7 +79,7 @@ def trusted_types(payload: bytes) -> tuple[str, ...]:
         names = tuple(sorted(sio.get_untrusted_types(data=payload)))
     except (OSError, TypeError, ValueError) as exc:
         raise ArtifactError("unable to inspect selected model types") from exc
-    if any(not name.startswith(_ALLOWED_UNTRUSTED_PREFIXES) for name in names):
+    if any(name not in _ALLOWED_UNTRUSTED_TYPES for name in names):
         raise ArtifactError("selected model contains a non-allowlisted type")
     return names
 
@@ -152,12 +168,21 @@ def save_bundle(
     try:
         if sha256_bytes(model_payload) != manifest.artifact_checksum:
             raise ArtifactError("model bundle payload does not match its manifest")
+        manifest_payload = (manifest.model_dump_json(indent=2) + "\n").encode("utf-8")
+        model_card_payload = model_card.encode("utf-8")
+        checksums = BundleChecksums(
+            checksum_schema_version="1.0.0",
+            model_checksum=sha256_bytes(model_payload),
+            manifest_checksum=sha256_bytes(manifest_payload),
+            model_card_checksum=sha256_bytes(model_card_payload),
+        )
         (temporary / MODEL_FILENAME).write_bytes(model_payload)
-        (temporary / MANIFEST_FILENAME).write_text(
-            manifest.model_dump_json(indent=2) + "\n",
+        (temporary / MANIFEST_FILENAME).write_bytes(manifest_payload)
+        (temporary / "model_card.md").write_bytes(model_card_payload)
+        (temporary / BUNDLE_CHECKSUMS_FILENAME).write_text(
+            checksums.model_dump_json(indent=2) + "\n",
             encoding="utf-8",
         )
-        (temporary / "model_card.md").write_text(model_card, encoding="utf-8")
         temporary.rename(destination)
     except (OSError, ArtifactError) as exc:
         for child in temporary.iterdir() if temporary.exists() else ():
@@ -169,19 +194,47 @@ def save_bundle(
     return destination
 
 
-def load_bundle(bundle_dir: Path, *, artifact_root: Path) -> LoadedModel:
-    """Load a configured bundle only after path, manifest, checksum, and type checks."""
-
+def _read_verified_bundle(
+    bundle_dir: Path,
+    *,
+    artifact_root: Path,
+) -> tuple[BundleManifest, bytes]:
     resolved = _within(bundle_dir, artifact_root)
     if resolved.suffix in {".pkl", ".pickle", ".joblib"} or not resolved.is_dir():
         raise ArtifactError("model bundle must be a system-generated directory")
+    if {path.name for path in resolved.iterdir()} != _BUNDLE_FILES:
+        raise ArtifactError("model bundle file inventory is invalid")
     try:
+        manifest_payload = (resolved / MANIFEST_FILENAME).read_bytes()
+        model_card_payload = (resolved / "model_card.md").read_bytes()
+        checksums = BundleChecksums.model_validate_json(
+            (resolved / BUNDLE_CHECKSUMS_FILENAME).read_text(encoding="utf-8")
+        )
+        if checksums.manifest_checksum != sha256_bytes(manifest_payload):
+            raise ArtifactError("model bundle manifest checksum verification failed")
+        if checksums.model_card_checksum != sha256_bytes(model_card_payload):
+            raise ArtifactError("model card checksum verification failed")
         manifest = BundleManifest.model_validate_json(
-            (resolved / MANIFEST_FILENAME).read_text(encoding="utf-8")
+            manifest_payload
         )
         payload = (resolved / MODEL_FILENAME).read_bytes()
+    except ArtifactError:
+        raise
     except (OSError, ValidationError) as exc:
         raise ArtifactError("model bundle manifest or artifact is invalid") from exc
+    if checksums.model_checksum != sha256_bytes(payload):
+        raise ArtifactError("model artifact checksum verification failed")
+    if manifest.artifact_checksum != checksums.model_checksum:
+        raise ArtifactError("model manifest and outer checksum inventory differ")
+    if resolved.name != manifest.model_version:
+        raise ArtifactError("model bundle directory does not match its version")
+    return manifest, payload
+
+
+def load_bundle(bundle_dir: Path, *, artifact_root: Path) -> LoadedModel:
+    """Load a configured bundle only after path, manifest, checksum, and type checks."""
+
+    manifest, payload = _read_verified_bundle(bundle_dir, artifact_root=artifact_root)
     estimator, calibrator = _load_components(
         payload,
         expected_checksum=manifest.artifact_checksum,
@@ -192,15 +245,10 @@ def load_bundle(bundle_dir: Path, *, artifact_root: Path) -> LoadedModel:
 
 
 def load_manifest(bundle_dir: Path, *, artifact_root: Path) -> BundleManifest:
-    """Read metadata without loading executable model state."""
+    """Read metadata after verifying the complete bundle without loading model state."""
 
-    resolved = _within(bundle_dir, artifact_root)
-    try:
-        return BundleManifest.model_validate_json(
-            (resolved / MANIFEST_FILENAME).read_text(encoding="utf-8")
-        )
-    except (OSError, ValidationError) as exc:
-        raise ArtifactError("model bundle manifest is invalid") from exc
+    manifest, _ = _read_verified_bundle(bundle_dir, artifact_root=artifact_root)
+    return manifest
 
 
 def manifest_as_safe_json(manifest: BundleManifest) -> str:

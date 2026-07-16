@@ -97,3 +97,17 @@ def test_candidate_tuning_records_all_parameters_and_refits(tmp_path: Path) -> N
     assert best in evidence
     assert duration >= 0.0
     assert raw_positive_scores(estimator, train.features).shape == train.labels.shape
+
+
+def test_candidate_tuning_records_failed_parameter_without_hiding_it(tmp_path: Path) -> None:
+    config, train = _training_data(tmp_path)
+    candidate = CandidateConfig(
+        algorithm="decision_tree",
+        parameters={"max_depth": (2, "invalid")},
+    )
+
+    best, evidence = tune_candidate(candidate, train, config)
+
+    assert best.status == "passed"
+    assert [result.status for result in evidence] == ["passed", "failed"]
+    assert evidence[1].failure_code == "candidate_fit_or_score_failed"

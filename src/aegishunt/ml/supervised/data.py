@@ -167,13 +167,53 @@ class SupervisedDatasetGate:
             raise DatasetGateError("Phase 4 split overlap validation did not pass")
         if dataset.feature_schema_version != FEATURE_SCHEMA_VERSION:
             raise DatasetGateError("dataset feature schema is incompatible with Phase 3")
-        if split.feature_schema_version != FEATURE_SCHEMA_VERSION:
-            raise DatasetGateError("split feature schema is incompatible with Phase 3")
+        schema_versions = {
+            dataset.feature_schema_version,
+            split.feature_schema_version,
+            quality.feature_schema_version,
+        }
+        if schema_versions != {FEATURE_SCHEMA_VERSION}:
+            raise DatasetGateError("Phase 4 evidence feature schemas are inconsistent")
+        canonical_versions = {
+            dataset.canonical_schema_version,
+            split.canonical_schema_version,
+            quality.canonical_schema_version,
+        }
+        if len(canonical_versions) != 1:
+            raise DatasetGateError("Phase 4 evidence canonical schemas are inconsistent")
         if (dataset.dataset_id, dataset.dataset_version) != (
             split.dataset_id,
             split.dataset_version,
         ):
             raise DatasetGateError("dataset and split manifest identities differ")
+        if (quality.row_count, quality.group_count) != (
+            dataset.row_count,
+            dataset.group_count,
+        ):
+            raise DatasetGateError("quality report counts differ from the dataset manifest")
+        expected_partitions = {"train", "validation", "test"}
+        count_sections = (set(split.row_counts), set(split.group_counts))
+        if any(section != expected_partitions for section in count_sections):
+            raise DatasetGateError("split manifest partition counts are incomplete")
+        if sum(split.row_counts.values()) != dataset.row_count:
+            raise DatasetGateError("split row counts differ from the dataset manifest")
+        if sum(split.group_counts.values()) != dataset.group_count:
+            raise DatasetGateError("split group counts differ from the dataset manifest")
+        declared_groups = {
+            "train": split.train_groups,
+            "validation": split.validation_groups,
+            "test": split.test_groups,
+        }
+        if any(
+            len(declared_groups[name]) != split.group_counts[name]
+            for name in expected_partitions
+        ):
+            raise DatasetGateError("split group inventory differs from declared counts")
+        combined_classes = Counter[str]()
+        for distribution in split.class_distributions.values():
+            combined_classes.update(distribution)
+        if dict(sorted(combined_classes.items())) != quality.binary_class_distribution:
+            raise DatasetGateError("split class distributions differ from the quality report")
         expected_names = set(REQUIRED_DATA_FILES)
         if set(dataset.processed_files) != expected_names:
             raise DatasetGateError("dataset manifest partition inventory is incomplete")
@@ -231,6 +271,13 @@ class SupervisedDatasetGate:
         partition = PartitionData(name=name, rows=rows)
         if set(partition.class_distribution) != {"0", "1"}:
             raise DatasetGateError("supervised partition must contain both binary classes")
+        split = self._evidence.split_manifest
+        if len(rows) != split.row_counts[name]:
+            raise DatasetGateError("partition row count differs from the split manifest")
+        if len(set(partition.groups.tolist())) != split.group_counts[name]:
+            raise DatasetGateError("partition group count differs from the split manifest")
+        if partition.class_distribution != split.class_distributions[name]:
+            raise DatasetGateError("partition class distribution differs from the split manifest")
         return partition
 
     @staticmethod
