@@ -18,16 +18,20 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 5 supervised detection is implemented on `phase/05-supervised-detection`
-and awaits PR review. Phases 0–4 are complete on `main`. Phase 5 enforces the
+Phase 5 supervised detection was merged to `main` in PR #13. A corrective fix
+for PM-DEF-001 is implemented on `fix/phase-05-zero-brier-selection` and awaits
+review; Phase 6 has not started. Phase 5 enforces the
 Phase 4 data-quality/leakage boundary, compares five configured supervised
 candidates with train-only group CV, freezes validation-selected calibration and
 thresholds before one explicit test evaluation, and saves integrity-checked
 versioned bundles. The checked run uses only the small synthetic controlled demo
 and is **pipeline verification only**, not a public-benchmark, research, or
 deployment result. No public benchmark is committed or claimed downloaded.
-Anomaly detection, fusion, alerts, correlation, hypotheses, replay orchestration,
-and cases are **not implemented**.
+The original Phase 5 evidence used an incorrect truthiness fallback for a valid
+Brier score of `0.0`; the corrective run preserves the old evidence, records an
+explicit supersession link, and uses new experiment/model versions. Anomaly
+detection, fusion, alerts, correlation, hypotheses, replay orchestration, and
+cases are **not implemented**.
 
 ## Planned architecture
 
@@ -70,7 +74,7 @@ aegishunt model --help
 aegishunt model train --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
 aegishunt model test --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
 aegishunt model list
-aegishunt model verify 1.0.0
+aegishunt model verify 1.0.1
 aegishunt api
 aegishunt frontend
 ```
