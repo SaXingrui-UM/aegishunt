@@ -23,6 +23,10 @@ from aegishunt.ml.supervised.contracts import (
 from aegishunt.ml.supervised.data import PartitionData
 from aegishunt.ml.supervised.errors import TrainingError
 from aegishunt.ml.supervised.metrics import evaluate_binary_classification, metric_summary
+from aegishunt.ml.supervised.ranking import (
+    maximize_optional_metric,
+    minimize_optional_metric,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,10 +186,12 @@ def tune_candidate(
     def ranking(result: HyperparameterResult) -> tuple[float, float, float, float, str]:
         means = result.mean_metrics
         return (
-            float(means["macro_f1"] or 0.0),
-            float(means["pr_auc"] or 0.0),
-            float(means["recall"] or 0.0),
-            -float(means["false_positive_rate"] or 0.0),
+            maximize_optional_metric(means["macro_f1"], name="CV Macro F1"),
+            maximize_optional_metric(means["pr_auc"], name="CV PR-AUC"),
+            maximize_optional_metric(means["recall"], name="CV recall"),
+            -minimize_optional_metric(
+                means["false_positive_rate"], name="CV false-positive rate"
+            ),
             json.dumps(result.parameters, sort_keys=True),
         )
 

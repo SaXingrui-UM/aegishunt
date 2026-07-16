@@ -16,17 +16,25 @@ from aegishunt.ml.supervised.data import SupervisedDatasetGate
 from aegishunt.ml.supervised.errors import ArtifactError, PredictionError
 from aegishunt.ml.supervised.prediction import PredictionBatch
 from aegishunt.ml.supervised.service import SupervisedTrainingService
-from tests.fixtures.supervised import TRAINING_CONFIG_PATH, build_phase4_bundle
+from tests.fixtures.supervised import (
+    CORRECTIVE_CONFIG_PATH,
+    TRAINING_CONFIG_PATH,
+    build_phase4_bundle,
+)
 
 
-def _service(root: Path) -> tuple[SupervisedTrainingService, Path, Path, Path, Path]:
+def _service(
+    root: Path,
+    *,
+    config_path: Path = TRAINING_CONFIG_PATH,
+) -> tuple[SupervisedTrainingService, Path, Path, Path, Path]:
     data_root, dataset_reports = build_phase4_bundle(root / "phase4")
     model_root = root / "models"
     experiment_root = root / "experiments"
     service = SupervisedTrainingService(
         data_root=data_root,
         dataset_report_root=dataset_reports,
-        training_config_path=TRAINING_CONFIG_PATH,
+        training_config_path=config_path,
         artifact_root=model_root,
         reports_root=experiment_root,
     )
@@ -41,6 +49,7 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
 
     assert training.pipeline_verification_only is True
     assert training.selection.test_data_accessed is False
+    assert training.selection.corrective_evidence is None
     assert not (experiment_dir / "frozen_test_metrics.json").exists()
     comparison = (experiment_dir / "model_comparison.csv").read_text(encoding="utf-8")
     assert all(
@@ -74,6 +83,7 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
     assert frozen.report.pipeline_verification_only is True
     assert len(frozen.report.confidence_intervals) >= 11
     assert manifest.frozen_test_metrics == frozen.report.metrics
+    assert manifest.corrective_evidence is None
     assert [
         result.model_dump(exclude={"prediction_timestamp"}) for result in first
     ] == [result.model_dump(exclude={"prediction_timestamp"}) for result in second]
@@ -82,6 +92,9 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
     assert "PIPELINE VERIFICATION ONLY" in (experiment_dir / "model_card.md").read_text(
         encoding="utf-8"
     )
+    model_card = (experiment_dir / "model_card.md").read_text(encoding="utf-8")
+    assert "project-internal synthetic research fixture" in model_card
+    assert "no public benchmark or external dataset license is claimed" in model_card
     with pytest.raises(ArtifactError, match="already exists"):
         service.evaluate_test(allow_controlled_demo=True)
 
@@ -138,3 +151,44 @@ def test_phase_05_selection_test_bundle_and_independent_reload(tmp_path: Path) -
     report = json.loads((experiment_dir / "frozen_test_metrics.json").read_text())
     assert report["evaluation_count"] == 1
     assert report["test_affected_selection"] is False
+
+
+def test_corrective_run_versions_and_preserves_prior_evidence(tmp_path: Path) -> None:
+    service, _, _, model_root, experiment_root = _service(
+        tmp_path,
+        config_path=CORRECTIVE_CONFIG_PATH,
+    )
+    legacy_experiment = experiment_root / "phase-05-controlled-demo"
+    legacy_bundle = model_root / "1.0.0"
+    legacy_experiment.mkdir(parents=True)
+    legacy_bundle.mkdir(parents=True)
+    (legacy_experiment / "immutable.marker").write_text("legacy evidence\n", encoding="utf-8")
+    (legacy_bundle / "immutable.marker").write_text("legacy bundle\n", encoding="utf-8")
+
+    training = service.train(allow_controlled_demo=True)
+    correction = training.selection.corrective_evidence
+    assert correction is not None
+    assert correction.defect_id == "PM-DEF-001"
+    assert correction.supersedes_experiment_id == "phase-05-controlled-demo"
+    assert correction.supersedes_model_version == "1.0.0"
+    assert len(correction.code_commit_sha) == 40
+    assert training.experiment_id == "phase-05-controlled-demo-pm-def-001"
+    assert training.model_version == "1.0.1"
+    assert (legacy_experiment / "immutable.marker").read_text(encoding="utf-8") == (
+        "legacy evidence\n"
+    )
+
+    frozen = service.evaluate_test(allow_controlled_demo=True)
+    manifest = service.verify(training.model_version)
+    assert frozen.report.evaluation_count == 1
+    assert manifest.corrective_evidence == correction
+    assert (legacy_bundle / "immutable.marker").read_text(encoding="utf-8") == (
+        "legacy bundle\n"
+    )
+    corrective_card = (
+        experiment_root / training.experiment_id / "model_card.md"
+    ).read_text(encoding="utf-8")
+    assert "PM-DEF-001" in corrective_card
+    assert "without overwriting that evidence" in corrective_card
+    with pytest.raises(ArtifactError, match="already exists"):
+        service.evaluate_test(allow_controlled_demo=True)

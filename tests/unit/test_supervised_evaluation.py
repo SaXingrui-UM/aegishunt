@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from aegishunt.ml.supervised.calibration import select_calibration
 from aegishunt.ml.supervised.config import SupervisedTrainingConfig
+from aegishunt.ml.supervised.contracts import CalibrationResult
 from aegishunt.ml.supervised.errors import EvaluationError, TrainingError
 from aegishunt.ml.supervised.metrics import (
     evaluate_binary_classification,
     metric_summary,
+)
+from aegishunt.ml.supervised.ranking import (
+    maximize_optional_metric,
+    minimize_optional_metric,
 )
 from aegishunt.ml.supervised.thresholding import select_threshold
 from tests.fixtures.supervised import TRAINING_CONFIG_PATH
@@ -68,15 +74,38 @@ def test_calibration_and_threshold_selection_use_validation_evidence() -> None:
     scores = np.asarray([0.1, 0.2, 0.3, 0.4, 0.45, 0.6, 0.7, 0.8, 0.9, 0.95])
 
     calibrator, calibration_evidence = select_calibration(scores, labels, config)
+    repeated_calibrator, repeated_evidence = select_calibration(scores, labels, config)
     probabilities = calibrator.transform(scores)
     threshold, curve = select_threshold(probabilities, labels, config.threshold_candidates)
 
     assert len(calibration_evidence) == 2
     assert all(result.status == "passed" for result in calibration_evidence)
+    assert calibrator.method == "isotonic"
+    assert repeated_calibrator.method == "isotonic"
+    assert repeated_evidence == calibration_evidence
+    evidence_by_method = {result.method: result.brier_score for result in calibration_evidence}
+    assert evidence_by_method["sigmoid"] == pytest.approx(0.19178394648427863)
+    assert evidence_by_method["isotonic"] == 0.0
     assert np.isfinite(probabilities).all()
     assert np.all((probabilities >= 0.0) & (probabilities <= 1.0))
     assert threshold in config.threshold_candidates
     assert len(curve) == len(config.threshold_candidates)
+
+
+def test_optional_metric_ranking_preserves_zero_and_rejects_non_finite() -> None:
+    assert minimize_optional_metric(0.0, name="Brier") == 0.0
+    assert minimize_optional_metric(0.2, name="Brier") == 0.2
+    assert minimize_optional_metric(None, name="Brier") == float("inf")
+    assert maximize_optional_metric(0.0, name="PR-AUC") == 0.0
+    assert maximize_optional_metric(None, name="PR-AUC") == -float("inf")
+
+    for invalid in (float("nan"), float("inf"), -float("inf")):
+        with pytest.raises(TrainingError, match="finite"):
+            minimize_optional_metric(invalid, name="Brier")
+        with pytest.raises(TrainingError, match="finite"):
+            maximize_optional_metric(invalid, name="PR-AUC")
+        with pytest.raises(ValidationError, match="finite_number"):
+            CalibrationResult(method="isotonic", status="passed", brier_score=invalid)
 
 
 def test_calibration_rejects_single_class_validation() -> None:

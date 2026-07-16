@@ -59,3 +59,14 @@ so estimates can be unstable. Skops compatibility still depends on recorded
 Python/scikit-learn versions. A write failure after a multi-file experiment
 starts may leave a deliberately unusable partial directory. Public benchmark
 acquisition and conversion remain provisional, and DEF-004 remains unchanged.
+
+## Corrective evidence amendment
+
+PM-DEF-001 showed that truthiness-based optional-number fallbacks can corrupt a
+legitimate Brier score of `0.0`. Selection policy `1.0.1` retains the documented
+ordering while using explicit missing-value handling and finite-value validation.
+Defect-authorized corrective runs use configuration schema `1.1.0`, a new
+experiment ID, and a new model version. Their immutable selection and bundle
+metadata record the defect ID, superseded experiment/model, reason, and exact Git
+commit. Existing frozen evidence remains unchanged, and the normal one-evaluation
+guard continues to apply independently to the new corrective experiment.

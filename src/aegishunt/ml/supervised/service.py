@@ -28,6 +28,7 @@ from aegishunt.ml.supervised.candidates import PREPROCESSING_VERSION
 from aegishunt.ml.supervised.config import SupervisedTrainingConfig
 from aegishunt.ml.supervised.contracts import (
     BundleManifest,
+    CorrectiveEvidence,
     FrozenTestReport,
     ModelSelectionRecord,
     PredictionResult,
@@ -116,11 +117,24 @@ class SupervisedTrainingService:
         config_checksum: str,
         model_payload: bytes,
         pipeline_verification_only: bool,
+        corrective_code_commit: str | None,
     ) -> ModelSelectionRecord:
         evidence = gate.evidence
         result = selected.result
+        corrective = config.corrective_run
+        corrective_evidence = (
+            CorrectiveEvidence(
+                defect_id=corrective.defect_id,
+                supersedes_experiment_id=corrective.supersedes_experiment_id,
+                supersedes_model_version=corrective.supersedes_model_version,
+                reason=corrective.reason,
+                code_commit_sha=corrective_code_commit,
+            )
+            if corrective is not None and corrective_code_commit is not None
+            else None
+        )
         return ModelSelectionRecord(
-            record_schema_version="1.0.0",
+            record_schema_version="1.1.0" if corrective is not None else "1.0.0",
             status="frozen",
             experiment_id=config.experiment_id,
             model_id=f"aegishunt-supervised-{config.model_version}",
@@ -155,6 +169,7 @@ class SupervisedTrainingService:
             operational_metrics=result.operational_metrics,
             pipeline_verification_only=pipeline_verification_only,
             test_data_accessed=False,
+            corrective_evidence=corrective_evidence,
             created_at=datetime.now(UTC),
         )
 
@@ -173,6 +188,9 @@ class SupervisedTrainingService:
         candidates = evaluate_candidates(data, config)
         selected = select_main_candidate(candidates)
         model_payload = candidate_bytes(selected)
+        corrective_code_commit = self._git_commit() if config.corrective_run is not None else None
+        if config.corrective_run is not None and corrective_code_commit is None:
+            raise ArtifactError("corrective run requires an identifiable Git commit")
         selection = self._selection_record(
             selected,
             config,
@@ -180,6 +198,7 @@ class SupervisedTrainingService:
             config_checksum=sha256_file(self._training_config_path),
             model_payload=model_payload,
             pipeline_verification_only=pipeline_only,
+            corrective_code_commit=corrective_code_commit,
         )
         store = ExperimentStore.create(self._reports_root, config.experiment_id)
         write_training_artifacts(store, config, candidates, selection, model_payload)
@@ -228,7 +247,9 @@ class SupervisedTrainingService:
             gate.evidence.split_manifest,
         )
         manifest = BundleManifest(
-            manifest_schema_version="1.0.0",
+            manifest_schema_version=(
+                "1.1.0" if selection.corrective_evidence is not None else "1.0.0"
+            ),
             model_id=selection.model_id,
             model_version=selection.model_version,
             model_type="supervised",
@@ -253,6 +274,7 @@ class SupervisedTrainingService:
             validation_metrics=selection.validation_metrics,
             frozen_test_metrics=frozen.metrics,
             pipeline_verification_only=selection.pipeline_verification_only,
+            corrective_evidence=selection.corrective_evidence,
             python_version=platform.python_version(),
             sklearn_version=sklearn.__version__,
             git_commit_sha=self._git_commit(),

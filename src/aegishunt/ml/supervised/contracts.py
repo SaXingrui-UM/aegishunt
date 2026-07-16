@@ -16,7 +16,7 @@ SUPERVISED_CONTRACT_VERSION = "1.0.0"
 class SupervisedModel(BaseModel):
     """Strict immutable base for auditable experiment evidence."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
 
 
 class PerClassMetrics(SupervisedModel):
@@ -115,6 +115,16 @@ class CandidateValidationResult(SupervisedModel):
     operational_metrics: OperationalMetrics
 
 
+class CorrectiveEvidence(SupervisedModel):
+    """Immutable link from corrected evidence to the affected prior run."""
+
+    defect_id: str = Field(pattern=r"^[A-Z][A-Z0-9-]{2,63}$")
+    supersedes_experiment_id: str
+    supersedes_model_version: str
+    reason: str
+    code_commit_sha: str = Field(pattern=r"^[0-9a-f]{40}$")
+
+
 class ModelSelectionRecord(SupervisedModel):
     record_schema_version: str
     status: Literal["frozen"]
@@ -147,6 +157,7 @@ class ModelSelectionRecord(SupervisedModel):
     operational_metrics: OperationalMetrics
     pipeline_verification_only: bool
     test_data_accessed: Literal[False]
+    corrective_evidence: CorrectiveEvidence | None = None
     created_at: datetime
 
     @field_validator(
@@ -247,6 +258,7 @@ class BundleManifest(SupervisedModel):
     validation_metrics: ClassificationMetrics
     frozen_test_metrics: ClassificationMetrics | None
     pipeline_verification_only: bool
+    corrective_evidence: CorrectiveEvidence | None = None
     python_version: str
     sklearn_version: str
     git_commit_sha: str | None

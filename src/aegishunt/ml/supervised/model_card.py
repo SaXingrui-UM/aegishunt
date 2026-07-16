@@ -38,6 +38,27 @@ def render_model_card(
         if selection.pipeline_verification_only
         else "Evaluation uses the registered benchmark described below."
     )
+    provenance_note = (
+        "This dataset was generated entirely by the AegisHunt project as controlled "
+        "synthetic demo data for pipeline verification. The registry describes it as a "
+        "project-internal synthetic research fixture; no public benchmark or external "
+        "dataset license is claimed or implied."
+        if selection.pipeline_verification_only
+        else "Dataset licensing and provenance follow the registered provider evidence."
+    )
+    corrective_note = (
+        f"""## Corrective evidence
+
+This run corrects `{selection.corrective_evidence.defect_id}` and supersedes experiment
+`{selection.corrective_evidence.supersedes_experiment_id}` / model
+`{selection.corrective_evidence.supersedes_model_version}` without overwriting that evidence.
+The corrected selection is bound to Git commit
+`{selection.corrective_evidence.code_commit_sha}`. Reason:
+{selection.corrective_evidence.reason}
+"""
+        if selection.corrective_evidence is not None
+        else ""
+    )
     feature_summary = (
         f"`{selection.feature_schema_version}` ({len(selection.feature_names)} float64 features)"
     )
@@ -96,8 +117,12 @@ severity, fusion risk, anomaly scores, MITRE mappings, or threat hypotheses.
 - Rows: {row_summary}
 - Groups: {group_summary}
 
+{provenance_note}
+
 The test split remained frozen until algorithm, hyperparameters, preprocessing, calibration, and
 threshold were written to `model_selection.json`. Test metrics did not affect model selection.
+
+{corrective_note}
 
 ## Training and selection
 

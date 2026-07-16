@@ -9,6 +9,12 @@ from aegishunt.datasets.service import DatasetService
 from tests.fixtures.datasets import LABEL_ROOT, REGISTRY_PATH
 
 TRAINING_CONFIG_PATH = Path(__file__).parents[2] / "configs" / "models" / "supervised.yaml"
+CORRECTIVE_CONFIG_PATH = (
+    Path(__file__).parents[2]
+    / "configs"
+    / "models"
+    / "supervised-corrective-pm-def-001.yaml"
+)
 
 
 def build_phase4_bundle(root: Path) -> tuple[Path, Path]:
