@@ -6,10 +6,10 @@ Deliver the validation-frozen supervised detection engine, then correct
 PM-DEF-001 without erasing its historical evidence or weakening frozen-test
 protection.
 
-Status: **Final status closure awaiting PR merge**. Phase 5 implementation is
-complete and PM-DEF-001 was corrected by PR #14. Original PR #13, corrective PR
-#14, and metadata PR #15 are merged into `main`; the corrective checkpoint Tag
-is pushed. Phase 6 has not started.
+Status: **Phase complete — corrected and fully closed**. PM-DEF-001 is
+**Resolved**. Original PR #13, corrective PR #14, metadata PR #15, and final
+status PR #16 are merged into `main`; the corrective checkpoint Tag is pushed.
+Phase 6 has not started.
 
 ## Original completed scope
 
@@ -135,6 +135,9 @@ artifact, not a reproducible-build identifier.
   formal experiment record.
 - GitHub Actions PR #14 required `quality` check passed in 3m21s; no pending or
   failing required check remained.
+- PR #16 added final README, Streamlit, known-defect, and status regression
+  coverage. This metadata correction makes those tests assert the merged,
+  fully-closed state instead of protecting the former awaiting-merge wording.
 
 ## Review outcome
 
@@ -148,6 +151,13 @@ identified one Low truthfulness cluster because README, Streamlit,
 `docs/known_defects.md`, and the PR #15 metadata state still carried pre-merge
 wording. The dedicated final status-closure change corrects those current-state
 representations while preserving the historical review record.
+
+PR #16 then merged the dedicated closure change. Its final read-only verification
+found no model, evidence, bundle, Tag, or Phase 6 scope issue, but identified one
+closure-blocking Medium metadata/test expectation: the progress and release
+current-state sections still described PR #16 as awaiting merge. This final
+metadata correction records the merged state and replaces the stale assertion
+without rewriting any historical audit evidence.
 
 ## Generated artifacts
 
@@ -197,11 +207,17 @@ removed them automatically. No formal frozen-test record was rerun or overwritte
   `[Docs] Record Phase 5 corrective post-merge checkpoint`, merged into `main`
   on 2026-07-18 17:28:36 +08:00 as
   `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574`; required CI passed.
+- Final status PR: [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16),
+  `[Phase 05] Close corrective status`, merged into `main` on 2026-07-18
+  17:53:48 +08:00 as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696`;
+  required CI passed.
+- No new Phase 5 Tag was created. Annotated `phase-05-complete` and
+  `phase-05-pm-def-001-complete` remain unchanged at their documented commits.
 
 ## Next phase
 
 Phase 6 — Anomaly Detection is **Not started**. Do not create
 `phase/06-anomaly-detection` or implement anomaly/fusion work. Its next planned
-branch is `phase/06-anomaly-detection`, but it may be created only after the
-final status-closure PR is merged, `main` is resynchronized and reverified, and
-the user gives explicit authorization in a separate task.
+branch is `phase/06-anomaly-detection`, but it may be created only after this
+metadata correction is merged, `main` is resynchronized and read-only verified,
+and the user gives explicit authorization in a separate task.
