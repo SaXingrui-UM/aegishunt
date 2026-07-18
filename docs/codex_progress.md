@@ -6,12 +6,12 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 5 - Supervised Detection Engine |
-| Status | Phase complete — corrected and fully closed |
-| Phase 5 implementation | PR #13, corrective PR #14, metadata PR #15, and final status PR #16 are merged; PM-DEF-001 is Resolved with versioned evidence |
-| Current activity | PR #16 is merged on `main`; Phase 5 closure is verified and Phase 6 has not started |
-| Verification status | Final status-closure Ruff and strict mypy pass; 205 tests pass with 86.90% branch-aware coverage; the 20-test focused status/corrective suite passes |
-| Stable branch checkpoint | `main` at PR #16 merge `cc3b1ac52d93d786ab5552c4f9be4b08b3408696`; no Phase 6 branch exists |
+| Current phase | Phase 6 - Unsupervised Anomaly Detection Engine |
+| Status | Implementation complete — awaiting PR review |
+| Phase 6 implementation | Benign-only Isolation Forest, offline novelty LOF, bounded normalization, validation threshold, one-time frozen test, safe bundle, prediction, CLI, evidence, and tests |
+| Current activity | Phase 6 implementation and controlled offline verification on `phase/06-anomaly-detection`; Phase 7 has not started |
+| Verification status | Ruff passes; strict mypy passes for 118 source files; all 246 tests pass with 87.17% branch-aware coverage and no skipped/xfailed tests |
+| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; implementation commits `d710b09` and `352205f` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -19,7 +19,7 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | PR [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13), corrective PR [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14), metadata PR [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15), and final status PR [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) are merged into `main` |
+| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR pending branch publication |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
 | CI status | PR #14, PR #15, and PR #16 required `quality` checks passed; no pending or failing required check |
@@ -29,16 +29,61 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
-| Working tree | Clean at the synchronized PR #16 `main` checkpoint before this isolated metadata correction |
-| Phase 6 status | Not started |
-| Next planned branch | `phase/06-anomaly-detection` (must not be created without explicit user authorization) |
-| Next action | Keep Phase 5 closed and wait for explicit user authorization before creating the Phase 6 branch |
+| Phase 6 tag | `phase-06-complete` is pending user review, PR merge, and an explicit post-merge checkpoint instruction; it has not been created |
+| Current branch | `phase/06-anomaly-detection` |
+| Working tree | Phase 6 implementation and documentation are being finalized; must be clean before push |
+| Phase 7 status | Not started |
+| Next planned branch | `phase/07-fusion-evaluation` (must not be created before Phase 6 merge/checkpoint and explicit authorization) |
+| Next action | Complete full checks/review, push Phase 6 branch, open PR, and stop for user review |
 
-Phase 0 through Phase 4 remain complete. Phase 5 PR #13, corrective PR #14, and
-metadata PR #15 are merged, and PR #16 completed the final status closure. The
-original annotated Tag remains an immutable historical pre-corrective
-checkpoint, and the separately named corrective Tag points to the PR #14 merge
-on `main`; neither Tag was moved or overwritten. Phase 6 has not started.
+Phase 0 through Phase 5 remain complete. Phase 5's original and corrective Tags
+remain unchanged. Phase 6 implementation is isolated on its declared branch and
+has not modified frozen Phase 4 splits or Phase 5 model/evidence contracts. Phase
+7 fusion, combined risk, alerts, explanations, correlation, and hunting logic
+have not started.
+
+## Phase 6 implementation checkpoint
+
+- Phase 4 quality, leakage, checksum, feature-order, label-mapping, frozen-test,
+  and group/source/session/scenario isolation remain mandatory before training.
+- Only 10 benign rows from 5 Phase 4 training groups fit StandardScaler,
+  Isolation Forest, LOF, and the quantile-CDF normalizer. Eighteen malicious
+  training rows are explicitly excluded; validation and test are never fit data.
+- Three configured fixed-seed Isolation Forest candidates are compared on
+  validation. `iforest-64-full` was selected under policy `1.0.0`; LOF runs in
+  novelty mode as an offline-only comparator. One-Class SVM is truthfully not
+  implemented and Autoencoder is absent.
+- Raw sklearn scores are retained, canonical scores reverse direction so higher
+  means more anomalous, and normalizer `1.0.0` maps benign-training quantiles to
+  `[0,1]`. The normalized score is not probability.
+- Validation-only benign-FPR-constrained threshold selection chose `0.9` under
+  FPR ceiling `0.25`. Selection/config/artifact checksums were frozen before one
+  explicit test evaluation; repeats are rejected.
+- Actual controlled validation: Accuracy `0.4`, F1/recall `0.0`, Macro F1
+  `0.2857`, ROC-AUC `0.5`, PR-AUC `0.6389`, benign FPR `0.0`, confusion
+  `4/0/6/0`. Frozen test: Accuracy `0.4`, F1/recall `0.0`, Macro F1 `0.2857`,
+  ROC-AUC `0.0833`, PR-AUC `0.4704`, benign FPR `0.0`, confusion `4/0/6/0`.
+  Poor anomaly recall is retained, not used for retuning.
+- LOF validation comparison reached recall `0.3333`, F1 `0.5`, PR-AUC `0.8083`,
+  and FPR `0.0`, but did not replace the roadmap-defined production algorithm.
+- The four-file skops bundle preserves scaler/estimator, score direction,
+  normalizer, threshold, schema, provenance, metrics, environment, and model
+  card. It rejects path escape, pickle/joblib, missing/extra/corrupt files,
+  unsafe types, schema drift, and version collision. Independent-process scoring
+  reproduced raw, canonical, normalized, and decision output exactly.
+- The verified temporary model checksum was `d6ab14b4...`; model bytes and
+  machine reports remain ignored. The checksum identifies one bundle, not a
+  reproducible-build hash.
+- The controlled synthetic demo verifies pipeline mechanics only. It is not a
+  public benchmark, research/production conclusion, real-world evidence, or
+  proof of zero-day detection.
+- Phase 6 generated-artifact plots are not claimed. Real score-distribution and
+  threshold-sensitivity CSV inputs are generated by the explicit train command.
+- Final branch verification passed Ruff, strict mypy for 118 source files, and
+  all 246 tests in 431.07 seconds with 87.17% branch-aware coverage. There were
+  no failures, skips, or xfails.
+- DEF-004 remains open and non-blocking; Phase 6 adds no alternate database or
+  broker merely to record total database unavailability.
 
 ## Phase 5 implementation checkpoint
 

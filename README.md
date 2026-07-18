@@ -18,22 +18,23 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 5 is complete on `main`: PR #13 delivered supervised detection, PR #14
-corrected PM-DEF-001, and PR #15 recorded the corrective checkpoint metadata.
-The original `phase-05-complete` Tag remains the immutable pre-corrective
-checkpoint, while `phase-05-pm-def-001-complete` identifies the verified
-correction. Phase 6 has not started. Phase 5 enforces the
-Phase 4 data-quality/leakage boundary, compares five configured supervised
-candidates with train-only group CV, freezes validation-selected calibration and
-thresholds before one explicit test evaluation, and saves integrity-checked
-versioned bundles. The checked run uses only the small synthetic controlled demo
-and is **pipeline verification only**, not a public-benchmark, research, or
-deployment result. No public benchmark is committed or claimed downloaded.
-The original Phase 5 evidence used an incorrect truthiness fallback for a valid
-Brier score of `0.0`; the corrective run preserves the old evidence, records an
-explicit supersession link, and uses new experiment/model versions. Anomaly
-detection, fusion, alerts, correlation, hypotheses, replay orchestration, and
-cases are **not implemented**.
+Phase 5 is fully closed on `main`; its original and PM-DEF-001 corrective Tags
+remain immutable. Phase 6 anomaly-engine implementation is complete on
+`phase/06-anomaly-detection` and awaits PR review. It enforces Phase 4
+quality/leakage and frozen-split evidence, fits preprocessing, Isolation Forest,
+LOF, and score normalization only on benign training rows, selects the production
+Isolation Forest configuration and external threshold only from validation, and
+opens frozen test through one explicit command. Safe bundles preserve raw,
+canonical, and bounded normalized score semantics. The normalized anomaly score is not probability
+and must not be interpreted as attack likelihood.
+
+The checked Phase 6 run uses only the small synthetic controlled demo and is
+**pipeline verification only**, not a public benchmark, research conclusion,
+deployment result, or proof of zero-day detection. Its Isolation Forest missed
+all labeled anomalies in validation and frozen test; that poor result is retained
+rather than tuned against test or hidden behind the stronger offline LOF
+comparison. Fusion, alerts, correlation, hypotheses, replay orchestration, and
+cases are **not implemented**. Phase 7 has not started.
 
 ## Planned architecture
 
@@ -77,6 +78,11 @@ aegishunt model train --data-dir <data> --dataset-report-dir <reports> --allow-c
 aegishunt model test --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
 aegishunt model list
 aegishunt model verify 1.0.1
+aegishunt anomaly --help
+aegishunt anomaly train --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
+aegishunt anomaly test --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
+aegishunt anomaly list
+aegishunt anomaly verify 1.0.0
 aegishunt api
 aegishunt frontend
 ```
@@ -113,6 +119,23 @@ skops type inventory; arbitrary pickle/joblib is rejected. Prediction returns
 only supervised label/score/probability metadata and does not create alerts or
 risk. See [`docs/supervised_experiment_protocol.md`](docs/supervised_experiment_protocol.md)
 and [`docs/model_card.md`](docs/model_card.md).
+
+## Anomaly model workflow
+
+`anomaly train` validates the same Phase 4 evidence, excludes malicious training
+rows from every fit, compares configured Isolation Forest candidates, runs LOF in
+novelty mode as an offline comparator, fits a benign-training quantile normalizer,
+and freezes a validation-only FPR-constrained threshold. It does not read test
+rows. `anomaly test` explicitly performs the single frozen evaluation and refuses
+a repeat.
+
+Anomaly bundles persist the StandardScaler/IsolationForest pipeline, raw score
+direction, canonical transform, normalizer, threshold, fixed feature schema,
+provenance, metrics, and environment. Prediction returns raw, canonical, and
+normalized anomaly scores plus `is_anomaly`; it creates no alert or combined risk.
+See [`docs/anomaly_experiment_protocol.md`](docs/anomaly_experiment_protocol.md),
+[`docs/anomaly_model_card.md`](docs/anomaly_model_card.md), and
+[`docs/adr/0014-validation-frozen-benign-anomaly-engine.md`](docs/adr/0014-validation-frozen-benign-anomaly-engine.md).
 
 ## Telemetry ingestion
 
@@ -164,8 +187,9 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 5 page reports the implemented supervised pipeline boundary and planned
-modules only. It does not display invented flows, alerts, hypotheses, or metrics.
+The Phase 6 page reports the implemented supervised/anomaly pipeline boundary and
+planned modules only. It does not display invented flows, alerts, hypotheses, or
+model metrics.
 
 ## Quality checks
 

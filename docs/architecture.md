@@ -8,8 +8,10 @@ deterministic feature schema `1.0.0`, and transactional `NetworkFlow`
 persistence. Phase 4 adds file-based dataset registry, canonical transformation,
 quality/leakage gates, and group-exclusive frozen splits. Phase 5 adds supervised
 candidate training, validation-frozen selection, one-time test evaluation, safe
-bundles, and strict prediction. Anomaly/fusion, alerts, correlation, hunting
-workflows, cases, PCAP replay orchestration, and runtime workers remain planned.
+bundles, and strict prediction. Phase 6 adds benign-only Isolation Forest,
+novelty-mode LOF comparison, score normalization, validation-selected threshold,
+one-time anomaly test, and safe anomaly bundles. Fusion, alerts, correlation,
+hunting workflows, cases, PCAP replay orchestration, and runtime workers remain planned.
 
 ## System context
 
@@ -41,7 +43,8 @@ One deployable Python application is divided by responsibility:
 | flows, features | Implemented packet state, timeouts, finalization, and feature registry | 3 |
 | datasets | Implemented registry, conversion, split, manifests, leakage and quality | 4 |
 | ML supervised | Implemented group-CV, validation selection, bundles, prediction | 5 |
-| ML anomaly/fusion/evaluation | Benign-baseline anomaly and signal fusion | 6-7 |
+| ML anomaly | Implemented benign fit, normalization, validation threshold, bundle | 6 |
+| ML fusion/evaluation | Planned supervised/anomaly signal fusion | 7 |
 | detection and explainability | Results, risk, alerts, reasons, explanations | 8 |
 | correlation and hunting | Entity/time groups and deterministic hypotheses | 9 |
 | cases and feedback | Investigation workflow and retraining candidates | 10 |
@@ -66,7 +69,7 @@ flowchart TD
     Dataset --> Quality["Quality + leakage gates"]
     Quality --> Split["Group-exclusive frozen splits"]
     Split --> Supervised["Phase 5 supervised detector"]
-    Feature --> Anomaly["Anomaly detector"]
+    Split --> Anomaly["Phase 6 benign-baseline anomaly detector"]
     Supervised --> Fusion["Configured signal fusion"]
     Anomaly --> Fusion
     Fusion --> Detection["Detection result + explanation"]
@@ -77,10 +80,10 @@ flowchart TD
     Case --> Feedback["Analyst feedback export"]
 ```
 
-The boundary through `Supervised` is implemented for supported PCAP-derived
+The boundary through `Supervised` and `Anomaly` is implemented for supported PCAP-derived
 features and the controlled demo. Public benchmark acquisition and label joining
 remain manual/provisional gates, so current model metrics verify the pipeline
-only. Anomaly and all downstream nodes remain planned. IDs and provenance are
+only. Fusion and all downstream nodes remain planned. IDs and provenance are
 preserved; raw evidence, labels, supervised probability, future inference,
 fusion, correlation, and analyst judgment remain distinguishable.
 
@@ -136,8 +139,18 @@ candidates are tuned on train-only group folds. Validation chooses calibration,
 threshold, and the main model under a versioned policy; an immutable record is
 written before one explicit frozen-test evaluation. Bundles use skops, SHA-256,
 an exact type inventory, and the fixed feature contract. Arbitrary pickle/joblib
-and schema drift are rejected. Isolation Forest and fusion remain Phase 6–7.
-No online self-modification occurs.
+and schema drift are rejected.
+
+The anomaly portion reuses the same Phase 4 gate and fixed feature order. Only
+benign training rows fit StandardScaler, Isolation Forest, novelty-mode LOF, and
+the quantile-CDF score normalizer. Validation selects an external
+benign-FPR-constrained threshold; a checksummed immutable record precedes one
+frozen test. Raw estimator scores are reversed into a higher-is-more-anomalous
+canonical score and mapped to `[0,1]` without probability semantics. LOF remains
+an offline comparator, One-Class SVM is explicitly not implemented, and no test
+metric can replace Isolation Forest or modify the saved threshold. Exact-inventory
+skops bundles preserve the pipeline, direction, normalizer, threshold, and schema.
+Fusion remains Phase 7. No online self-modification occurs.
 
 ## Planned threat-hunting lifecycle
 
@@ -197,7 +210,7 @@ Phase 4 generated canonical/split JSONL and machine reports use configured
 directory placeholders. Registry YAML, versioned label mappings, schema docs,
 and tests are reviewed source files.
 
-The configured supervised model registry verifies root containment, schema,
+The configured supervised and anomaly model registries verify root containment, schema,
 hash, manifest, and skops type inventory before loading. User uploads can never
 be treated as arbitrary serialized Python models. Machine experiment reports
 and model binaries are ignored; reviewed protocols and model cards are source.
