@@ -149,8 +149,8 @@ is part of Phase 6. The explicit `anomaly train` command generates real
 - Frontend status: `63cedb6` (`feat: update phase 6 frontend status`)
 - Documentation: `3363788` (`docs: document phase 6 anomaly contract`)
 - Review fix: `0ad6fb6` (`fix: harden anomaly selection freeze`)
-- Final checkpoint documentation commit: pending
-- Pull request: pending
+- Final checkpoint documentation: `c64ef32` (`docs: record phase 6 review outcome`)
+- Pull request: [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18), open and ready for review
 - Merge commit: pending
 - Annotated Tag: pending; do not create before user merge authorization
 

@@ -9,7 +9,7 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Current phase | Phase 6 - Unsupervised Anomaly Detection Engine |
 | Status | Implementation complete — awaiting PR review |
 | Phase 6 implementation | Benign-only Isolation Forest, offline novelty LOF, bounded normalization, validation threshold, one-time frozen test, safe bundle, prediction, CLI, evidence, and tests |
-| Current activity | Phase 6 implementation and controlled offline verification on `phase/06-anomaly-detection`; Phase 7 has not started |
+| Current activity | Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open and ready for review; Phase 7 has not started |
 | Verification status | Ruff passes; strict mypy passes for 118 source files; all 249 tests pass with 87.15% branch-aware coverage and no skipped/xfailed tests |
 | Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; implementation commits `d710b09` and `352205f` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -19,10 +19,10 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR pending branch publication |
+| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open from `phase/06-anomaly-detection` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | PR #14, PR #15, and PR #16 required `quality` checks passed; no pending or failing required check |
+| CI status | Phase 5 checks passed; PR #18 has two `quality` checks in progress at publication time and no reported failure |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -31,10 +31,10 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | `phase-06-complete` is pending user review, PR merge, and an explicit post-merge checkpoint instruction; it has not been created |
 | Current branch | `phase/06-anomaly-detection` |
-| Working tree | Phase 6 implementation and documentation are being finalized; must be clean before push |
+| Working tree | Clean on the Phase 6 branch after the PR publication metadata update |
 | Phase 7 status | Not started |
 | Next planned branch | `phase/07-fusion-evaluation` (must not be created before Phase 6 merge/checkpoint and explicit authorization) |
-| Next action | Complete full checks/review, push Phase 6 branch, open PR, and stop for user review |
+| Next action | Wait for PR #18 CI, user review, and Squash and merge; do not begin Phase 7 |
 
 Phase 0 through Phase 5 remain complete. Phase 5's original and corrective Tags
 remain unchanged. Phase 6 implementation is isolated on its declared branch and
