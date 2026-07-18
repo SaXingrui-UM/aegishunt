@@ -81,12 +81,15 @@ determinism. These values are development-host observations, not an SLA.
 `aegishunt anomaly train` writes training configuration, benign manifest, every
 candidate, validation metrics, normalizer, threshold curves, comparator evidence,
 score distributions, latency evidence, `selection.skops`, and an immutable
-selection record with `test_data_accessed: false`.
+selection record with `test_data_accessed: false`. The separate
+`anomaly_model_selection.sha256` companion is verified before frozen-test access;
+selection threshold/normalizer tampering fails closed.
 
 `aegishunt anomaly test` is a separate explicit command. It verifies the
 selection/config/dataset/split checksums, opens frozen test once, writes final
 metrics/confidence intervals, and creates a four-file model bundle. A repeated
-test or existing model version is rejected. The bundle contains exactly:
+test or existing model version is rejected before new frozen evidence is written.
+The bundle contains exactly:
 
 - `model.skops`
 - `manifest.json`

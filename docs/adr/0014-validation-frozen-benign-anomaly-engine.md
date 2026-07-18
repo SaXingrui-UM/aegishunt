@@ -30,8 +30,8 @@ fusion without implementing fusion now.
 - LOF runs in `novelty=True` mode as an offline comparator and cannot replace the
   production algorithm. One-Class SVM is not implemented in the bounded Phase 6
   scope; Autoencoder is excluded.
-- An immutable checksummed selection record is written before an explicit,
-  one-time frozen-test command. Test evidence cannot alter estimator,
+- An immutable selection record plus a separate SHA-256 companion is written
+  before an explicit, one-time frozen-test command. Test evidence cannot alter estimator,
   normalization, threshold, FPR target, or production algorithm.
 - The four-file bundle contains a skops pipeline, manifest, outer checksums, and
   model card. Exact inventory, root containment, checksums, component types,

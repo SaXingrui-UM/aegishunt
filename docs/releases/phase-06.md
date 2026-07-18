@@ -27,6 +27,8 @@ completion Tag are `pending`; no `phase-06-complete` Tag may exist before merge.
   threshold curves, class score distributions, group stability, full anomaly
   metrics, 1,000-draw group bootstrap intervals, and operational evidence.
 - Added immutable selection evidence before explicit one-time frozen test.
+- Added an independently verified SHA-256 companion for the frozen selection;
+  tampered threshold/normalizer evidence is rejected before test access.
 - Added exact-inventory safe skops bundle, model card, strict prediction batch,
   deterministic independent-process reload, CLI, and machine reports.
 - Added unit, integration, security-oriented bundle, CLI, and offline E2E tests.
@@ -96,12 +98,24 @@ match its own exact inventory/checksums and reproduce numeric scoring.
   no implementation failure was hidden or skipped.
 - Ruff: pass.
 - Strict mypy: pass for 118 source files.
-- Full Pytest/coverage: 246 passed, 0 failed, 0 skipped, and 0 xfailed in
-  431.07 seconds; branch-aware coverage was 87.17% (85% required).
+- Full Pytest/coverage: 249 passed, 0 failed, 0 skipped, and 0 xfailed in
+  408.16 seconds; branch-aware coverage was 87.15% (85% required).
 - Offline controlled E2E: pass, including benign-only fit, validation freeze,
   frozen test, bundle, independent-process reload, and identical numeric scoring.
 - Bundle checks reject path escape, arbitrary joblib, extra/missing/corrupt files,
   checksum mismatch, version collision, and schema/order/dtype drift.
+
+## Review outcome
+
+Native `codex review --base main` could not start because the installed arm64
+binary is missing (`ENOENT`); no native-review success is claimed. The equivalent
+first read-only review found one High selection-integrity gap and two Medium
+issues: an impossible FPR limit could select a non-compliant threshold, and a
+model-version collision could be discovered after frozen evidence was written.
+Commit `0ad6fb6` added the independent selection checksum, fail-closed FPR
+selection, pre-test version-collision check, and three regression tests. Fifteen
+focused tests and the complete suite then passed. The second equivalent review
+found zero remaining Blocking, High, or unhandled Medium findings.
 
 ## Generated artifacts
 
@@ -132,7 +146,10 @@ is part of Phase 6. The explicit `anomaly train` command generates real
 - Branch: `phase/06-anomaly-detection`
 - Core implementation: `d710b09` (`feat: add benign-baseline anomaly engine`)
 - Regression tests: `352205f` (`test: cover anomaly selection and bundle integrity`)
-- Documentation/final check commits: pending
+- Frontend status: `63cedb6` (`feat: update phase 6 frontend status`)
+- Documentation: `3363788` (`docs: document phase 6 anomaly contract`)
+- Review fix: `0ad6fb6` (`fix: harden anomaly selection freeze`)
+- Final checkpoint documentation commit: pending
 - Pull request: pending
 - Merge commit: pending
 - Annotated Tag: pending; do not create before user merge authorization
