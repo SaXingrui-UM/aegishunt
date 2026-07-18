@@ -9,7 +9,7 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Current phase | Phase 5 - Supervised Detection Engine |
 | Status | Phase complete — corrected by PR #14 |
 | Phase 5 implementation | Original PR #13 and corrective PR #14 are merged; PM-DEF-001 is corrected with versioned evidence |
-| Current activity | Corrective annotated Tag is pushed; post-merge metadata PR is being prepared; Phase 6 has not started |
+| Current activity | Corrective annotated Tag is pushed; metadata PR #15 awaits user review; Phase 6 has not started |
 | Verification status | Post-merge Ruff and strict mypy pass; 202 tests pass with 86.90% branch-aware coverage; 33 focused Phase 5 and 61 dataset-integrity tests pass |
 | Current branch | `docs/phase-05-corrective-post-merge-metadata` |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -19,6 +19,7 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull requests | PR [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13) and corrective PR [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14) are merged into `main` |
+| Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) is open and ready for review; base `main`, head `docs/phase-05-corrective-post-merge-metadata` |
 | CI status | PR #14 required `quality` check passed; no pending or failing required check |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |

@@ -193,6 +193,10 @@ removed them automatically. No formal frozen-test record was rerun or overwritte
   `8ce8e8ad91a72a945bed3d71569ba42c28e1891b`, locally and remotely verified at
   the PR #14 merged `main` commit `76f79972dff778f5d30d550bc6da78583e338fa1`.
 - `phase-05-complete` remains an immutable historical pre-corrective checkpoint.
+- Post-merge metadata PR: [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15),
+  `[Docs] Record Phase 5 corrective post-merge checkpoint`, open and ready for
+  user review with base `main` and head
+  `docs/phase-05-corrective-post-merge-metadata`.
 
 ## Next phase
 
