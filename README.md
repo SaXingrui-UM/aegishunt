@@ -18,9 +18,11 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 5 supervised detection was merged to `main` in PR #13. A corrective fix
-for PM-DEF-001 is implemented on `fix/phase-05-zero-brier-selection` and awaits
-review; Phase 6 has not started. Phase 5 enforces the
+Phase 5 is complete on `main`: PR #13 delivered supervised detection, PR #14
+corrected PM-DEF-001, and PR #15 recorded the corrective checkpoint metadata.
+The original `phase-05-complete` Tag remains the immutable pre-corrective
+checkpoint, while `phase-05-pm-def-001-complete` identifies the verified
+correction. Phase 6 has not started. Phase 5 enforces the
 Phase 4 data-quality/leakage boundary, compares five configured supervised
 candidates with train-only group CV, freezes validation-selected calibration and
 thresholds before one explicit test evaluation, and saves integrity-checked

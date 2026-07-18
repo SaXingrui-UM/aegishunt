@@ -6,9 +6,10 @@ Deliver the validation-frozen supervised detection engine, then correct
 PM-DEF-001 without erasing its historical evidence or weakening frozen-test
 protection.
 
-Status: **Phase complete — corrected by PR #14**. Original PR #13 and corrective
-PR #14 are merged into `main`. The separately named corrective checkpoint Tag is
-pushed. Phase 6 has not started.
+Status: **Final status closure awaiting PR merge**. Phase 5 implementation is
+complete and PM-DEF-001 was corrected by PR #14. Original PR #13, corrective PR
+#14, and metadata PR #15 are merged into `main`; the corrective checkpoint Tag
+is pushed. Phase 6 has not started.
 
 ## Original completed scope
 
@@ -120,10 +121,11 @@ artifact, not a reproducible-build identifier.
 
 - Ruff: pass.
 - Strict mypy: pass across 96 source files.
-- Pytest: 202 passed, 0 failed, 0 skipped, 0 xfailed.
+- Final status-closure Pytest: 205 passed, 0 failed, 0 skipped, 0 xfailed.
 - Branch-aware coverage: 86.90% (minimum 85%).
-- Focused Phase 5 suite: 33 passed.
-- Phase 4 dataset-integrity suite: 61 passed.
+- Focused status/frontend and corrective-regression selection: 20 passed.
+- The earlier corrective checkpoint separately recorded 33 focused Phase 5
+  tests and 61 Phase 4 dataset-integrity tests as passing.
 - Zero-Brier calibration/candidate, missing-value, non-finite, deterministic
   selection, original/non-corrective E2E, corrective non-overwrite, one-time
   frozen test, GroupKFold, threshold, bootstrap, independent reload, checksum,
@@ -141,10 +143,11 @@ because the local Codex arm64 executable was missing (`ENOENT`). Equivalent
 review found one Medium regression gap; commit `f93a5b4` restored the original
 E2E and retained a separate corrective audit E2E. Post-merge native review
 against `2510c295...` failed with the same `ENOENT`; the equivalent read-only
-review found zero Blocking, zero High, and zero blocking Medium findings. One
-Low truthfulness finding remains because README, Streamlit, and
-`docs/known_defects.md` still carry pre-merge status wording; those files were
-outside this task's explicitly limited two-file metadata branch.
+review found zero Blocking, zero High, and zero blocking Medium findings. It
+identified one Low truthfulness cluster because README, Streamlit,
+`docs/known_defects.md`, and the PR #15 metadata state still carried pre-merge
+wording. The dedicated final status-closure change corrects those current-state
+representations while preserving the historical review record.
 
 ## Generated artifacts
 
@@ -170,9 +173,6 @@ removed them automatically. No formal frozen-test record was rerun or overwritte
   recorded `9b403dd2...` checksum cannot be re-verified without the original
   external/temporary artifact. Current isolated bundles pass their own complete
   checksum inventories.
-- README, Streamlit, and `docs/known_defects.md` retain stale pre-merge status
-  text. This is a Low documentation issue and not a model, evidence, or bundle
-  integrity failure; no out-of-scope file was changed during this metadata task.
 - Anomaly detection, fusion, alerts, explanations, correlation, hypotheses, and
   cases are Phase 6+ and absent.
 
@@ -194,13 +194,14 @@ removed them automatically. No formal frozen-test record was rerun or overwritte
   the PR #14 merged `main` commit `76f79972dff778f5d30d550bc6da78583e338fa1`.
 - `phase-05-complete` remains an immutable historical pre-corrective checkpoint.
 - Post-merge metadata PR: [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15),
-  `[Docs] Record Phase 5 corrective post-merge checkpoint`, open and ready for
-  user review with base `main` and head
-  `docs/phase-05-corrective-post-merge-metadata`.
+  `[Docs] Record Phase 5 corrective post-merge checkpoint`, merged into `main`
+  on 2026-07-18 17:28:36 +08:00 as
+  `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574`; required CI passed.
 
 ## Next phase
 
 Phase 6 — Anomaly Detection is **Not started**. Do not create
-`phase/06-anomaly-detection` or implement anomaly/fusion work. First review and
-merge the post-merge metadata PR, resynchronize clean `main`, and then wait for
-explicit user authorization in a separate task.
+`phase/06-anomaly-detection` or implement anomaly/fusion work. Its next planned
+branch is `phase/06-anomaly-detection`, but it may be created only after the
+final status-closure PR is merged, `main` is resynchronized and reverified, and
+the user gives explicit authorization in a separate task.

@@ -7,11 +7,11 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 5 - Supervised Detection Engine |
-| Status | Phase complete — corrected by PR #14 |
+| Status | Final status closure awaiting PR merge |
 | Phase 5 implementation | Original PR #13 and corrective PR #14 are merged; PM-DEF-001 is corrected with versioned evidence |
-| Current activity | Corrective annotated Tag is pushed; metadata PR #15 awaits user review; Phase 6 has not started |
-| Verification status | Post-merge Ruff and strict mypy pass; 202 tests pass with 86.90% branch-aware coverage; 33 focused Phase 5 and 61 dataset-integrity tests pass |
-| Current branch | `docs/phase-05-corrective-post-merge-metadata` |
+| Current activity | Metadata PR #15 is merged; final status-truthfulness closure is in progress; Phase 6 has not started |
+| Verification status | Final status-closure Ruff and strict mypy pass; 205 tests pass with 86.90% branch-aware coverage; the 20-test focused status/corrective suite passes |
+| Current branch | `fix/phase-05-final-status-closure` |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
@@ -19,21 +19,23 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
 | Pull requests | PR [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13) and corrective PR [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14) are merged into `main` |
-| Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) is open and ready for review; base `main`, head `docs/phase-05-corrective-post-merge-metadata` |
-| CI status | PR #14 required `quality` check passed; no pending or failing required check |
+| Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
+| CI status | PR #14 and PR #15 required `quality` checks passed; no pending or failing required check |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
-| Working tree | Clean after the corrective post-merge metadata commit |
-| Next action | Review and merge the corrective metadata PR, resynchronize `main`, then wait for explicit user authorization; do not start Phase 6 |
+| Working tree | Clean after the final status-closure commit |
+| Phase 6 status | Not started |
+| Next planned branch | `phase/06-anomaly-detection` (must not be created without explicit user authorization) |
+| Next action | Review and merge the final status-closure PR, resynchronize `main`, run the final read-only closure check, then wait for explicit user authorization |
 
-Phase 0 through Phase 4 remain complete. Phase 5 PR #13 and corrective PR #14
-are merged. The original annotated Tag remains an immutable historical
-pre-corrective checkpoint, and the separately named corrective Tag points to the
-PR #14 merge on `main`. Phase 6 has not started.
+Phase 0 through Phase 4 remain complete. Phase 5 PR #13, corrective PR #14, and
+metadata PR #15 are merged. The original annotated Tag remains an immutable
+historical pre-corrective checkpoint, and the separately named corrective Tag
+points to the PR #14 merge on `main`. Phase 6 has not started.
 
 ## Phase 5 implementation checkpoint
 
@@ -73,12 +75,17 @@ PR #14 merge on `main`. Phase 6 has not started.
 - Post-merge checks on synchronized `main`: Ruff pass; strict mypy pass for 96 source files; 202
   tests pass, zero failures/skips/xfails, 86.90% branch-aware coverage; 33 focused
   Phase 5 tests and 61 Phase 4 dataset-integrity tests pass.
+- Final status-closure verification: Ruff pass; strict mypy pass for 96 source
+  files; 205 tests pass with zero failures/skips/xfails and 86.90% branch-aware
+  coverage; the focused status, frontend, PM-DEF-001 regression, original E2E,
+  and corrective E2E selection passed 20 tests.
 - Native post-merge `codex review --base 2510c295...` remained unavailable
   because the installed arm64 binary is missing (`ENOENT`). Equivalent read-only
-  review found zero Blocking, zero High, and zero blocking Medium findings. One
-  Low status-truthfulness finding remains: README, Streamlit, and
-  `docs/known_defects.md` still contain pre-merge wording and are outside this
-  task's explicitly limited two-file metadata change.
+  review found zero Blocking, zero High, and zero blocking Medium findings. It
+  identified one Low status-truthfulness cluster in README, Streamlit,
+  `docs/known_defects.md`, and the PR #15 metadata state; the dedicated final
+  status-closure change corrects those current-status representations without
+  rewriting historical evidence.
 - `phase-05-complete` remains unchanged: annotated Tag object `ff3f9710...`
   dereferences to `2510c295...`. Corrective annotated Tag
   `phase-05-pm-def-001-complete` (object `8ce8e8ad...`) dereferences to the PR #14
