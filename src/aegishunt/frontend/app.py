@@ -1,4 +1,4 @@
-"""Minimal Streamlit page for the Phase 5 supervised research foundation."""
+"""Minimal Streamlit page for the Phase 6 anomaly research foundation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 PLANNED_MODULES = (
     "PCAP replay and runtime orchestration",
     "Public benchmark acquisition and validated label joining",
-    "Anomaly detection and supervised/anomaly fusion",
+    "Supervised/anomaly signal fusion",
     "Risk fusion, alerting, and correlation",
     "Threat hypotheses, cases, and analyst feedback",
     "Model activation and controlled retraining",
@@ -17,16 +17,19 @@ PLANNED_MODULES = (
 
 
 def main() -> None:
-    """Render truthful Phase 5 foundation status and planned capabilities."""
+    """Render truthful Phase 6 implementation status and planned capabilities."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 5 complete — PM-DEF-001 corrected by PR #14. "
-        "Phase 6: Not started."
+        "Current status: Phase 6 implementation complete — awaiting PR review. "
+        "Phase 7: Not started."
     )
-    st.success("Quality-gated supervised training and safe model bundles are available.")
+    st.success(
+        "Benign-only anomaly training, one-time evaluation, and safe bundle workflows "
+        "are implemented. No anomaly model metric is displayed as a deployment claim."
+    )
     st.subheader("Planned system modules")
     for module in PLANNED_MODULES:
         st.markdown(f"- {module}")

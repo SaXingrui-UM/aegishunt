@@ -1,4 +1,4 @@
-"""Tests for truthful content in the Phase 5 Streamlit shell."""
+"""Tests for truthful content in the Phase 6 Streamlit shell."""
 
 from typing import Any
 
@@ -20,9 +20,10 @@ def test_frontend_renders_phase_status_without_fake_results(monkeypatch: Any) ->
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 5 complete — PM-DEF-001 corrected by PR #14" in content
-    assert "Phase 6: Not started" in content
-    assert "awaiting PR review" not in content
-    assert "safe model bundles" in content
+    assert "Phase 6 implementation complete — awaiting PR review" in content
+    assert "Phase 7: Not started" in content
+    assert "anomaly training" in content
+    assert "fusion" in content
     assert "Research prototype only" in content
     assert "Accuracy" not in content
+    assert "SecurityAlert" not in content
