@@ -1,38 +1,38 @@
 # Codex Progress
 
-Last updated: 2026-07-16 (Asia/Shanghai)
+Last updated: 2026-07-18 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 5 - Supervised Detection Engine |
-| Status | Phase 5 corrective implementation complete — awaiting PR review |
-| Phase 5 implementation | PR #13 merged; PM-DEF-001 corrected on a dedicated branch with immutable corrective evidence |
-| Current activity | Corrective PR #14 is open as a draft; Phase 6 has not started |
-| Verification status | Ruff and strict mypy pass; 202 tests pass with 86.90% branch-aware coverage; 33 focused Phase 5 and 61 dataset-integrity tests pass |
-| Current branch | `fix/phase-05-zero-brier-selection` |
-| Phase 5 merged baseline | `main` at `2510c295f9bf82d90e8c82a072187808651980dc` |
-| Latest corrective implementation commit | `f93a5b4` (retain original and corrective E2E paths) |
+| Status | Phase complete — corrected by PR #14 |
+| Phase 5 implementation | Original PR #13 and corrective PR #14 are merged; PM-DEF-001 is corrected with versioned evidence |
+| Current activity | Corrective annotated Tag is pushed; post-merge metadata PR is being prepared; Phase 6 has not started |
+| Verification status | Post-merge Ruff and strict mypy pass; 202 tests pass with 86.90% branch-aware coverage; 33 focused Phase 5 and 61 dataset-integrity tests pass |
+| Current branch | `docs/phase-05-corrective-post-merge-metadata` |
+| Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
+| Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
 | Phase 2 merge commit | `d5e1ba6b4df7614977a0330a4c38a56cec051241` |
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull request | Corrective PR [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14) is open as a draft; base `main`, head `fix/phase-05-zero-brier-selection` |
-| CI status | Both PR #13 `quality` checks passed; PR #14 `quality` is pending |
+| Pull requests | PR [#13](https://github.com/SaXingrui-UM/aegishunt/pull/13) and corrective PR [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14) are merged into `main` |
+| CI status | PR #14 required `quality` check passed; no pending or failing required check |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
-| Phase 5 tag | Existing annotated `phase-05-complete`, unchanged at merge commit `2510c295`; it predates the corrective PR |
-| Working tree | Clean after the corrective checkpoint commit |
-| Next action | Wait for PR #14 CI, review it, mark it ready, then merge only with user approval; do not start Phase 6 |
+| Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
+| Working tree | Clean after the corrective post-merge metadata commit |
+| Next action | Review and merge the corrective metadata PR, resynchronize `main`, then wait for explicit user authorization; do not start Phase 6 |
 
-Phase 0 through Phase 4 remain complete. Phase 5 PR #13 was merged and its
-existing annotated tag remains unchanged, but PM-DEF-001 invalidated the affected
-selection evidence as final evidence. The corrective implementation is awaiting
-review and merge; Phase 6 has not started.
+Phase 0 through Phase 4 remain complete. Phase 5 PR #13 and corrective PR #14
+are merged. The original annotated Tag remains an immutable historical
+pre-corrective checkpoint, and the separately named corrective Tag points to the
+PR #14 merge on `main`. Phase 6 has not started.
 
 ## Phase 5 implementation checkpoint
 
@@ -56,18 +56,32 @@ review and merge; Phase 6 has not started.
   model payload, and checksum changed. Threshold, frozen Accuracy/Macro F1, and
   confusion matrix did not. Bundle SHA-256 is
   `9b403dd20ca77322983a175980081399414219f3cc6a2ceac7acff0bec3d17a5`.
+- Post-merge verification used isolated temporary roots and did not touch the
+  formal frozen-test identity. It reproduced the same candidate, calibration,
+  threshold, validation metrics, frozen metrics, confidence intervals, and
+  confusion matrix. Independent process reload and deterministic predictions
+  passed; repeat frozen evaluation, missing/extra/corrupt files, arbitrary
+  joblib, and version collision were rejected.
+- The historical `9b403dd2...` model binary was intentionally not committed and
+  is no longer present locally, so that particular payload could not be
+  re-hashed. Two new isolated skops serializations had different per-artifact
+  checksums while each matched its own manifest. The historical checksum remains
+  an audit record, not a claimed reproducible-build checksum.
 - Controlled-demo provenance explicitly states project-generated synthetic data,
   project-internal fixture status, and no claimed external/public license.
-- Final checks before PR: Ruff pass; strict mypy pass for 96 source files; 202
+- Post-merge checks on synchronized `main`: Ruff pass; strict mypy pass for 96 source files; 202
   tests pass, zero failures/skips/xfails, 86.90% branch-aware coverage; 33 focused
   Phase 5 tests and 61 Phase 4 dataset-integrity tests pass.
-- Native `codex review --base main` remains unavailable because the installed
-  arm64 binary is missing (`ENOENT`). Equivalent read-only review found one
-  Medium regression-coverage issue: the corrective E2E had replaced the original
-  E2E path. Commit `f93a5b4` restored the original path and added a separate
-  corrective E2E; no Blocking or High issue remains.
-- `phase-05-complete` was not moved, deleted, overwritten, or recreated. A later
-  user-authorized post-merge corrective checkpoint remains pending.
+- Native post-merge `codex review --base 2510c295...` remained unavailable
+  because the installed arm64 binary is missing (`ENOENT`). Equivalent read-only
+  review found zero Blocking, zero High, and zero blocking Medium findings. One
+  Low status-truthfulness finding remains: README, Streamlit, and
+  `docs/known_defects.md` still contain pre-merge wording and are outside this
+  task's explicitly limited two-file metadata change.
+- `phase-05-complete` remains unchanged: annotated Tag object `ff3f9710...`
+  dereferences to `2510c295...`. Corrective annotated Tag
+  `phase-05-pm-def-001-complete` (object `8ce8e8ad...`) dereferences to the PR #14
+  merge `76f79972...`; both local and remote references were verified.
 - Phase 6 anomaly detection, fusion, alerts, and related functionality are absent.
 
 ### Original merged implementation record
