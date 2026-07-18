@@ -20,7 +20,7 @@ from aegishunt.ml.anomaly.contracts import (
     ScoreDistribution,
 )
 from aegishunt.ml.anomaly.data import AnomalyTrainingData
-from aegishunt.ml.anomaly.errors import AnomalyTrainingError
+from aegishunt.ml.anomaly.errors import AnomalyEvaluationError, AnomalyTrainingError
 from aegishunt.ml.anomaly.isolation_forest import (
     build_isolation_forest,
     isolation_parameters,
@@ -122,7 +122,7 @@ def evaluate_isolation_forest_candidates(
             completed = _fit_candidate(candidate, data, config)
             fitted.append(completed)
             results.append(completed.result)
-        except (AnomalyTrainingError, ValueError) as exc:
+        except (AnomalyEvaluationError, AnomalyTrainingError, ValueError) as exc:
             results.append(
                 IsolationForestCandidateResult(
                     candidate_id=candidate.candidate_id,
@@ -226,7 +226,7 @@ def evaluate_lof_comparator(
             false_positive_rate_limit=config.false_positive_rate_limit,
         )
         selected = select_threshold(thresholds)
-    except (AnomalyTrainingError, ValueError):
+    except (AnomalyEvaluationError, AnomalyTrainingError, ValueError):
         return ComparatorResult(
             algorithm="local_outlier_factor",
             production_eligible=False,

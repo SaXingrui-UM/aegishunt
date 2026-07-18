@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -58,6 +59,39 @@ def test_frozen_test_requires_selection_and_rejects_repeat(tmp_path: Path) -> No
         service.evaluate_test(allow_controlled_demo=True)
 
 
+def test_frozen_test_rejects_selection_tampering(tmp_path: Path) -> None:
+    service, _, _, _, experiment_root = anomaly_service(tmp_path)
+    training = service.train(allow_controlled_demo=True)
+    selection_path = experiment_root / training.experiment_id / "anomaly_model_selection.json"
+    payload = json.loads(selection_path.read_text(encoding="utf-8"))
+    payload["threshold"] = 0.1
+    selection_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    with pytest.raises(AnomalyArtifactError, match="selection checksum"):
+        service.evaluate_test(allow_controlled_demo=True)
+    assert not (
+        experiment_root
+        / training.experiment_id
+        / "anomaly_frozen_test_metrics.json"
+    ).exists()
+
+
+def test_model_version_collision_is_rejected_before_frozen_evidence(
+    tmp_path: Path,
+) -> None:
+    service, _, _, model_root, experiment_root = anomaly_service(tmp_path)
+    training = service.train(allow_controlled_demo=True)
+    (model_root / training.model_version).mkdir(parents=True)
+
+    with pytest.raises(AnomalyArtifactError, match="version already exists"):
+        service.evaluate_test(allow_controlled_demo=True)
+    assert not (
+        experiment_root
+        / training.experiment_id
+        / "anomaly_frozen_test_metrics.json"
+    ).exists()
+
+
 def test_training_artifact_inventory_is_complete_and_has_no_test_metrics(tmp_path: Path) -> None:
     service, _, _, _, experiment_root = anomaly_service(tmp_path)
     training = service.train(allow_controlled_demo=True)
@@ -79,6 +113,7 @@ def test_training_artifact_inventory_is_complete_and_has_no_test_metrics(tmp_pat
         "latency_results.csv",
         "selection.skops",
         "anomaly_model_selection.json",
+        "anomaly_model_selection.sha256",
     }
     assert {path.name for path in directory.iterdir()} == expected
     assert not (directory / "anomaly_frozen_test_metrics.json").exists()

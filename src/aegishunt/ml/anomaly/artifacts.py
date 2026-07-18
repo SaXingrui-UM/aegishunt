@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 from dataclasses import dataclass
@@ -11,8 +12,12 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
+from aegishunt.datasets.schemas import SHA256_PATTERN
 from aegishunt.ml.anomaly.contracts import AnomalySelectionRecord
 from aegishunt.ml.anomaly.errors import AnomalyArtifactError
+
+SELECTION_RECORD_FILENAME = "anomaly_model_selection.json"
+SELECTION_CHECKSUM_FILENAME = "anomaly_model_selection.sha256"
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,8 +87,17 @@ class AnomalyExperimentStore:
 
     def read_selection(self) -> AnomalySelectionRecord:
         try:
-            return AnomalySelectionRecord.model_validate_json(
-                self.path("anomaly_model_selection.json").read_text(encoding="utf-8")
-            )
+            payload = self.path(SELECTION_RECORD_FILENAME).read_bytes()
+            expected = self.path(SELECTION_CHECKSUM_FILENAME).read_text(
+                encoding="utf-8"
+            ).strip().lower()
         except (OSError, ValidationError) as exc:
+            raise AnomalyArtifactError("anomaly selection record is invalid") from exc
+        if not SHA256_PATTERN.fullmatch(expected):
+            raise AnomalyArtifactError("anomaly selection checksum is invalid")
+        if hashlib.sha256(payload).hexdigest() != expected:
+            raise AnomalyArtifactError("anomaly selection checksum verification failed")
+        try:
+            return AnomalySelectionRecord.model_validate_json(payload)
+        except ValidationError as exc:
             raise AnomalyArtifactError("anomaly selection record is invalid") from exc

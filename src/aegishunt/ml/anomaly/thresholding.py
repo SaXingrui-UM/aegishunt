@@ -44,12 +44,15 @@ def evaluate_thresholds(
 
 
 def select_threshold(results: tuple[ThresholdResult, ...]) -> ThresholdResult:
-    """Choose deterministically without access to frozen-test evidence."""
+    """Choose a compliant threshold deterministically without frozen-test evidence."""
 
     if not results:
         raise AnomalyEvaluationError("threshold results cannot be empty")
     eligible = tuple(item for item in results if item.satisfies_fpr_limit)
-    pool = eligible or results
+    if not eligible:
+        raise AnomalyEvaluationError(
+            "no validation threshold satisfies the configured benign FPR limit"
+        )
 
     def key(item: ThresholdResult) -> tuple[float, ...]:
         pr_auc = item.metrics.pr_auc if item.metrics.pr_auc is not None else -1.0
@@ -63,4 +66,4 @@ def select_threshold(results: tuple[ThresholdResult, ...]) -> ThresholdResult:
             -item.threshold,
         )
 
-    return max(pool, key=key)
+    return max(eligible, key=key)

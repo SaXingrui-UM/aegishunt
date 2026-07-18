@@ -125,8 +125,7 @@ def save_bundle(
 
     artifact_root.mkdir(parents=True, exist_ok=True)
     destination = artifact_root / manifest.model_version
-    if destination.exists():
-        raise AnomalyArtifactError("anomaly model version already exists")
+    require_available_bundle_version(artifact_root, manifest.model_version)
     temporary = artifact_root / f".{manifest.model_version}.tmp-{os.getpid()}"
     if temporary.exists():
         raise AnomalyArtifactError("anomaly bundle staging path already exists")
@@ -157,6 +156,18 @@ def save_bundle(
             raise
         raise AnomalyArtifactError("unable to save anomaly model bundle") from exc
     return destination
+
+
+def require_available_bundle_version(artifact_root: Path, model_version: str) -> None:
+    """Fail before frozen-test access when a model version cannot be reserved safely."""
+
+    try:
+        artifact_root.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise AnomalyArtifactError("anomaly model storage is unavailable") from exc
+    destination = artifact_root / model_version
+    if destination.exists() or destination.is_symlink():
+        raise AnomalyArtifactError("anomaly model version already exists")
 
 
 def _read_verified_bundle(

@@ -77,6 +77,20 @@ def test_empty_threshold_candidates_are_rejected() -> None:
         )
 
 
+def test_threshold_selection_fails_closed_when_fpr_limit_is_impossible() -> None:
+    results = evaluate_thresholds(
+        np.asarray([0, 0, 1], dtype=np.int64),
+        np.asarray([0.9, 0.95, 0.99], dtype=np.float64),
+        np.asarray(["b1", "b2", "a1"], dtype=np.str_),
+        candidates=(0.5, 0.8),
+        false_positive_rate_limit=0.0,
+    )
+
+    assert not any(item.satisfies_fpr_limit for item in results)
+    with pytest.raises(AnomalyEvaluationError, match="no validation threshold"):
+        select_threshold(results)
+
+
 def test_isolation_candidates_fit_benign_only_and_select_deterministically(
     tmp_path: Path,
 ) -> None:

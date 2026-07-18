@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 
-from aegishunt.ml.anomaly.artifacts import AnomalyExperimentStore
+from aegishunt.ml.anomaly.artifacts import (
+    SELECTION_CHECKSUM_FILENAME,
+    SELECTION_RECORD_FILENAME,
+    AnomalyExperimentStore,
+)
 from aegishunt.ml.anomaly.config import AnomalyTrainingConfig
 from aegishunt.ml.anomaly.contracts import (
     AnomalyBundleManifest,
@@ -180,7 +185,12 @@ def write_training_artifacts(
     store.write_csv("score_distribution.csv", distribution_rows)
     store.write_csv("latency_results.csv", latency_rows)
     store.write_bytes("selection.skops", model_payload)
-    store.write_json("anomaly_model_selection.json", selection)
+    selection_payload = selection.model_dump_json(indent=2) + "\n"
+    store.write_text(SELECTION_RECORD_FILENAME, selection_payload)
+    store.write_text(
+        SELECTION_CHECKSUM_FILENAME,
+        hashlib.sha256(selection_payload.encode("utf-8")).hexdigest() + "\n",
+    )
 
 
 def write_frozen_artifacts(

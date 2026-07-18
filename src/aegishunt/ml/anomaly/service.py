@@ -19,6 +19,7 @@ from aegishunt.ml.anomaly.bundle import (
     load_manifest,
     load_selection_artifact,
     manifest_as_safe_json,
+    require_available_bundle_version,
     save_bundle,
     sha256_bytes,
     trusted_types,
@@ -227,6 +228,7 @@ class AnomalyTrainingService:
         store = AnomalyExperimentStore.open(self._reports_root, config.experiment_id)
         if store.exists("anomaly_frozen_test_metrics.json"):
             raise AnomalyArtifactError("anomaly frozen test evaluation already exists")
+        require_available_bundle_version(self._artifact_root, config.model_version)
         selection = store.read_selection()
         config_checksum = sha256_file(self._training_config_path)
         if selection.training_config_checksum != config_checksum:
