@@ -25,6 +25,7 @@ def test_help_lists_foundation_commands() -> None:
     assert "ingest" in result.stdout
     assert "dataset" in result.stdout
     assert "model" in result.stdout
+    assert "anomaly" in result.stdout
 
 
 def test_model_help_lists_explicit_phase_5_boundaries() -> None:
