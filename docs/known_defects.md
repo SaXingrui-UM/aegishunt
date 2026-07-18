@@ -1,11 +1,11 @@
 # Known Defects
 
-Last updated: 2026-07-16 (Asia/Shanghai)
+Last updated: 2026-07-18 (Asia/Shanghai)
 
 ## PM-DEF-001 — Zero Brier score treated as missing
 
 - Severity: High
-- Status: Corrected in `fix/phase-05-zero-brier-selection`; awaiting PR review
+- Status: Resolved
 - Component: Phase 5 calibration and candidate selection
 - Root cause: optional numeric evidence used truthiness fallbacks, so valid
   Brier `0.0` was replaced by a worse fallback value.
@@ -21,6 +21,14 @@ Last updated: 2026-07-16 (Asia/Shanghai)
 - Corrective result: Random Forest, isotonic calibration, threshold `0.5`.
   These controlled synthetic results verify the pipeline only and are not public
   benchmark or real-world performance evidence.
+- Corrective PR: [#14](https://github.com/SaXingrui-UM/aegishunt/pull/14),
+  merged as `76f79972dff778f5d30d550bc6da78583e338fa1`.
+- Checkpoints: original annotated `phase-05-complete` remains unchanged as the
+  affected historical checkpoint; annotated `phase-05-pm-def-001-complete`
+  identifies the merged correction.
+- Metadata closure: PR
+  [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged the corrective
+  post-merge record into `main`.
 - Regression evidence: zero-Brier calibration, candidate tie-break, `None`
   ordering, non-finite rejection, determinism, non-overwrite, one-time frozen
   test, secure bundle, and independent reload tests.
