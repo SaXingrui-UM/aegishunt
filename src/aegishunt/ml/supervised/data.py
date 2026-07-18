@@ -307,11 +307,28 @@ class SupervisedDatasetGate:
     def load_frozen_test(self, selection: ModelSelectionRecord) -> PartitionData:
         """Load test only after a selection record binds the exact Phase 4 evidence."""
 
-        if selection.status != "frozen" or selection.test_data_accessed is not False:
+        return self.load_frozen_test_for_contract(
+            status=selection.status,
+            test_data_accessed=selection.test_data_accessed,
+            dataset_manifest_checksum=selection.dataset_manifest_checksum,
+            split_manifest_checksum=selection.split_manifest_checksum,
+        )
+
+    def load_frozen_test_for_contract(
+        self,
+        *,
+        status: str,
+        test_data_accessed: bool,
+        dataset_manifest_checksum: str,
+        split_manifest_checksum: str,
+    ) -> PartitionData:
+        """Open frozen test rows for a checksummed, immutable model-selection contract."""
+
+        if status != "frozen" or test_data_accessed is not False:
             raise DatasetGateError("model selection is not frozen before test access")
-        if selection.dataset_manifest_checksum != self._evidence.dataset_manifest_checksum:
+        if dataset_manifest_checksum != self._evidence.dataset_manifest_checksum:
             raise DatasetGateError("selection dataset manifest checksum mismatch")
-        if selection.split_manifest_checksum != self._evidence.split_manifest_checksum:
+        if split_manifest_checksum != self._evidence.split_manifest_checksum:
             raise DatasetGateError("selection split manifest checksum mismatch")
         test = self._load_partition("test", self._evidence.split_manifest.test_groups)
         train = self._load_partition("train", self._evidence.split_manifest.train_groups)

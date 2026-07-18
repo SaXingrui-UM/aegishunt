@@ -20,6 +20,7 @@ from aegishunt.datasets.cli import dataset_app
 from aegishunt.errors import AegisHuntError
 from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
+from aegishunt.ml.anomaly.cli import anomaly_app
 from aegishunt.ml.supervised.cli import model_app
 from aegishunt.storage import Database
 
@@ -31,6 +32,7 @@ app = typer.Typer(
 app.add_typer(ingest_app)
 app.add_typer(dataset_app)
 app.add_typer(model_app)
+app.add_typer(anomaly_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 

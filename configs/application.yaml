@@ -42,3 +42,8 @@ supervised:
   training_config_path: configs/models/supervised.yaml
   artifact_root: artifacts/models/supervised
   reports_root: reports/models/supervised
+
+anomaly:
+  training_config_path: configs/models/anomaly.yaml
+  artifact_root: artifacts/models/anomaly
+  reports_root: reports/models/anomaly
