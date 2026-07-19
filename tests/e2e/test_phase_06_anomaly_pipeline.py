@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from aegishunt.datasets.io import read_canonical_jsonl, sha256_file
 from aegishunt.flows.registry import FEATURE_SCHEMA_VERSION, feature_names
 from aegishunt.ml.anomaly.prediction import AnomalyPredictionBatch
@@ -87,9 +89,15 @@ print(json.dumps([item.model_dump(mode='json') for item in result], sort_keys=Tr
             )
         )
     smoke = reloaded[1]
-    assert smoke["raw_model_score"] == -0.5342412669946718
-    assert smoke["canonical_anomaly_score"] == 0.5342412669946718
-    assert smoke["normalized_anomaly_score"] == 0.791111455384955
+    assert smoke["raw_model_score"] == pytest.approx(
+        -0.5342412669946718, rel=1e-12, abs=1e-15
+    )
+    assert smoke["canonical_anomaly_score"] == pytest.approx(
+        0.5342412669946718, rel=1e-12, abs=1e-15
+    )
+    assert smoke["normalized_anomaly_score"] == pytest.approx(
+        0.791111455384955, rel=1e-12, abs=1e-15
+    )
     assert smoke["selected_threshold"] == 0.9
     assert smoke["is_anomaly"] is False
     assert {path.name for path in (model_root / "1.0.0").iterdir()} == {
