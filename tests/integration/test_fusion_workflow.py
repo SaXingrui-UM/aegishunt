@@ -50,6 +50,7 @@ def test_full_controlled_workflow_writes_truthful_evidence_and_verified_policy(
         "temporal_holdout.csv",
         "parameter_shift.csv",
         "fusion_comparison.csv",
+        "score_distributions.csv",
         "metric_deltas.csv",
         "confidence_intervals.json",
         "latency_results.csv",
@@ -71,13 +72,24 @@ def test_full_controlled_workflow_writes_truthful_evidence_and_verified_policy(
         "anomaly_false_negative_rate",
     }
     assert {
-        comparison.held_out_family
-        for comparison in result.experiment.leave_one_family_out
+        comparison.held_out_family for comparison in result.experiment.leave_one_family_out
     } == set(result.dataset.eligible_attack_families)
     assert all(
         set(comparison.family_distribution) == {"benign", comparison.held_out_family}
         for comparison in result.experiment.leave_one_family_out
     )
+    assert all(
+        comparison.isolation.held_out_family_absent_from_train is True
+        and comparison.isolation.held_out_family_absent_from_validation is True
+        for comparison in result.experiment.leave_one_family_out
+    )
+    assert all(
+        comparison.parameter_shift_audit is not None
+        and comparison.parameter_shift_audit.group_overlap == ()
+        for comparison in result.experiment.parameter_shifts
+    )
+    assert result.experiment.latency["temporary_supervised_model_size_bytes"] > 0
+    assert result.experiment.latency["temporary_anomaly_model_size_bytes"] > 0
     assert {item.shift_axis for item in result.experiment.parameter_shifts} == {
         "flow_duration",
         "packet_rate",

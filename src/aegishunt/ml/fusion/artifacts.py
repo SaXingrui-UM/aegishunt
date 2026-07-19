@@ -81,9 +81,7 @@ class FusionExperimentStore:
         return self.write_bytes(filename, payload.encode())
 
     def write_json(self, filename: str, payload: BaseModel | dict[str, Any] | list[Any]) -> Path:
-        content = (
-            payload.model_dump(mode="json") if isinstance(payload, BaseModel) else payload
-        )
+        content = payload.model_dump(mode="json") if isinstance(payload, BaseModel) else payload
         serialized = json.dumps(content, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
         return self.write_text(filename, serialized)
 
@@ -105,6 +103,7 @@ def _metric_row(
     candidate: CandidateEvaluation,
 ) -> dict[str, object]:
     metrics = candidate.metrics
+    shift = result.parameter_shift_audit
     return {
         "experiment_kind": result.experiment_kind,
         "scenario_id": result.scenario_id,
@@ -113,6 +112,47 @@ def _metric_row(
         "mode": candidate.mode,
         "row_count": result.row_count,
         "group_count": len(result.groups),
+        "train_row_count": result.isolation.train_rows,
+        "validation_row_count": result.isolation.validation_rows,
+        "evaluation_row_count": result.isolation.evaluation_rows,
+        "train_group_count": result.isolation.train_groups,
+        "validation_group_count": result.isolation.validation_groups,
+        "evaluation_group_count": result.isolation.evaluation_groups,
+        "identity_overlap_count": sum(
+            len(values)
+            for values in (
+                result.isolation.group_overlap,
+                result.isolation.source_overlap,
+                result.isolation.session_overlap,
+                result.isolation.scenario_overlap,
+            )
+        ),
+        "held_out_absent_from_fit_selection": (
+            result.isolation.held_out_family_absent_from_train is True
+            and result.isolation.held_out_family_absent_from_validation is True
+            if result.held_out_family is not None
+            else ""
+        ),
+        "shift_factor": shift.factor if shift is not None else "",
+        "shift_relevant_features": (
+            json.dumps(shift.relevant_features) if shift is not None else ""
+        ),
+        "base_feature_ranges": (
+            json.dumps(
+                {name: bounds.model_dump() for name, bounds in shift.base_ranges.items()},
+                sort_keys=True,
+            )
+            if shift is not None
+            else ""
+        ),
+        "shifted_feature_ranges": (
+            json.dumps(
+                {name: bounds.model_dump() for name, bounds in shift.shifted_ranges.items()},
+                sort_keys=True,
+            )
+            if shift is not None
+            else ""
+        ),
         "threshold": candidate.threshold,
         "accuracy": metrics.accuracy,
         "precision": metrics.precision,
@@ -140,6 +180,76 @@ def _comparison_rows(results: tuple[ComparisonResult, ...]) -> list[dict[str, ob
         _metric_row(result, candidate)
         for result in results
         for candidate in (result.supervised, result.anomaly, result.fusion)
+    ]
+
+
+def _loao_aggregate_rows(results: tuple[ComparisonResult, ...]) -> list[dict[str, object]]:
+    if not results:
+        raise FusionArtifactError("LOAO aggregate requires evaluated families")
+    rows: list[dict[str, object]] = []
+    for mode in ("supervised", "anomaly", "fusion"):
+        candidates = [getattr(result, mode) for result in results]
+        rows.append(
+            {
+                "aggregation": "family_macro_mean",
+                "mode": candidates[0].mode,
+                "eligible_family_count": len(results),
+                "families": json.dumps(
+                    [result.held_out_family for result in results], sort_keys=True
+                ),
+                "mean_recall": sum(item.metrics.recall for item in candidates) / len(candidates),
+                "minimum_recall": min(item.metrics.recall for item in candidates),
+                "maximum_recall": max(item.metrics.recall for item in candidates),
+                "mean_f1": sum(item.metrics.f1 for item in candidates) / len(candidates),
+                "mean_macro_f1": sum(item.metrics.macro_f1 for item in candidates)
+                / len(candidates),
+                "mean_pr_auc": sum(
+                    item.metrics.pr_auc for item in candidates if item.metrics.pr_auc is not None
+                )
+                / sum(item.metrics.pr_auc is not None for item in candidates),
+                "mean_false_positive_rate": sum(
+                    item.metrics.benign_false_positive_rate for item in candidates
+                )
+                / len(candidates),
+                "mean_false_negative_rate": sum(
+                    item.metrics.anomaly_false_negative_rate for item in candidates
+                )
+                / len(candidates),
+                "all_identity_checks_passed": all(
+                    not any(
+                        (
+                            result.isolation.group_overlap,
+                            result.isolation.source_overlap,
+                            result.isolation.session_overlap,
+                            result.isolation.scenario_overlap,
+                        )
+                    )
+                    for result in results
+                ),
+                "held_out_families_absent_from_fit_selection": all(
+                    result.isolation.held_out_family_absent_from_train is True
+                    and result.isolation.held_out_family_absent_from_validation is True
+                    for result in results
+                ),
+            }
+        )
+    return rows
+
+
+def _score_distribution_rows(
+    results: tuple[ComparisonResult, ...],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "experiment_kind": result.experiment_kind,
+            "scenario_id": result.scenario_id,
+            "held_out_family": result.held_out_family or "",
+            "shift_axis": result.shift_axis or "",
+            "distribution": name,
+            **distribution.model_dump(),
+        }
+        for result in results
+        for name, distribution in result.score_distributions.items()
     ]
 
 
@@ -188,9 +298,7 @@ def write_experiment_evidence(
             "threshold": candidate.threshold,
             "macro_f1": candidate.metrics.macro_f1,
             "recall": candidate.metrics.recall,
-            "pr_auc": (
-                candidate.metrics.pr_auc if candidate.metrics.pr_auc is not None else ""
-            ),
+            "pr_auc": (candidate.metrics.pr_auc if candidate.metrics.pr_auc is not None else ""),
             "false_positive_rate": candidate.metrics.benign_false_positive_rate,
             "satisfies_fpr_ceiling": candidate.satisfies_fpr_ceiling,
             "selected": candidate.candidate_id == run.selection.selected_candidate_id,
@@ -200,12 +308,13 @@ def write_experiment_evidence(
     store.write_csv("fusion_weight_results.csv", candidate_rows)
     store.write_csv("fusion_threshold_results.csv", candidate_rows)
     known_rows = _comparison_rows((run.known,))
-    unseen_rows = _comparison_rows(run.leave_one_family_out)
+    unseen_rows = _loao_aggregate_rows(run.leave_one_family_out)
+    loao_rows = _comparison_rows(run.leave_one_family_out)
     temporal_rows = _comparison_rows((run.temporal,))
     shift_rows = _comparison_rows(run.parameter_shifts)
     store.write_csv("known_attack_metrics.csv", known_rows)
     store.write_csv("unseen_attack_metrics.csv", unseen_rows)
-    store.write_csv("leave_one_family_out.csv", unseen_rows)
+    store.write_csv("leave_one_family_out.csv", loao_rows)
     store.write_csv("temporal_holdout.csv", temporal_rows)
     store.write_csv("parameter_shift.csv", shift_rows)
     all_results = (
@@ -215,6 +324,7 @@ def write_experiment_evidence(
         *run.parameter_shifts,
     )
     store.write_csv("fusion_comparison.csv", _comparison_rows(all_results))
+    store.write_csv("score_distributions.csv", _score_distribution_rows(all_results))
     store.write_csv("metric_deltas.csv", _delta_rows(all_results))
     store.write_json(
         "confidence_intervals.json",

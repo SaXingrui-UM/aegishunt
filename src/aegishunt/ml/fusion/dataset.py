@@ -28,6 +28,26 @@ from aegishunt.ml.fusion.errors import FusionDatasetError
 TimelineStage = Literal["early", "middle", "late"]
 _STAGES: tuple[TimelineStage, ...] = ("early", "middle", "late")
 PHASE7_GENERATOR_VERSION = "1.0.0"
+_SHIFT_FEATURES: dict[str, tuple[str, ...]] = {
+    "flow_duration": (
+        "flow_duration",
+        "mean_inter_arrival_time",
+        "packets_per_second",
+        "bytes_per_second",
+    ),
+    "packet_rate": (
+        "packets_per_second",
+        "bytes_per_second",
+        "connection_burst_score",
+    ),
+    "packet_size_pattern": (
+        "total_bytes",
+        "mean_packet_size",
+        "max_packet_size",
+        "bytes_per_second",
+    ),
+    "connection_frequency": ("connection_burst_score",),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,9 +90,7 @@ class ControlledExperimentDataset:
     split_manifest: Phase7SplitManifest
 
     def stage(self, stage: TimelineStage) -> ExperimentPartition:
-        rows = tuple(
-            row for row in self.rows if row.metadata.provenance["timeline_stage"] == stage
-        )
+        rows = tuple(row for row in self.rows if row.metadata.provenance["timeline_stage"] == stage)
         return ExperimentPartition(stage, rows)
 
     @property
@@ -84,20 +102,12 @@ class ControlledExperimentDataset:
     ) -> tuple[ExperimentPartition, ExperimentPartition, ExperimentPartition]:
         if family not in self.eligible_attack_families:
             raise FusionDatasetError("held-out attack family is not eligible")
-        train = tuple(
-            row
-            for row in self.stage("early").rows
-            if row.labels.attack_family != family
-        )
+        train = tuple(row for row in self.stage("early").rows if row.labels.attack_family != family)
         validation = tuple(
-            row
-            for row in self.stage("middle").rows
-            if row.labels.attack_family != family
+            row for row in self.stage("middle").rows if row.labels.attack_family != family
         )
         evaluation = tuple(
-            row
-            for row in self.stage("late").rows
-            if row.labels.attack_family in {"benign", family}
+            row for row in self.stage("late").rows if row.labels.attack_family in {"benign", family}
         )
         _require_isolated(train, validation, evaluation)
         if any(row.labels.attack_family == family for row in (*train, *validation)):
@@ -120,9 +130,7 @@ def _dataset_checksum(rows: tuple[CanonicalDatasetRow, ...]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def _identity_sets(
-    rows: tuple[CanonicalDatasetRow, ...], attribute: str
-) -> dict[str, set[str]]:
+def _identity_sets(rows: tuple[CanonicalDatasetRow, ...], attribute: str) -> dict[str, set[str]]:
     result: dict[str, set[str]] = defaultdict(set)
     for row in rows:
         stage = row.metadata.provenance["timeline_stage"]
@@ -203,8 +211,7 @@ def build_controlled_experiment_dataset(
                 source_file = f"{group_id}.flow"
                 checksum = hashlib.sha256(
                     (
-                        f"{PHASE7_GENERATOR_VERSION}:{config.data_seed}:"
-                        f"{group_id}:{row_index}"
+                        f"{PHASE7_GENERATOR_VERSION}:{config.data_seed}:{group_id}:{row_index}"
                     ).encode()
                 ).hexdigest()
                 metadata = CanonicalMetadata(
@@ -265,9 +272,7 @@ def build_controlled_experiment_dataset(
         quality_status="pass",
         exact_duplicate_count=quality.exact_duplicate_count,
         feature_duplicate_count=quality.feature_duplicate_count,
-        conflicting_label_fingerprint_count=(
-            quality.conflicting_label_fingerprint_count
-        ),
+        conflicting_label_fingerprint_count=(quality.conflicting_label_fingerprint_count),
         near_duplicate_count=quality.near_duplicate_count,
         controlled_synthetic_only=True,
         public_benchmark=False,
@@ -277,15 +282,12 @@ def build_controlled_experiment_dataset(
         random_seed=config.data_seed,
     )
     rows_by_stage = {
-        stage: tuple(
-            row for row in rows if row.metadata.provenance["timeline_stage"] == stage
-        )
+        stage: tuple(row for row in rows if row.metadata.provenance["timeline_stage"] == stage)
         for stage in _STAGES
     }
     _require_isolated(*(rows_by_stage[stage] for stage in _STAGES))
     time_ranges: dict[str, tuple[datetime, datetime]] = {
-        stage: _observed_bounds(stage_rows)
-        for stage, stage_rows in rows_by_stage.items()
+        stage: _observed_bounds(stage_rows) for stage, stage_rows in rows_by_stage.items()
     }
     split = Phase7SplitManifest(
         manifest_schema_version="1.0.0",
@@ -294,9 +296,7 @@ def build_controlled_experiment_dataset(
         dataset_checksum=checksum,
         time_field="metadata.observed_at",
         early_groups=tuple(sorted({row.metadata.group_id for row in rows_by_stage["early"]})),
-        middle_groups=tuple(
-            sorted({row.metadata.group_id for row in rows_by_stage["middle"]})
-        ),
+        middle_groups=tuple(sorted({row.metadata.group_id for row in rows_by_stage["middle"]})),
         late_groups=tuple(sorted({row.metadata.group_id for row in rows_by_stage["late"]})),
         row_counts={stage: len(stage_rows) for stage, stage_rows in rows_by_stage.items()},
         group_counts={
@@ -401,3 +401,12 @@ def build_parameter_shift_partition(
     result = ExperimentPartition(f"parameter-shift-{shift.shift_id}", tuple(shifted))
     _require_isolated(partition.rows, result.rows)
     return result
+
+
+def parameter_shift_features(axis: str) -> tuple[str, ...]:
+    """Return the pre-registered evidence features for one shift axis."""
+
+    try:
+        return _SHIFT_FEATURES[axis]
+    except KeyError as exc:
+        raise FusionDatasetError("parameter-shift axis is unsupported") from exc

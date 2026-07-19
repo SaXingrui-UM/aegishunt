@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import cast
 
 import numpy as np
+import skops.io as sio
 from numpy.typing import NDArray
 from sklearn.pipeline import Pipeline
 
@@ -75,6 +76,17 @@ class FittedExperimentalEngines:
             supervised=self.score_supervised(partition),
             anomaly=self.score_anomaly(partition),
         )
+
+    def temporary_serialized_sizes(self) -> tuple[int, int]:
+        """Measure temporary research components without registering model bundles."""
+
+        supervised_size = len(sio.dumps(self.supervised_estimator)) + len(
+            sio.dumps(self.supervised_calibrator.estimator)
+        )
+        anomaly_size = len(sio.dumps(self.anomaly_estimator)) + len(
+            self.anomaly_normalizer.model_dump_json().encode("utf-8")
+        )
+        return supervised_size, anomaly_size
 
 
 def _validate_fixed_configs(
@@ -216,7 +228,5 @@ def adapt_verified_predictions(
         supervised=np.asarray(
             [item.calibrated_probability for item in supervised], dtype=np.float64
         ),
-        anomaly=np.asarray(
-            [item.normalized_anomaly_score for item in anomaly], dtype=np.float64
-        ),
+        anomaly=np.asarray([item.normalized_anomaly_score for item in anomaly], dtype=np.float64),
     )

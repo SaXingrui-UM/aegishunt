@@ -147,6 +147,98 @@ class FusionSelectionRecord(FusionModel):
         return require_aware_utc(value)
 
 
+class ScoreDistributionEvidence(FusionModel):
+    sample_class: Literal["benign", "attack"]
+    count: int = Field(ge=1)
+    minimum: float = Field(ge=0.0, le=1.0)
+    maximum: float = Field(ge=0.0, le=1.0)
+    mean: float = Field(ge=0.0, le=1.0)
+    standard_deviation: float = Field(ge=0.0)
+    q25: float = Field(ge=0.0, le=1.0)
+    median: float = Field(ge=0.0, le=1.0)
+    q75: float = Field(ge=0.0, le=1.0)
+
+
+class ExperimentIsolationAudit(FusionModel):
+    train_rows: int = Field(ge=1)
+    validation_rows: int = Field(ge=1)
+    evaluation_rows: int = Field(ge=1)
+    train_groups: int = Field(ge=1)
+    validation_groups: int = Field(ge=1)
+    evaluation_groups: int = Field(ge=1)
+    group_overlap: tuple[str, ...]
+    source_overlap: tuple[str, ...]
+    session_overlap: tuple[str, ...]
+    scenario_overlap: tuple[str, ...]
+    held_out_family_absent_from_train: bool | None = None
+    held_out_family_absent_from_validation: bool | None = None
+    metadata_and_labels_excluded_from_features: Literal[True]
+    future_data_used_for_fit: Literal[False]
+
+    @model_validator(mode="after")
+    def validate_isolation(self) -> Self:
+        if any(
+            (
+                self.group_overlap,
+                self.source_overlap,
+                self.session_overlap,
+                self.scenario_overlap,
+            )
+        ):
+            raise ValueError("fusion experiment identities overlap")
+        held_out_flags = (
+            self.held_out_family_absent_from_train,
+            self.held_out_family_absent_from_validation,
+        )
+        if any(value is False for value in held_out_flags):
+            raise ValueError("held-out family entered fit or selection evidence")
+        return self
+
+
+class FeatureRange(FusionModel):
+    minimum: float
+    maximum: float
+
+    @model_validator(mode="after")
+    def validate_order(self) -> Self:
+        if self.minimum > self.maximum:
+            raise ValueError("feature range is reversed")
+        return self
+
+
+class ParameterShiftAudit(FusionModel):
+    shift_id: str
+    axis: Literal[
+        "flow_duration",
+        "packet_rate",
+        "packet_size_pattern",
+        "connection_frequency",
+    ]
+    factor: float = Field(gt=1.0, le=2.0)
+    relevant_features: tuple[str, ...]
+    base_ranges: dict[str, FeatureRange]
+    shifted_ranges: dict[str, FeatureRange]
+    base_group_count: int = Field(ge=1)
+    shifted_group_count: int = Field(ge=1)
+    group_overlap: tuple[str, ...]
+    result_driven_expansion: Literal[False]
+    safe_bounded_simulation: Literal[True]
+    network_access: Literal[False]
+    external_target: Literal[False]
+
+    @model_validator(mode="after")
+    def validate_ranges(self) -> Self:
+        expected = set(self.relevant_features)
+        if (
+            not expected
+            or set(self.base_ranges) != expected
+            or set(self.shifted_ranges) != expected
+            or self.group_overlap
+        ):
+            raise ValueError("parameter-shift audit evidence is incomplete")
+        return self
+
+
 class ComparisonResult(FusionModel):
     experiment_kind: Literal[
         "known_attack",
@@ -160,16 +252,32 @@ class ComparisonResult(FusionModel):
     row_count: int = Field(ge=1)
     groups: tuple[str, ...]
     family_distribution: dict[str, int]
+    isolation: ExperimentIsolationAudit
     supervised: CandidateEvaluation
     anomaly: CandidateEvaluation
     fusion: CandidateEvaluation
+    score_distributions: dict[str, ScoreDistributionEvidence]
     confidence_intervals: dict[str, MetricInterval]
     fusion_minus_supervised: dict[str, float | None]
     fusion_minus_anomaly: dict[str, float | None]
     delta_confidence_intervals: dict[str, MetricInterval]
     fpr_ceiling_satisfied: bool
     recommendation_status: RecommendationStatus
+    parameter_shift_audit: ParameterShiftAudit | None = None
     limitations: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_experiment_evidence(self) -> Self:
+        expected_distributions = {
+            f"{mode}.{sample_class}"
+            for mode in ("supervised", "anomaly", "fusion")
+            for sample_class in ("benign", "attack")
+        }
+        if set(self.score_distributions) != expected_distributions:
+            raise ValueError("comparison score distributions are incomplete")
+        if (self.experiment_kind == "parameter_shift") != (self.parameter_shift_audit is not None):
+            raise ValueError("parameter-shift audit presence is inconsistent")
+        return self
 
 
 class Phase7DatasetManifest(FusionModel):
@@ -280,9 +388,7 @@ class PolicyManifest(FusionModel):
     supervised_score_semantics: Literal["calibrated supervised probability"]
     anomaly_model_id: str
     anomaly_model_version: str
-    anomaly_score_semantics: Literal[
-        "bounded normalized anomaly score; not probability"
-    ]
+    anomaly_score_semantics: Literal["bounded normalized anomaly score; not probability"]
     selected_candidate_id: str
     selected_weights: FusionWeights
     selected_threshold: float = Field(gt=0.0, lt=1.0)

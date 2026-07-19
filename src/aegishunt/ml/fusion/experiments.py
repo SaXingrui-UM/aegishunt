@@ -19,13 +19,18 @@ from aegishunt.ml.fusion.config import FusionExperimentConfig
 from aegishunt.ml.fusion.contracts import (
     CandidateEvaluation,
     ComparisonResult,
+    ExperimentIsolationAudit,
+    FeatureRange,
     FusionSelectionRecord,
     MetricInterval,
+    ParameterShiftAudit,
+    ScoreDistributionEvidence,
 )
 from aegishunt.ml.fusion.dataset import (
     ControlledExperimentDataset,
     ExperimentPartition,
     build_parameter_shift_partition,
+    parameter_shift_features,
 )
 from aegishunt.ml.fusion.engines import FittedExperimentalEngines, fit_experimental_engines
 from aegishunt.ml.fusion.metrics import evaluate_scores, metric_deltas
@@ -94,6 +99,141 @@ def _candidate(
     )
 
 
+def _identity_overlap(
+    partitions: tuple[ExperimentPartition, ...], attribute: str
+) -> tuple[str, ...]:
+    identities = [
+        {str(getattr(row.metadata, attribute)) for row in partition.rows}
+        for partition in partitions
+    ]
+    return tuple(
+        sorted(
+            {
+                identity
+                for index, left in enumerate(identities)
+                for right in identities[index + 1 :]
+                for identity in left & right
+            }
+        )
+    )
+
+
+def _isolation_audit(
+    train: ExperimentPartition,
+    validation: ExperimentPartition,
+    evaluation: ExperimentPartition,
+    *,
+    held_out_family: str | None,
+) -> ExperimentIsolationAudit:
+    partitions = (train, validation, evaluation)
+    return ExperimentIsolationAudit(
+        train_rows=len(train.rows),
+        validation_rows=len(validation.rows),
+        evaluation_rows=len(evaluation.rows),
+        train_groups=len(set(train.groups.tolist())),
+        validation_groups=len(set(validation.groups.tolist())),
+        evaluation_groups=len(set(evaluation.groups.tolist())),
+        group_overlap=_identity_overlap(partitions, "group_id"),
+        source_overlap=_identity_overlap(partitions, "source_file"),
+        session_overlap=_identity_overlap(partitions, "capture_session_id"),
+        scenario_overlap=_identity_overlap(partitions, "scenario_id"),
+        held_out_family_absent_from_train=(
+            held_out_family not in set(train.families.tolist())
+            if held_out_family is not None
+            else None
+        ),
+        held_out_family_absent_from_validation=(
+            held_out_family not in set(validation.families.tolist())
+            if held_out_family is not None
+            else None
+        ),
+        metadata_and_labels_excluded_from_features=True,
+        future_data_used_for_fit=False,
+    )
+
+
+def _distribution(
+    scores: NDArray[np.float64],
+    labels: NDArray[np.int64],
+    sample_class: Literal["benign", "attack"],
+) -> ScoreDistributionEvidence:
+    values = scores[labels == (0 if sample_class == "benign" else 1)]
+    if not len(values):
+        raise ValueError("score distribution class is empty")
+    return ScoreDistributionEvidence(
+        sample_class=sample_class,
+        count=len(values),
+        minimum=float(np.min(values)),
+        maximum=float(np.max(values)),
+        mean=float(np.mean(values)),
+        standard_deviation=float(np.std(values)),
+        q25=float(np.quantile(values, 0.25)),
+        median=float(np.median(values)),
+        q75=float(np.quantile(values, 0.75)),
+    )
+
+
+def _score_distributions(
+    labels: NDArray[np.int64],
+    supervised: NDArray[np.float64],
+    anomaly: NDArray[np.float64],
+    fusion: NDArray[np.float64],
+) -> dict[str, ScoreDistributionEvidence]:
+    sample_classes: tuple[Literal["benign", "attack"], ...] = ("benign", "attack")
+    return {
+        f"{mode}.{sample_class}": _distribution(scores, labels, sample_class)
+        for mode, scores in (
+            ("supervised", supervised),
+            ("anomaly", anomaly),
+            ("fusion", fusion),
+        )
+        for sample_class in sample_classes
+    }
+
+
+def _parameter_shift_audit(
+    base: ExperimentPartition,
+    shifted: ExperimentPartition,
+    *,
+    shift_id: str,
+    axis: Literal[
+        "flow_duration",
+        "packet_rate",
+        "packet_size_pattern",
+        "connection_frequency",
+    ],
+    factor: float,
+) -> ParameterShiftAudit:
+    names = tuple(row for row in parameter_shift_features(axis))
+    all_feature_names = base.rows[0].features.names
+    positions = {name: all_feature_names.index(name) for name in names}
+
+    def ranges(partition: ExperimentPartition) -> dict[str, FeatureRange]:
+        return {
+            name: FeatureRange(
+                minimum=float(np.min(partition.features[:, position])),
+                maximum=float(np.max(partition.features[:, position])),
+            )
+            for name, position in positions.items()
+        }
+
+    return ParameterShiftAudit(
+        shift_id=shift_id,
+        axis=axis,
+        factor=factor,
+        relevant_features=names,
+        base_ranges=ranges(base),
+        shifted_ranges=ranges(shifted),
+        base_group_count=len(set(base.groups.tolist())),
+        shifted_group_count=len(set(shifted.groups.tolist())),
+        group_overlap=tuple(sorted(set(base.groups.tolist()) & set(shifted.groups.tolist()))),
+        result_driven_expansion=False,
+        safe_bounded_simulation=True,
+        network_access=False,
+        external_target=False,
+    )
+
+
 def evaluate_partition(
     partition: ExperimentPartition,
     *,
@@ -102,8 +242,11 @@ def evaluate_partition(
     engines: FittedExperimentalEngines,
     selection: FusionSelectionRecord,
     config: FusionExperimentConfig,
+    train_partition: ExperimentPartition,
+    validation_partition: ExperimentPartition,
     held_out_family: str | None = None,
     shift_axis: str | None = None,
+    parameter_shift_audit: ParameterShiftAudit | None = None,
 ) -> ComparisonResult:
     """Evaluate all modes on exactly the same rows without changing the policy."""
 
@@ -172,15 +315,28 @@ def evaluate_partition(
         row_count=len(partition.rows),
         groups=tuple(sorted(set(partition.groups.tolist()))),
         family_distribution=dict(sorted(Counter(partition.families.tolist()).items())),
+        isolation=_isolation_audit(
+            train_partition,
+            validation_partition,
+            partition,
+            held_out_family=held_out_family,
+        ),
         supervised=supervised,
         anomaly=anomaly,
         fusion=fusion,
+        score_distributions=_score_distributions(
+            partition.labels,
+            scores.supervised,
+            scores.anomaly,
+            fusion_scores,
+        ),
         confidence_intervals=intervals,
         fusion_minus_supervised=metric_deltas(fusion.metrics, supervised.metrics),
         fusion_minus_anomaly=metric_deltas(fusion.metrics, anomaly.metrics),
         delta_confidence_intervals=delta_intervals,
         fpr_ceiling_satisfied=fusion.satisfies_fpr_ceiling,
         recommendation_status=selection.recommendation_status,
+        parameter_shift_audit=parameter_shift_audit,
         limitations=(
             "controlled synthetic pipeline verification only; not a public benchmark",
             "fusion score is not probability, risk, severity, or attack confirmation",
@@ -250,6 +406,7 @@ def _measure_latency(
         deterministic = deterministic and np.array_equal(anomaly, expected.anomaly)
     batch_size = len(partition.rows)
     total_seconds = sum(total_ms) / 1_000
+    supervised_size, anomaly_size = engines.temporary_serialized_sizes()
     return {
         "batch_size": batch_size,
         "repetitions": repetitions,
@@ -261,6 +418,8 @@ def _measure_latency(
         "dual_batch_p99_ms": _percentile(total_ms, 99),
         "per_sample_p50_ms": _percentile(total_ms, 50) / batch_size,
         "throughput_samples_per_second": batch_size * repetitions / total_seconds,
+        "temporary_supervised_model_size_bytes": supervised_size,
+        "temporary_anomaly_model_size_bytes": anomaly_size,
         "deterministic_scoring": deterministic,
         "controlled_environment_only": True,
     }
@@ -292,6 +451,8 @@ def run_experiments(
         engines=engines,
         selection=selection,
         config=fusion_config,
+        train_partition=train,
+        validation_partition=validation,
     )
     loao: list[ComparisonResult] = []
     for family in dataset.eligible_attack_families:
@@ -311,6 +472,8 @@ def run_experiments(
                 engines=family_engines,
                 selection=family_selection,
                 config=fusion_config,
+                train_partition=family_train,
+                validation_partition=family_validation,
                 held_out_family=family,
             )
         )
@@ -321,25 +484,38 @@ def run_experiments(
         engines=engines,
         selection=selection,
         config=fusion_config,
+        train_partition=train,
+        validation_partition=validation,
     )
-    shifts = tuple(
-        evaluate_partition(
-            build_parameter_shift_partition(evaluation, shift),
-            kind="parameter_shift",
-            scenario_id=shift.shift_id,
-            engines=engines,
-            selection=selection,
-            config=fusion_config,
-            shift_axis=shift.axis,
+    shift_results: list[ComparisonResult] = []
+    for shift in fusion_config.parameter_shifts:
+        shifted = build_parameter_shift_partition(evaluation, shift)
+        shift_results.append(
+            evaluate_partition(
+                shifted,
+                kind="parameter_shift",
+                scenario_id=shift.shift_id,
+                engines=engines,
+                selection=selection,
+                config=fusion_config,
+                train_partition=train,
+                validation_partition=validation,
+                shift_axis=shift.axis,
+                parameter_shift_audit=_parameter_shift_audit(
+                    evaluation,
+                    shifted,
+                    shift_id=shift.shift_id,
+                    axis=shift.axis,
+                    factor=shift.factor,
+                ),
+            )
         )
-        for shift in fusion_config.parameter_shifts
-    )
     return FusionExperimentRun(
         selection=selection,
         known=known,
         leave_one_family_out=tuple(loao),
         temporal=temporal,
-        parameter_shifts=shifts,
+        parameter_shifts=tuple(shift_results),
         latency=_measure_latency(
             engines,
             evaluation,
