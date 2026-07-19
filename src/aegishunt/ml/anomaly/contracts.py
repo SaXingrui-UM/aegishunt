@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from aegishunt.datasets.schemas import SHA256_PATTERN
 from aegishunt.schemas.base import require_aware_utc
@@ -160,6 +160,42 @@ class ComparatorResult(AnomalyModel):
     limitations: tuple[str, ...]
     failure_code: str | None = None
 
+    @model_validator(mode="after")
+    def validate_eligibility_evidence(self) -> ComparatorResult:
+        """Reject comparator metadata that overstates production eligibility."""
+
+        if self.algorithm == "one_class_svm":
+            if self.production_eligible:
+                raise ValueError("One-Class SVM cannot be production eligible")
+            return self
+        if not self.production_eligible:
+            return self
+        required = (
+            self.candidate_id,
+            self.preprocessing,
+            self.raw_score_method,
+            self.canonical_score_transform,
+            self.normalizer,
+            self.threshold_policy,
+            self.false_positive_rate_limit,
+            self.benign_training_rows,
+            self.benign_training_groups,
+            self.validation_rows,
+            self.validation_groups,
+            self.selected_threshold,
+            self.validation_metrics,
+            self.benign_raw_distribution,
+            self.anomaly_raw_distribution,
+            self.benign_normalized_distribution,
+            self.anomaly_normalized_distribution,
+            self.operational_metrics,
+        )
+        if self.status != "passed" or any(value is None for value in required):
+            raise ValueError("production-eligible LOF evidence must be complete and passed")
+        if self.hyperparameters.get("novelty") is not True:
+            raise ValueError("production-eligible LOF must use novelty mode")
+        return self
+
 
 class BenignTrainingManifest(AnomalyModel):
     dataset_id: str
@@ -247,6 +283,27 @@ class AnomalySelectionRecord(AnomalyModel):
     @classmethod
     def validate_created_at(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
+
+    @model_validator(mode="after")
+    def validate_selection_state(self) -> AnomalySelectionRecord:
+        """Keep LOF eligibility distinct from a frozen-test-eligible selection."""
+
+        if self.one_class_svm_comparison.production_eligible:
+            raise ValueError("One-Class SVM comparison cannot be production eligible")
+        if self.algorithm != "local_outlier_factor":
+            return self
+        if (
+            self.status != "validation_qualified"
+            or self.record_schema_version != "2.0.0"
+            or self.selection_policy_version != "2.0.0"
+            or not self.model_version.endswith("-candidate")
+            or not self.lof_comparison.production_eligible
+            or self.lof_comparison.status != "passed"
+            or self.lof_comparison.candidate_id != self.selected_candidate_id
+            or self.hyperparameters.get("novelty") is not True
+        ):
+            raise ValueError("LOF selection must remain a validation-qualified candidate")
+        return self
 
 
 class ConfidenceInterval(AnomalyModel):
@@ -396,6 +453,29 @@ class AnomalyBundleManifest(AnomalyModel):
     @classmethod
     def validate_bundle_timestamp(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
+
+    @model_validator(mode="after")
+    def validate_bundle_state(self) -> AnomalyBundleManifest:
+        """Prevent candidate bundles from claiming frozen-test validation."""
+
+        if self.status == "validated":
+            if self.frozen_test_metrics is None:
+                raise ValueError("validated anomaly bundle requires frozen-test metrics")
+            return self
+        if (
+            self.frozen_test_metrics is not None
+            or self.candidate_smoke_fixture_checksum is None
+            or self.candidate_smoke_test_passed is not True
+            or self.untouched_independent_holdout_available is not False
+        ):
+            raise ValueError("validation-qualified bundle evidence is incomplete")
+        if self.algorithm == "local_outlier_factor" and (
+            self.manifest_schema_version != "1.1.0"
+            or not self.model_version.endswith("-candidate")
+            or self.hyperparameters.get("novelty") is not True
+        ):
+            raise ValueError("LOF bundle must remain a validation-qualified novelty candidate")
+        return self
 
 
 class AnomalyBundleChecksums(AnomalyModel):

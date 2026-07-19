@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -17,6 +18,11 @@ from aegishunt.ml.anomaly.bundle import (
     save_bundle,
     sha256_bytes,
     trusted_types,
+)
+from aegishunt.ml.anomaly.contracts import (
+    AnomalyBundleManifest,
+    AnomalySelectionRecord,
+    ComparatorResult,
 )
 from aegishunt.ml.anomaly.errors import AnomalyArtifactError, AnomalyDatasetError
 from aegishunt.ml.anomaly.prediction import AnomalyPredictionBatch, score_batch
@@ -87,9 +93,7 @@ def test_frozen_test_rejects_selection_tampering(tmp_path: Path) -> None:
     with pytest.raises(AnomalyArtifactError, match="selection checksum"):
         service.evaluate_test(allow_controlled_demo=True)
     assert not (
-        experiment_root
-        / training.experiment_id
-        / "anomaly_frozen_test_metrics.json"
+        experiment_root / training.experiment_id / "anomaly_frozen_test_metrics.json"
     ).exists()
 
 
@@ -103,9 +107,7 @@ def test_model_version_collision_is_rejected_before_frozen_evidence(
     with pytest.raises(AnomalyArtifactError, match="version already exists"):
         service.evaluate_test(allow_controlled_demo=True)
     assert not (
-        experiment_root
-        / training.experiment_id
-        / "anomaly_frozen_test_metrics.json"
+        experiment_root / training.experiment_id / "anomaly_frozen_test_metrics.json"
     ).exists()
 
 
@@ -214,6 +216,25 @@ def test_direction_b_creates_only_a_smoke_qualified_lof_candidate(
     loaded = load_bundle(bundle, artifact_root=model_root)
     assert loaded.manifest.algorithm == "local_outlier_factor"
     assert loaded.estimator.named_steps["model"].novelty is True
+    invalid_comparator = result.selection.lof_comparison.model_dump()
+    invalid_comparator["status"] = "failed"
+    with pytest.raises(ValidationError, match="complete and passed"):
+        ComparatorResult.model_validate(invalid_comparator)
+
+    invalid_selection = result.selection.model_dump()
+    invalid_selection["status"] = "frozen"
+    with pytest.raises(ValidationError, match="validation-qualified"):
+        AnomalySelectionRecord.model_validate(invalid_selection)
+
+    invalid_manifest = loaded.manifest.model_dump()
+    invalid_manifest["status"] = "validated"
+    with pytest.raises(ValidationError, match="frozen-test metrics"):
+        AnomalyBundleManifest.model_validate(invalid_manifest)
+
+    invalid_manifest = loaded.manifest.model_dump()
+    invalid_manifest["untouched_independent_holdout_available"] = True
+    with pytest.raises(ValidationError, match="evidence is incomplete"):
+        AnomalyBundleManifest.model_validate(invalid_manifest)
     batch = AnomalyPredictionBatch(
         feature_schema_version=FEATURE_SCHEMA_VERSION,
         feature_names=feature_names(),
@@ -223,9 +244,7 @@ def test_direction_b_creates_only_a_smoke_qualified_lof_candidate(
     first = score_batch(loaded, batch)[0]
     second = score_batch(loaded, batch)[0]
     assert first.is_anomaly is True
-    assert first.model_dump(exclude={"scored_at"}) == second.model_dump(
-        exclude={"scored_at"}
-    )
+    assert first.model_dump(exclude={"scored_at"}) == second.model_dump(exclude={"scored_at"})
     experiment = experiment_root / result.experiment_id
     assert not (experiment / "anomaly_frozen_test_metrics.json").exists()
     smoke = json.loads((experiment / "candidate_smoke_test.json").read_text())

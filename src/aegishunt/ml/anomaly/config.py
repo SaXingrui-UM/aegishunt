@@ -38,6 +38,39 @@ class IsolationForestCandidateConfig(AnomalyConfigModel):
     n_jobs: int = Field(ge=1, le=64)
 
 
+def _registered_corrective_forest_matrix() -> tuple[IsolationForestCandidateConfig, ...]:
+    """Return the fixed validation-only Isolation Forest comparison matrix."""
+
+    values = (
+        ("corrective-iforest-64-full", 64, 1.0, 1.0, False),
+        ("corrective-iforest-128-full", 128, 1.0, 1.0, False),
+        ("corrective-iforest-256-full", 256, 1.0, 1.0, False),
+        ("corrective-iforest-128-sample-80", 128, 0.8, 1.0, False),
+        ("corrective-iforest-128-feature-75", 128, 1.0, 0.75, False),
+        ("corrective-iforest-128-feature-50", 128, 1.0, 0.5, False),
+        (
+            "corrective-iforest-128-sample-80-feature-75",
+            128,
+            0.8,
+            0.75,
+            False,
+        ),
+        ("corrective-iforest-128-bootstrap", 128, 1.0, 1.0, True),
+    )
+    return tuple(
+        IsolationForestCandidateConfig(
+            candidate_id=candidate_id,
+            n_estimators=n_estimators,
+            max_samples=max_samples,
+            max_features=max_features,
+            bootstrap=bootstrap,
+            contamination="auto",
+            n_jobs=1,
+        )
+        for candidate_id, n_estimators, max_samples, max_features, bootstrap in values
+    )
+
+
 class LofComparatorConfig(AnomalyConfigModel):
     """Offline novelty-mode LOF comparator policy."""
 
@@ -91,9 +124,7 @@ class AnomalyTrainingConfig(AnomalyConfigModel):
     bootstrap_iterations: int = Field(ge=1_000, le=100_000)
     selection_policy_version: str
     normalization_version: str
-    normalization_strategies: tuple[NormalizationStrategy, ...] = (
-        "benign_training_quantile_cdf",
-    )
+    normalization_strategies: tuple[NormalizationStrategy, ...] = ("benign_training_quantile_cdf",)
     candidate_status: Literal["frozen_test_eligible", "validation_qualified"] = (
         "frozen_test_eligible"
     )
@@ -144,6 +175,8 @@ class AnomalyTrainingConfig(AnomalyConfigModel):
                 raise ValueError("corrective anomaly protocol is incomplete or inconsistent")
             if len(self.isolation_forest_candidates) != 8:
                 raise ValueError("corrective anomaly matrix must contain eight candidates")
+            if self.isolation_forest_candidates != _registered_corrective_forest_matrix():
+                raise ValueError("corrective anomaly matrix differs from its registration")
             if len(self.normalization_strategies) != 3:
                 raise ValueError("corrective anomaly matrix must contain three normalizers")
             if (
@@ -171,8 +204,7 @@ class AnomalyTrainingConfig(AnomalyConfigModel):
             )
             if (
                 protocol is None
-                or self.experiment_id
-                != "phase-06-controlled-demo-lof-production-candidate-001"
+                or self.experiment_id != "phase-06-controlled-demo-lof-production-candidate-001"
                 or self.candidate_status != "validation_qualified"
                 or self.selection_policy_version != "2.0.0"
                 or self.normalization_version != "1.0.1"
@@ -182,8 +214,7 @@ class AnomalyTrainingConfig(AnomalyConfigModel):
                 or self.threshold_candidates != expected_thresholds
                 or self.normalization_strategies != expected_normalizers
                 or protocol.protocol_version != "2.0.0"
-                or protocol.research_type
-                != "validation_only_algorithm_eligibility_promotion"
+                or protocol.research_type != "validation_only_algorithm_eligibility_promotion"
                 or not protocol.lof_production_eligible
                 or self.lof != expected_lof
             ):
@@ -192,6 +223,8 @@ class AnomalyTrainingConfig(AnomalyConfigModel):
                 raise ValueError(
                     "LOF candidate protocol must retain eight Isolation Forest candidates"
                 )
+            if self.isolation_forest_candidates != _registered_corrective_forest_matrix():
+                raise ValueError("LOF candidate comparison matrix differs from registration")
             if len(self.normalization_strategies) != 3:
                 raise ValueError("LOF candidate protocol must retain three normalizers")
         return self

@@ -99,6 +99,24 @@ def test_lof_candidate_registration_rejects_post_result_changes(
         AnomalyTrainingConfig.load(path)
 
 
+@pytest.mark.parametrize("config_path", (CORRECTIVE_CONFIG_PATH, LOF_CANDIDATE_CONFIG_PATH))
+def test_corrective_forest_matrix_rejects_parameter_substitution(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    candidates = payload["isolation_forest_candidates"]
+    assert isinstance(candidates, list)
+    assert isinstance(candidates[0], dict)
+    candidates[0]["n_estimators"] = 65
+    path = tmp_path / "changed-matrix.yaml"
+    path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+
+    with pytest.raises(AnomalyTrainingError, match="configuration is invalid"):
+        AnomalyTrainingConfig.load(path)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     (

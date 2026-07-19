@@ -217,7 +217,9 @@ class AnomalyTrainingService:
             git_commit_sha=self._git_commit(),
             status="validation_qualified",
             candidate_smoke_fixture_checksum=fixture_checksum,
-            candidate_smoke_test_passed=False,
+            # This manifest is in-memory scoring context only. It is never persisted
+            # unless the fixed smoke assertion below actually succeeds.
+            candidate_smoke_test_passed=True,
             untouched_independent_holdout_available=False,
             created_at=datetime.now(UTC),
         )
@@ -246,9 +248,7 @@ class AnomalyTrainingService:
                 ),
             )
             raise AnomalyArtifactError("validation candidate failed the fixed smoke decision")
-        manifest = draft_manifest.model_copy(
-            update={"candidate_smoke_test_passed": True}
-        )
+        manifest = draft_manifest
         card = render_candidate_model_card(
             selection,
             evidence.dataset_manifest,
@@ -307,9 +307,7 @@ class AnomalyTrainingService:
             gate.evidence.dataset_manifest.dataset_type,
             allow_controlled_demo,
         )
-        data = gate.load_training_validation(
-            minimum_benign_groups=config.minimum_benign_groups
-        )
+        data = gate.load_training_validation(minimum_benign_groups=config.minimum_benign_groups)
         self._require_corrective_evidence(config, data)
         evaluated = evaluate_isolation_forest_candidates(data, config)
         lof_evaluation = evaluate_lof_candidate(data, config)
