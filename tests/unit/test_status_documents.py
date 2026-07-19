@@ -1,4 +1,4 @@
-"""Regression tests for current Phase 6 status truthfulness."""
+"""Regression tests for current Phase 7 status truthfulness."""
 
 from pathlib import Path
 
@@ -10,18 +10,18 @@ def _section(content: str, start: str, end: str) -> str:
     return content.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
 
 
-def test_readme_preserves_phase_six_boundary_without_starting_phase_seven() -> None:
+def test_readme_records_phase_seven_without_starting_phase_eight() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
+    normalized = " ".join(content.split())
 
-    assert "Phase 5 is fully closed on `main`" in content
-    assert "Phase 6 anomaly-engine implementation is complete" in content
-    assert "Phase 7 has not started" in content
+    assert "Phases 0–6 are closed" in content
+    assert "Phase 7 dual-engine fusion implementation is complete" in normalized
+    assert "awaiting PR review" in content
+    assert "Phase 8" in content and "not implemented" in content
     assert "pipeline verification only" in content
-    assert "Forest missed all labeled anomalies" in content
-    assert "1.1.0-candidate" in content
-    assert "validation-qualified" in content
-    assert "Phase 7 has not started" in content
-    assert "normalized anomaly score is not probability" in content
+    assert "recommendation is **inconclusive**" in normalized
+    assert "lower family-macro LOAO recall" in content
+    assert "Fusion score is not probability, risk, severity, or attack confirmation" in normalized
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -39,14 +39,14 @@ def test_pm_def_001_is_resolved_without_erasing_history() -> None:
     assert "not public\n  benchmark or real-world performance evidence" in pm_def_001
 
 
-def test_progress_and_release_record_completed_phase_six_without_phase_seven_scope() -> None:
+def test_progress_and_release_record_phase_seven_without_phase_eight_scope() -> None:
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
-    release = (PROJECT_ROOT / "docs/releases/phase-06.md").read_text(encoding="utf-8")
+    release = (PROJECT_ROOT / "docs/releases/phase-07.md").read_text(encoding="utf-8")
 
     progress_current = _section(
         progress,
         "## Current state",
-        "## Phase 6 implementation checkpoint",
+        "## Phase 7 implementation checkpoint",
     )
     release_current = _section(
         release,
@@ -57,35 +57,26 @@ def test_progress_and_release_record_completed_phase_six_without_phase_seven_sco
     normalized_release_current = " ".join(release_current.split())
 
     for content in (progress, release):
-        assert "phase/06-anomaly-detection" in content
-        assert "Phase 7" in content and "Not started" in content
+        assert "phase/07-fusion-evaluation" in content
+        assert "Phase 8" in content and "not started" in content.lower()
         assert "pipeline verification only" in content.lower()
-        assert "phase-06-complete" in content
+        assert "inconclusive" in content
         assert "validation-qualified" in content.lower()
-        assert "no untouched independent holdout" in " ".join(content.lower().split())
         assert "not a public benchmark" in " ".join(content.lower().split())
 
-    assert "Implementation complete — awaiting PR review" not in progress_current
-    assert "Implementation complete — awaiting PR review" not in release_current
-    assert "Current phase | Phase 6" in normalized_progress_current
-    assert "Status | Phase complete" in normalized_progress_current
-    assert "Phase 7 status | Not started" in normalized_progress_current
-    assert "PR #18 was squash-merged to `main`" in progress_current
-    assert "40692d0f576b70fd57719ca2f74d869e27891e13" in progress_current
-    assert "Annotated `phase-06-complete`" in progress_current
-    assert "pushed and remotely verified" in progress_current
+    assert "Current phase | Phase 7" in normalized_progress_current
+    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
+    assert "Phase 8 status | Not started" in normalized_progress_current
+    assert "phase/07-fusion-evaluation" in progress_current
 
-    assert "Status: **Phase complete**" in release_current
-    assert "was squash-merged" in normalized_release_current
-    assert "40692d0f576b70fd57719ca2f74d869e27891e13" in release_current
-    assert "Annotated Tag `phase-06-complete` is pushed and remotely verified" in release_current
-    assert "Phase 7 has not started" in normalized_release_current
+    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Pull request, merge commit, and completion Tag are" in normalized_release_current
+    assert "pending" in release_current
+    assert "Phase 8 has not started" in normalized_release_current
 
-    assert "iforest-64-full" in release
-    assert "Isolation Forest missed all controlled validation/test anomalies" in release
-    assert "lof-novelty-5--benign_training_quantile_cdf" in progress
-    assert "ADR 0015" in release
-    assert "no untouched independent holdout" in " ".join(release.lower().split())
-    assert "no final-test metric is claimed" in release
-    assert "not final-tested, production-validated, or deployable" in release
-    assert "not a public benchmark" in release
+    assert "supervised-75-anomaly-25-t0.700" in release
+    assert "fusion missed all held-out" in release.lower()
+    assert "Historical Phase 5/6 frozen test reused: no" in " ".join(release.split())
+    assert "ADR 0016" in release
+    assert "Detection results, alerts, explanations" in release
+    assert "not a public benchmark" in " ".join(release.split())

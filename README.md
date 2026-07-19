@@ -18,29 +18,24 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phase 5 is fully closed on `main`; its original and PM-DEF-001 corrective Tags
-remain immutable. Phase 6 anomaly-engine implementation is complete and fully
-closed on `main`: implementation PR #18 and post-merge metadata PR #19 are
-merged, and annotated Tag `phase-06-complete` is remotely verified. The anomaly
-engine enforces Phase 4
-quality/leakage and frozen-split evidence and fits preprocessing, anomaly
-estimators, and score normalization only on benign training rows. The original
-Isolation Forest `1.0.0` evidence remains immutable. ADR 0015 permits the fixed
-novelty-mode LOF to become a separate `1.1.0-candidate`; validation-only policy
-`2.0.0` selected it and the unchanged post-selection smoke gate passed. This
-artifact is only validation-qualified because no new independent holdout exists.
-Safe bundles preserve raw, canonical, and bounded normalized score semantics.
-The normalized anomaly score is not probability or attack likelihood.
+Phases 0–6 are closed and their annotated checkpoints remain immutable. Phase 7
+dual-engine fusion implementation is complete on
+`phase/07-fusion-evaluation` and is **awaiting PR review**. It adds bounded score
+contracts, validation-only weight/threshold selection, explicit single-engine
+baselines, known and Leave-One-Attack-Family-Out comparisons, a strict controlled
+timeline, four preregistered parameter shifts, 1,000-draw group-bootstrap
+intervals, and a checksummed JSON-only policy.
 
-The checked Phase 6 run uses only the small synthetic controlled demo and is
-**pipeline verification only**, not a public benchmark, research conclusion,
-deployment result, or proof of zero-day detection. The historical Isolation
-Forest missed all labeled anomalies in validation and frozen test; that poor
-result is retained. The LOF eligibility decision was made after its validation
-evidence was known, is explicitly post-hoc, did not reuse the viewed test, and
-still requires independently sourced holdout evidence. Fusion, alerts,
-correlation, hypotheses, replay orchestration, and cases are **not implemented**.
-Phase 7 has not started and requires explicit user authorization.
+The Phase 7 run uses 144 newly identified controlled synthetic rows in 72 groups
+and does not reuse Phase 5/6 frozen-test evidence. It selected supervised/anomaly
+weights `0.75/0.25` and threshold `0.7`, but the recommendation is
+**inconclusive**: fusion matched supervised-only on known controlled groups and
+had lower family-macro LOAO recall. Negative results are retained. This is
+**pipeline verification only**, not a public benchmark, production result,
+real-world performance claim, or proof of zero-day detection. Fusion score is
+not probability, risk, severity, or attack confirmation. Phase 8 detection
+results, alerts, explanations, correlation, hypotheses, replay orchestration,
+and cases are **not implemented**.
 
 ## Planned architecture
 
@@ -89,6 +84,11 @@ aegishunt anomaly train --data-dir <data> --dataset-report-dir <reports> --allow
 aegishunt anomaly test --data-dir <data> --dataset-report-dir <reports> --allow-controlled-demo
 aegishunt anomaly list
 aegishunt anomaly verify 1.0.0
+aegishunt fusion --help
+aegishunt fusion evaluate --fusion-config <fusion-yaml> --supervised-config <supervised-yaml> --anomaly-config <anomaly-yaml> --label-mapping <label-yaml> --experiment-root <new-root> --policy-root <new-root> --allow-controlled-demo
+aegishunt fusion verify 1.0.0 --policy-root <policy-root>
+aegishunt fusion describe 1.0.0 --policy-root <policy-root>
+aegishunt fusion score 1.0.0 --input <score-input.json> --policy-root <policy-root>
 aegishunt api
 aegishunt frontend
 ```
@@ -146,6 +146,21 @@ See [`docs/anomaly_experiment_protocol.md`](docs/anomaly_experiment_protocol.md)
 [`docs/adr/0014-validation-frozen-benign-anomaly-engine.md`](docs/adr/0014-validation-frozen-benign-anomaly-engine.md),
 and [`docs/adr/0015-lof-validation-qualified-production-candidate.md`](docs/adr/0015-lof-validation-qualified-production-candidate.md).
 
+## Fusion experiment workflow
+
+`fusion evaluate` creates a new exclusive experiment and policy version; it
+never overwrites Phase 5/6 artifacts or silently falls back to one engine. The
+fixed Phase 5 Random Forest/isotonic and Phase 6 novelty-mode LOF configurations
+are refitted only within isolated Phase 7 early/middle groups. Late, held-out
+family, temporal, and shifted groups do not select weights or thresholds.
+
+The policy contains no model binary. Its exact JSON/Markdown inventory and
+SHA-256 checksums are verified before describe or score. Missing, extra,
+corrupt, escaped, mismatched, or colliding artifacts fail closed. See
+[`docs/fusion_experiment_protocol.md`](docs/fusion_experiment_protocol.md),
+[`docs/fusion_policy_card.md`](docs/fusion_policy_card.md), and
+[`docs/adr/0016-validation-selected-dual-engine-fusion.md`](docs/adr/0016-validation-selected-dual-engine-fusion.md).
+
 ## Telemetry ingestion
 
 The ingestion API exposes `/ingestion/pcap`, `/ingestion/flow-csv`,
@@ -196,9 +211,9 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 6 page reports the implemented supervised/anomaly pipeline boundary and
-planned modules only. It does not display invented flows, alerts, hypotheses, or
-model metrics.
+The Phase 7 page reports the implemented experiment boundary and planned modules
+only. It does not display invented metrics, flows, alerts, explanations,
+hypotheses, or model results.
 
 ## Quality checks
 
