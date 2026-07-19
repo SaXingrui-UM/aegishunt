@@ -1,0 +1,105 @@
+config_schema_version: 1.1.0
+experiment_id: phase-06-controlled-demo-validation-corrective-001
+model_version: 1.0.1-candidate
+random_seed: 6106
+minimum_benign_groups: 5
+false_positive_rate_limit: 0.25
+threshold_candidates: [0.40, 0.50, 0.60, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95]
+normalization_quantiles: 101
+normalization_strategies:
+  - benign_training_quantile_cdf
+  - smoothed_empirical_cdf
+  - robust_percentile_scaling
+latency_repetitions: 50
+bootstrap_iterations: 1000
+selection_policy_version: 1.0.1
+normalization_version: 1.0.1
+candidate_status: validation_qualified
+corrective_protocol:
+  protocol_version: 1.0.0
+  research_type: validation_only_algorithm_configuration_corrective
+  original_experiment_id: phase-06-controlled-demo
+  original_model_version: 1.0.0
+  dataset_id: aegishunt-controlled-demo
+  dataset_version: 1.0.0
+  dataset_manifest_checksum: badf8c045c29fa02299eb55f8a1cd7deb15d92aec40c0e80cd6ea4a133d98d0d
+  split_manifest_checksum: a2949d3ef88381119616c5c352e39c30c7c98371edc0101614c230e0c7b8a1e0
+  expected_benign_training_rows: 10
+  expected_benign_training_groups: 5
+  expected_validation_rows: 10
+  expected_validation_groups: 5
+  estimator_fit_partition: benign_training_only
+  normalizer_fit_partition: benign_training_only
+  selection_partition: validation_only
+  original_test_access_permitted: false
+  smoke_fixture_affects_selection: false
+  lof_production_eligible: false
+  untouched_independent_holdout_required: true
+isolation_forest_candidates:
+  - candidate_id: corrective-iforest-64-full
+    n_estimators: 64
+    max_samples: 1.0
+    max_features: 1.0
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-128-full
+    n_estimators: 128
+    max_samples: 1.0
+    max_features: 1.0
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-256-full
+    n_estimators: 256
+    max_samples: 1.0
+    max_features: 1.0
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-128-sample-80
+    n_estimators: 128
+    max_samples: 0.8
+    max_features: 1.0
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-128-feature-75
+    n_estimators: 128
+    max_samples: 1.0
+    max_features: 0.75
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-128-feature-50
+    n_estimators: 128
+    max_samples: 1.0
+    max_features: 0.5
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-128-sample-80-feature-75
+    n_estimators: 128
+    max_samples: 0.8
+    max_features: 0.75
+    bootstrap: false
+    contamination: auto
+    n_jobs: 1
+  - candidate_id: corrective-iforest-128-bootstrap
+    n_estimators: 128
+    max_samples: 1.0
+    max_features: 1.0
+    bootstrap: true
+    contamination: auto
+    n_jobs: 1
+lof:
+  enabled: true
+  n_neighbors: 5
+  metric: minkowski
+  algorithm: auto
+  leaf_size: 30
+  n_jobs: 1
+one_class_svm_status: not_implemented
+one_class_svm_reason: >-
+  Not implemented in the bounded Phase 6 corrective scope; LOF remains the only
+  offline comparator and no comparator can silently replace Isolation Forest.

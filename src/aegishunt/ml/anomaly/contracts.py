@@ -11,6 +11,7 @@ from aegishunt.datasets.schemas import SHA256_PATTERN
 from aegishunt.schemas.base import require_aware_utc
 
 ANOMALY_CONTRACT_VERSION = "1.0.0"
+AnomalyAlgorithm = Literal["isolation_forest", "local_outlier_factor"]
 
 
 class AnomalyModel(BaseModel):
@@ -72,7 +73,11 @@ class GroupStability(AnomalyModel):
 
 class ScoreNormalization(AnomalyModel):
     version: str
-    method: Literal["benign_training_quantile_cdf"]
+    method: Literal[
+        "benign_training_quantile_cdf",
+        "smoothed_empirical_cdf",
+        "robust_percentile_scaling",
+    ]
     score_direction: Literal["higher_is_more_anomalous"]
     reference_partition: Literal["benign_training"]
     canonical_score_knots: tuple[float, ...]
@@ -102,10 +107,11 @@ class AnomalyOperationalMetrics(AnomalyModel):
     peak_memory_bytes: int | None = Field(default=None, ge=0)
 
 
-class IsolationForestCandidateResult(AnomalyModel):
+class AnomalyCandidateResult(AnomalyModel):
     candidate_id: str
-    algorithm: Literal["isolation_forest"]
+    algorithm: AnomalyAlgorithm
     hyperparameters: dict[str, bool | int | float | str]
+    normalization_strategy: str = "benign_training_quantile_cdf"
     status: Literal["passed", "failed"]
     failure_code: str | None = None
     benign_training_rows: int = Field(ge=1)
@@ -123,13 +129,34 @@ class IsolationForestCandidateResult(AnomalyModel):
     operational_metrics: AnomalyOperationalMetrics | None = None
 
 
+# Backward-compatible name retained for the original Phase 6 evidence readers.
+IsolationForestCandidateResult = AnomalyCandidateResult
+
+
 class ComparatorResult(AnomalyModel):
     algorithm: Literal["local_outlier_factor", "one_class_svm"]
-    production_eligible: Literal[False]
+    candidate_id: str | None = None
+    production_eligible: bool
     status: Literal["passed", "failed", "not_implemented"]
     hyperparameters: dict[str, bool | int | float | str]
+    preprocessing: Literal["standard_scaler"] | None = None
+    raw_score_method: Literal["score_samples"] | None = None
+    canonical_score_transform: Literal["negative_raw_score"] | None = None
+    normalizer: ScoreNormalization | None = None
+    threshold_policy: Literal["validation_benign_fpr_constrained"] | None = None
+    false_positive_rate_limit: float | None = Field(default=None, ge=0.0, lt=1.0)
+    benign_training_rows: int | None = Field(default=None, ge=1)
+    benign_training_groups: int | None = Field(default=None, ge=1)
+    validation_rows: int | None = Field(default=None, ge=1)
+    validation_groups: int | None = Field(default=None, ge=1)
     selected_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    threshold_results: tuple[ThresholdResult, ...] = ()
     validation_metrics: AnomalyMetrics | None = None
+    benign_raw_distribution: ScoreDistribution | None = None
+    anomaly_raw_distribution: ScoreDistribution | None = None
+    benign_normalized_distribution: ScoreDistribution | None = None
+    anomaly_normalized_distribution: ScoreDistribution | None = None
+    operational_metrics: AnomalyOperationalMetrics | None = None
     limitations: tuple[str, ...]
     failure_code: str | None = None
 
@@ -140,6 +167,7 @@ class BenignTrainingManifest(AnomalyModel):
     partition: Literal["train"]
     benign_rows: int = Field(ge=1)
     benign_groups: tuple[str, ...]
+    benign_row_identity_digest: str
     excluded_malicious_rows: int = Field(ge=0)
     validation_rows: int = Field(ge=1)
     validation_groups: tuple[str, ...]
@@ -147,14 +175,22 @@ class BenignTrainingManifest(AnomalyModel):
     metadata_used_as_features: Literal[False]
     test_data_accessed: Literal[False]
 
+    @field_validator("benign_row_identity_digest")
+    @classmethod
+    def validate_identity_digest(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("benign row identity digest must be SHA-256")
+        return normalized
+
 
 class AnomalySelectionRecord(AnomalyModel):
     record_schema_version: str
-    status: Literal["frozen"]
+    status: Literal["frozen", "validation_qualified"]
     experiment_id: str
     model_id: str
     model_version: str
-    algorithm: Literal["isolation_forest"]
+    algorithm: AnomalyAlgorithm
     selected_candidate_id: str
     hyperparameters: dict[str, bool | int | float | str]
     preprocessing: Literal["standard_scaler"]
@@ -176,6 +212,7 @@ class AnomalySelectionRecord(AnomalyModel):
     label_mapping_version: str
     benign_training_rows: int = Field(ge=1)
     benign_training_groups: tuple[str, ...]
+    benign_training_identity_digest: str
     validation_rows: int = Field(ge=1)
     validation_groups: tuple[str, ...]
     random_seed: int
@@ -197,6 +234,7 @@ class AnomalySelectionRecord(AnomalyModel):
         "split_manifest_checksum",
         "training_config_checksum",
         "selection_artifact_checksum",
+        "benign_training_identity_digest",
     )
     @classmethod
     def validate_checksum(cls, value: str) -> str:
@@ -269,12 +307,37 @@ class AnomalyPredictionResult(AnomalyModel):
         return require_aware_utc(value)
 
 
+class CandidateSmokeResult(AnomalyModel):
+    result_schema_version: Literal["1.0.0"]
+    fixture_id: Literal["phase-06-fixed-syn-burst-v1"]
+    fixture_checksum: str
+    affected_selection: Literal[False]
+    ran_after_selection_freeze: Literal[True]
+    independently_reloaded: bool
+    prediction: AnomalyPredictionResult
+    passed: bool
+    evaluated_at: datetime
+
+    @field_validator("fixture_checksum")
+    @classmethod
+    def validate_fixture_checksum(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("candidate smoke fixture checksum must be SHA-256")
+        return normalized
+
+    @field_validator("evaluated_at")
+    @classmethod
+    def validate_smoke_timestamp(cls, value: datetime) -> datetime:
+        return require_aware_utc(value)
+
+
 class AnomalyBundleManifest(AnomalyModel):
     manifest_schema_version: str
     model_id: str
     model_version: str
     model_type: Literal["anomaly"]
-    algorithm: Literal["isolation_forest"]
+    algorithm: AnomalyAlgorithm
     artifact_filename: Literal["model.skops"]
     artifact_checksum: str
     trusted_types: tuple[str, ...]
@@ -296,6 +359,7 @@ class AnomalyBundleManifest(AnomalyModel):
     training_config_checksum: str
     benign_training_rows: int = Field(ge=1)
     benign_training_groups: tuple[str, ...]
+    benign_training_identity_digest: str
     random_seed: int
     hyperparameters: dict[str, bool | int | float | str]
     validation_metrics: AnomalyMetrics
@@ -305,7 +369,10 @@ class AnomalyBundleManifest(AnomalyModel):
     python_version: str
     sklearn_version: str
     git_commit_sha: str | None
-    status: Literal["validated"]
+    status: Literal["validated", "validation_qualified"]
+    candidate_smoke_fixture_checksum: str | None = None
+    candidate_smoke_test_passed: bool | None = None
+    untouched_independent_holdout_available: bool | None = None
     created_at: datetime
 
     @field_validator(
@@ -313,9 +380,13 @@ class AnomalyBundleManifest(AnomalyModel):
         "dataset_manifest_checksum",
         "split_manifest_checksum",
         "training_config_checksum",
+        "benign_training_identity_digest",
+        "candidate_smoke_fixture_checksum",
     )
     @classmethod
-    def validate_bundle_checksum(cls, value: str) -> str:
+    def validate_bundle_checksum(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         normalized = value.strip().lower()
         if not SHA256_PATTERN.fullmatch(normalized):
             raise ValueError("anomaly bundle checksum must be SHA-256")

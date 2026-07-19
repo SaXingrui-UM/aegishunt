@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -68,6 +69,11 @@ class AnomalyDatasetGate:
             partition="train",
             benign_rows=len(benign_rows),
             benign_groups=benign_groups,
+            benign_row_identity_digest=hashlib.sha256(
+                "\n".join(
+                    sorted(row.metadata.record_id for row in benign_rows)
+                ).encode("utf-8")
+            ).hexdigest(),
             excluded_malicious_rows=len(malicious_rows),
             validation_rows=len(source.validation.rows),
             validation_groups=validation_groups,

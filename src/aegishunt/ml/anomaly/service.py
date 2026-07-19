@@ -15,6 +15,7 @@ from aegishunt.datasets.io import sha256_file
 from aegishunt.flows.registry import feature_names
 from aegishunt.ml.anomaly.artifacts import AnomalyExperimentStore
 from aegishunt.ml.anomaly.bundle import (
+    LoadedAnomalyModel,
     load_bundle,
     load_manifest,
     load_selection_artifact,
@@ -30,19 +31,25 @@ from aegishunt.ml.anomaly.contracts import (
     AnomalyFrozenTestReport,
     AnomalyPredictionResult,
     AnomalySelectionRecord,
+    CandidateSmokeResult,
 )
 from aegishunt.ml.anomaly.data import AnomalyDatasetGate
 from aegishunt.ml.anomaly.errors import AnomalyArtifactError, AnomalyDatasetError
 from aegishunt.ml.anomaly.frozen import evaluate_frozen_test
-from aegishunt.ml.anomaly.model_card import render_model_card
+from aegishunt.ml.anomaly.model_card import render_candidate_model_card, render_model_card
 from aegishunt.ml.anomaly.prediction import AnomalyPredictionBatch, score_batch
 from aegishunt.ml.anomaly.reporting import write_frozen_artifacts, write_training_artifacts
 from aegishunt.ml.anomaly.selection import (
     FittedAnomalyCandidate,
     evaluate_isolation_forest_candidates,
-    evaluate_lof_comparator,
+    evaluate_lof_candidate,
     one_class_svm_status,
     select_production_candidate,
+)
+from aegishunt.ml.anomaly.smoke import (
+    SMOKE_FIXTURE_ID,
+    predefined_sample_anomaly,
+    smoke_fixture_checksum,
 )
 
 
@@ -54,6 +61,8 @@ class AnomalyTrainingRunResult:
     selected_candidate_id: str
     selected_algorithm: str
     pipeline_verification_only: bool
+    status: str
+    candidate_smoke_passed: bool | None
     selection: AnomalySelectionRecord
 
 
@@ -123,12 +132,176 @@ class AnomalyTrainingService:
         ):
             raise AnomalyArtifactError("selected anomaly candidate evidence is incomplete")
 
+    @staticmethod
+    def _require_corrective_evidence(
+        config: AnomalyTrainingConfig,
+        data: object,
+    ) -> None:
+        from aegishunt.ml.anomaly.data import AnomalyTrainingData
+
+        if not isinstance(data, AnomalyTrainingData):
+            raise AnomalyArtifactError("corrective anomaly data contract is invalid")
+        protocol = config.corrective_protocol
+        evidence = data.evidence
+        if protocol is None:
+            return
+        actual = (
+            evidence.dataset_manifest.dataset_id,
+            evidence.dataset_manifest.dataset_version,
+            evidence.dataset_manifest_checksum,
+            evidence.split_manifest_checksum,
+            len(data.benign_train.rows),
+            len(set(data.benign_train.groups.tolist())),
+            len(data.validation.rows),
+            len(set(data.validation.groups.tolist())),
+        )
+        expected = (
+            protocol.dataset_id,
+            protocol.dataset_version,
+            protocol.dataset_manifest_checksum,
+            protocol.split_manifest_checksum,
+            protocol.expected_benign_training_rows,
+            protocol.expected_benign_training_groups,
+            protocol.expected_validation_rows,
+            protocol.expected_validation_groups,
+        )
+        if actual != expected:
+            raise AnomalyArtifactError("corrective anomaly evidence differs from registration")
+
+    def _save_validation_candidate(
+        self,
+        *,
+        store: AnomalyExperimentStore,
+        selection: AnomalySelectionRecord,
+        selected: FittedAnomalyCandidate,
+        gate: AnomalyDatasetGate,
+    ) -> CandidateSmokeResult:
+        evidence = gate.evidence
+        fixture_checksum = smoke_fixture_checksum()
+        draft_manifest = AnomalyBundleManifest(
+            manifest_schema_version="1.1.0",
+            model_id=selection.model_id,
+            model_version=selection.model_version,
+            model_type="anomaly",
+            algorithm=selection.algorithm,
+            artifact_filename="model.skops",
+            artifact_checksum=selection.selection_artifact_checksum,
+            trusted_types=selection.trusted_types,
+            preprocessing=selection.preprocessing,
+            raw_score_method=selection.raw_score_method,
+            canonical_score_transform=selection.canonical_score_transform,
+            normalizer=selection.normalizer,
+            anomaly_threshold=selection.threshold,
+            threshold_policy=selection.threshold_policy,
+            false_positive_rate_limit=selection.false_positive_rate_limit,
+            feature_names=selection.feature_names,
+            feature_schema_version=selection.feature_schema_version,
+            expected_dtype=selection.expected_dtype,
+            training_dataset_id=selection.dataset_id,
+            training_dataset_version=selection.dataset_version,
+            dataset_manifest_checksum=selection.dataset_manifest_checksum,
+            split_manifest_checksum=selection.split_manifest_checksum,
+            label_mapping_version=selection.label_mapping_version,
+            training_config_checksum=selection.training_config_checksum,
+            benign_training_rows=selection.benign_training_rows,
+            benign_training_groups=selection.benign_training_groups,
+            benign_training_identity_digest=selection.benign_training_identity_digest,
+            random_seed=selection.random_seed,
+            hyperparameters=selection.hyperparameters,
+            validation_metrics=selection.validation_metrics,
+            frozen_test_metrics=None,
+            operational_metrics=selection.operational_metrics,
+            pipeline_verification_only=selection.pipeline_verification_only,
+            python_version=platform.python_version(),
+            sklearn_version=sklearn.__version__,
+            git_commit_sha=self._git_commit(),
+            status="validation_qualified",
+            candidate_smoke_fixture_checksum=fixture_checksum,
+            candidate_smoke_test_passed=False,
+            untouched_independent_holdout_available=False,
+            created_at=datetime.now(UTC),
+        )
+        smoke_batch = AnomalyPredictionBatch(
+            feature_schema_version=selection.feature_schema_version,
+            feature_names=selection.feature_names,
+            dtype="float64",
+            rows=(predefined_sample_anomaly(),),
+        )
+        before_save = score_batch(
+            LoadedAnomalyModel(selected.estimator, draft_manifest), smoke_batch
+        )[0]
+        if not before_save.is_anomaly:
+            store.write_json(
+                "candidate_smoke_test.json",
+                CandidateSmokeResult(
+                    result_schema_version="1.0.0",
+                    fixture_id=SMOKE_FIXTURE_ID,
+                    fixture_checksum=fixture_checksum,
+                    affected_selection=False,
+                    ran_after_selection_freeze=True,
+                    independently_reloaded=False,
+                    prediction=before_save,
+                    passed=False,
+                    evaluated_at=datetime.now(UTC),
+                ),
+            )
+            raise AnomalyArtifactError("validation candidate failed the fixed smoke decision")
+        manifest = draft_manifest.model_copy(
+            update={"candidate_smoke_test_passed": True}
+        )
+        card = render_candidate_model_card(
+            selection,
+            evidence.dataset_manifest,
+            evidence.split_manifest,
+            before_save,
+        )
+        save_bundle(self._artifact_root, manifest, selected.model_payload, card)
+        loaded = load_bundle(
+            self._artifact_root / selection.model_version,
+            artifact_root=self._artifact_root,
+        )
+        after_reload = score_batch(loaded, smoke_batch)[0]
+        if before_save.model_dump(exclude={"scored_at"}) != after_reload.model_dump(
+            exclude={"scored_at"}
+        ):
+            raise AnomalyArtifactError("candidate smoke result changed after bundle reload")
+        smoke = CandidateSmokeResult(
+            result_schema_version="1.0.0",
+            fixture_id=SMOKE_FIXTURE_ID,
+            fixture_checksum=fixture_checksum,
+            affected_selection=False,
+            ran_after_selection_freeze=True,
+            independently_reloaded=True,
+            prediction=after_reload,
+            passed=True,
+            evaluated_at=datetime.now(UTC),
+        )
+        store.write_json("candidate_smoke_test.json", smoke)
+        store.write_json(
+            "independent_holdout_status.json",
+            {
+                "schema_version": "1.0.0",
+                "available": False,
+                "checked_without_scoring_or_label_access": True,
+                "registered_row_count": evidence.dataset_manifest.row_count,
+                "assigned_row_count": sum(evidence.split_manifest.row_counts.values()),
+                "reason": (
+                    "all registered rows are assigned to train, validation, or the "
+                    "previously viewed original test partition"
+                ),
+                "candidate_status": "validation_qualified",
+            },
+        )
+        return smoke
+
     def train(self, *, allow_controlled_demo: bool = False) -> AnomalyTrainingRunResult:
-        """Freeze validation-selected Isolation Forest evidence without reading test rows."""
+        """Freeze validation-selected anomaly evidence without reading test rows."""
 
         config = self._config()
         if (self._reports_root / config.experiment_id).exists():
             raise AnomalyArtifactError("anomaly experiment already exists")
+        if config.candidate_status == "validation_qualified":
+            require_available_bundle_version(self._artifact_root, config.model_version)
         gate = AnomalyDatasetGate(self._data_root, self._dataset_report_root)
         pipeline_only = self._require_controlled_permission(
             gate.evidence.dataset_manifest.dataset_type,
@@ -137,8 +310,20 @@ class AnomalyTrainingService:
         data = gate.load_training_validation(
             minimum_benign_groups=config.minimum_benign_groups
         )
+        self._require_corrective_evidence(config, data)
         evaluated = evaluate_isolation_forest_candidates(data, config)
-        selected = select_production_candidate(evaluated.fitted)
+        lof_evaluation = evaluate_lof_candidate(data, config)
+        selection_candidates = evaluated.fitted
+        if config.lof_production_eligible:
+            if lof_evaluation.fitted is None:
+                raise AnomalyArtifactError(
+                    "production-eligible LOF candidate did not produce complete evidence"
+                )
+            selection_candidates = (*selection_candidates, lof_evaluation.fitted)
+        selected = select_production_candidate(
+            selection_candidates,
+            selection_policy_version=config.selection_policy_version,
+        )
         self._require_complete(selected)
         result = selected.result
         assert result.selected_threshold is not None
@@ -148,16 +333,20 @@ class AnomalyTrainingService:
         selected_threshold = next(
             item for item in result.threshold_results if item.threshold == result.selected_threshold
         )
-        lof = evaluate_lof_comparator(data, config)
+        lof = lof_evaluation.comparator
         one_class_svm = one_class_svm_status(config)
         evidence = data.evidence
         selection = AnomalySelectionRecord(
-            record_schema_version="1.0.0",
-            status="frozen",
+            record_schema_version=config.config_schema_version,
+            status=(
+                "validation_qualified"
+                if config.candidate_status == "validation_qualified"
+                else "frozen"
+            ),
             experiment_id=config.experiment_id,
             model_id=f"aegishunt-anomaly-{config.model_version}",
             model_version=config.model_version,
-            algorithm="isolation_forest",
+            algorithm=result.algorithm,
             selected_candidate_id=result.candidate_id,
             hyperparameters=result.hyperparameters,
             preprocessing="standard_scaler",
@@ -169,10 +358,31 @@ class AnomalyTrainingService:
             false_positive_rate_limit=config.false_positive_rate_limit,
             selection_policy_version=config.selection_policy_version,
             selection_rationale=(
-                "Isolation Forest is the roadmap-defined production anomaly algorithm",
+                (
+                    "LOF production-candidate eligibility was authorized by ADR 0015"
+                    if result.algorithm == "local_outlier_factor"
+                    else "Isolation Forest is the roadmap-defined anomaly algorithm"
+                ),
                 "every estimator and preprocessing step fit benign training rows only",
                 "validation benign FPR constraint preceded PR-AUC/F1/recall tie-breaks",
-                "LOF remained an offline comparator and frozen test was not accessed",
+                "the previously viewed frozen test was not accessed or used for selection",
+                *(
+                    (
+                        "corrective search used fixed configuration complexity and stable ID "
+                        "tie-breaks without runtime latency or test evidence",
+                    )
+                    if config.selection_policy_version == "1.0.1"
+                    else ()
+                ),
+                *(
+                    (
+                        "policy 2.0.0 compared the registered Isolation Forest matrix and "
+                        "fixed novelty-mode LOF using validation utility only",
+                        "this post-hoc eligibility decision requires a new independent holdout",
+                    )
+                    if config.selection_policy_version == "2.0.0"
+                    else ()
+                ),
             ),
             dataset_id=evidence.dataset_manifest.dataset_id,
             dataset_version=evidence.dataset_manifest.dataset_version,
@@ -184,6 +394,7 @@ class AnomalyTrainingService:
             label_mapping_version=evidence.dataset_manifest.label_mapping_version,
             benign_training_rows=len(data.benign_train.rows),
             benign_training_groups=tuple(sorted(set(data.benign_train.groups.tolist()))),
+            benign_training_identity_digest=data.manifest.benign_row_identity_digest,
             validation_rows=len(data.validation.rows),
             validation_groups=tuple(sorted(set(data.validation.groups.tolist()))),
             random_seed=config.random_seed,
@@ -208,9 +419,21 @@ class AnomalyTrainingService:
             evaluated.results,
             lof,
             one_class_svm,
+            result,
             selection,
             selected.model_payload,
+            selected.validation_labels,
+            selected.validation_raw_scores,
+            selected.validation_normalized_scores,
         )
+        smoke: CandidateSmokeResult | None = None
+        if config.candidate_status == "validation_qualified":
+            smoke = self._save_validation_candidate(
+                store=store,
+                selection=selection,
+                selected=selected,
+                gate=gate,
+            )
         return AnomalyTrainingRunResult(
             experiment_id=config.experiment_id,
             model_id=selection.model_id,
@@ -218,6 +441,8 @@ class AnomalyTrainingService:
             selected_candidate_id=selection.selected_candidate_id,
             selected_algorithm=selection.algorithm,
             pipeline_verification_only=pipeline_only,
+            status=config.candidate_status,
+            candidate_smoke_passed=smoke.passed if smoke is not None else None,
             selection=selection,
         )
 
@@ -225,6 +450,10 @@ class AnomalyTrainingService:
         """Run the explicit one-time test and finalize the safe anomaly bundle."""
 
         config = self._config()
+        if config.candidate_status == "validation_qualified":
+            raise AnomalyArtifactError(
+                "validation-qualified corrective candidate requires a new independent holdout"
+            )
         store = AnomalyExperimentStore.open(self._reports_root, config.experiment_id)
         if store.exists("anomaly_frozen_test_metrics.json"):
             raise AnomalyArtifactError("anomaly frozen test evaluation already exists")
@@ -262,7 +491,7 @@ class AnomalyTrainingService:
             model_id=selection.model_id,
             model_version=selection.model_version,
             model_type="anomaly",
-            algorithm="isolation_forest",
+            algorithm=selection.algorithm,
             artifact_filename="model.skops",
             artifact_checksum=selection.selection_artifact_checksum,
             trusted_types=selection.trusted_types,
@@ -284,6 +513,7 @@ class AnomalyTrainingService:
             training_config_checksum=selection.training_config_checksum,
             benign_training_rows=selection.benign_training_rows,
             benign_training_groups=selection.benign_training_groups,
+            benign_training_identity_digest=selection.benign_training_identity_digest,
             random_seed=selection.random_seed,
             hyperparameters=selection.hyperparameters,
             validation_metrics=selection.validation_metrics,

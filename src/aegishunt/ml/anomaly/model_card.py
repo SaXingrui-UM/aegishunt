@@ -5,6 +5,7 @@ from __future__ import annotations
 from aegishunt.datasets.reports import DatasetManifest, SplitManifest
 from aegishunt.ml.anomaly.contracts import (
     AnomalyFrozenTestReport,
+    AnomalyPredictionResult,
     AnomalySelectionRecord,
 )
 
@@ -26,6 +27,100 @@ def _metric_rows(metrics: object) -> str:
         "anomaly_false_negative_rate",
     )
     return "\n".join(f"| {name} | {getattr(metrics, name)} |" for name in names)
+
+
+def _algorithm_name(value: str) -> str:
+    names = {
+        "isolation_forest": "Isolation Forest",
+        "local_outlier_factor": "Local Outlier Factor (novelty mode)",
+    }
+    return names.get(value, value)
+
+
+def render_candidate_model_card(
+    selection: AnomalySelectionRecord,
+    dataset: DatasetManifest,
+    split: SplitManifest,
+    smoke: AnomalyPredictionResult,
+) -> str:
+    """Describe a validation-qualified candidate without implying holdout validation."""
+
+    algorithm = _algorithm_name(selection.algorithm)
+    return f"""# AegisHunt Anomaly Candidate Model Card
+
+**CONTROLLED SYNTHETIC PIPELINE VERIFICATION ONLY — not a public benchmark,
+production result, real-world performance claim, or proof of zero-day detection.**
+
+## Candidate status
+
+- Model ID/version: `{selection.model_id}` / `{selection.model_version}`
+- Status: **validation-qualified candidate only**
+- Algorithm/candidate: {algorithm} / `{selection.selected_candidate_id}`
+- Feature schema: `{selection.feature_schema_version}` with
+  {len(selection.feature_names)} ordered `float64` features
+- Preprocessing: `{selection.preprocessing}` fitted on benign training only
+- Normalization: `{selection.normalizer.method}` version `{selection.normalizer.version}`
+- Selected validation threshold: `{selection.threshold}`
+- Untouched independent holdout: **not available in the registered 48-row pool**
+
+This candidate has not been evaluated on a new independent holdout and is not final-tested,
+production-validated, or production-ready. The previously viewed original test partition was not
+opened or reused by this corrective experiment. A score is relative deviation, not probability,
+causality, severity, or proof of malicious activity.
+
+## Evidence boundary
+
+- Dataset: `{dataset.dataset_id}` version `{dataset.dataset_version}`
+- Dataset manifest SHA-256: `{selection.dataset_manifest_checksum}`
+- Split manifest SHA-256: `{selection.split_manifest_checksum}`
+- Benign fit: {selection.benign_training_rows} rows /
+  {len(selection.benign_training_groups)} groups
+- Benign row-identity digest: `{selection.benign_training_identity_digest}`
+- Validation: {selection.validation_rows} rows / {len(selection.validation_groups)} groups
+- Split strategy: `{split.split_strategy}` grouped by `{split.group_key}`
+- Test affected selection: **false**
+
+Only benign train rows fitted the scaler, {algorithm}, and normalizer. Validation labels
+selected the bounded configuration and threshold. Malicious train rows, all test rows, metadata,
+labels, addresses, ports, filenames, and local paths were excluded from model inputs.
+
+## Validation metrics
+
+| Metric | Value |
+| --- | ---: |
+{_metric_rows(selection.validation_metrics)}
+
+The validation confusion matrix is `{selection.validation_metrics.confusion_matrix}` and benign
+FPR is `{selection.validation_metrics.benign_false_positive_rate}` against the fixed ceiling
+`{selection.false_positive_rate_limit}`.
+
+## Fixed post-selection smoke
+
+- Fixture: `phase-06-fixed-syn-burst-v1`
+- Ran only after selection freeze: yes
+- Normalized score: `{smoke.normalized_anomaly_score}`
+- Frozen candidate threshold: `{smoke.selected_threshold}`
+- Smoke decision: `{smoke.is_anomaly}`
+- Smoke affected selection: no
+
+The smoke is a fixed schema/decision regression, not representative performance evidence and not
+a substitute for an untouched independent holdout.
+
+## Comparator and scope limits
+
+- LOF production-candidate eligibility follows ADR 0015; its status here is
+  `{selection.lof_comparison.production_eligible}` and it still requires an independent holdout.
+- One-Class SVM and autoencoder remain unimplemented in this bounded corrective scope.
+- Phase 7 fusion, risk, alerts, explainability, correlation, hypotheses, and response are absent.
+- DEF-004 remains: a fully unavailable database cannot record its own failure in that database.
+
+## Integrity and next evidence gate
+
+The four-file skops bundle is exact-inventory and SHA-256 verified and rejects path escape,
+pickle/joblib, missing/extra/corrupt files, schema drift, unsafe types, and version collisions.
+Promotion requires a separately registered, never-viewed, group-isolated independent holdout.
+Until then this artifact must remain `validation_qualified`.
+"""
 
 
 def render_model_card(

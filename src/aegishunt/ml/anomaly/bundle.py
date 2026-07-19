@@ -12,6 +12,7 @@ from typing import Any
 import skops.io as sio
 from pydantic import ValidationError
 from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -67,6 +68,7 @@ def _load_estimator(
     *,
     expected_checksum: str,
     expected_trusted_types: tuple[str, ...],
+    expected_algorithm: str,
 ) -> Pipeline:
     if sha256_bytes(payload) != expected_checksum:
         raise AnomalyArtifactError("anomaly model checksum verification failed")
@@ -85,10 +87,17 @@ def _load_estimator(
         "model",
     ):
         raise AnomalyArtifactError("anomaly model inference pipeline is invalid")
-    if not isinstance(estimator.named_steps["scale"], StandardScaler) or not isinstance(
-        estimator.named_steps["model"], IsolationForest
-    ):
+    if not isinstance(estimator.named_steps["scale"], StandardScaler):
         raise AnomalyArtifactError("anomaly model component types are invalid")
+    model = estimator.named_steps["model"]
+    if expected_algorithm == "isolation_forest":
+        if not isinstance(model, IsolationForest):
+            raise AnomalyArtifactError("anomaly model component types are invalid")
+    elif expected_algorithm == "local_outlier_factor":
+        if not isinstance(model, LocalOutlierFactor) or not model.novelty:
+            raise AnomalyArtifactError("LOF candidate must use novelty mode")
+    else:
+        raise AnomalyArtifactError("anomaly model algorithm is unsupported")
     return estimator
 
 
@@ -104,6 +113,7 @@ def load_selection_artifact(
         payload,
         expected_checksum=selection.selection_artifact_checksum,
         expected_trusted_types=selection.trusted_types,
+        expected_algorithm=selection.algorithm,
     )
 
 
@@ -133,6 +143,12 @@ def save_bundle(
     try:
         if sha256_bytes(model_payload) != manifest.artifact_checksum:
             raise AnomalyArtifactError("anomaly model payload differs from its manifest")
+        _load_estimator(
+            model_payload,
+            expected_checksum=manifest.artifact_checksum,
+            expected_trusted_types=manifest.trusted_types,
+            expected_algorithm=manifest.algorithm,
+        )
         manifest_payload = (manifest.model_dump_json(indent=2) + "\n").encode()
         card_payload = model_card.encode()
         checksums = AnomalyBundleChecksums(
@@ -211,6 +227,7 @@ def load_bundle(bundle_dir: Path, *, artifact_root: Path) -> LoadedAnomalyModel:
         payload,
         expected_checksum=manifest.artifact_checksum,
         expected_trusted_types=manifest.trusted_types,
+        expected_algorithm=manifest.algorithm,
     )
     return LoadedAnomalyModel(estimator=estimator, manifest=manifest)
 

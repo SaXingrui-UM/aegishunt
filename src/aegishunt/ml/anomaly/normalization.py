@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
+from aegishunt.ml.anomaly.config import NormalizationStrategy
 from aegishunt.ml.anomaly.contracts import ScoreNormalization
 from aegishunt.ml.anomaly.errors import AnomalyTrainingError
 
@@ -14,26 +15,46 @@ def fit_score_normalizer(
     *,
     version: str,
     quantile_count: int,
+    strategy: NormalizationStrategy = "benign_training_quantile_cdf",
 ) -> ScoreNormalization:
     """Fit quantile knots only from benign training canonical scores."""
 
     values = np.asarray(canonical_training_scores, dtype=np.float64)
     if values.ndim != 1 or not len(values) or not np.isfinite(values).all():
         raise AnomalyTrainingError("normalizer reference scores must be finite and non-empty")
-    probabilities: NDArray[np.float64] = np.asarray(
-        np.linspace(0.0, 1.0, min(quantile_count, len(values))),
-        dtype=np.float64,
-    )
-    quantiles: NDArray[np.float64] = np.asarray(
-        np.quantile(values, probabilities, method="linear"),
-        dtype=np.float64,
-    )
-    unique: dict[float, float] = {}
-    for score, probability in zip(quantiles, probabilities, strict=True):
-        unique[float(score)] = float(probability)
+    if strategy == "benign_training_quantile_cdf":
+        probabilities: NDArray[np.float64] = np.asarray(
+            np.linspace(0.0, 1.0, min(quantile_count, len(values))),
+            dtype=np.float64,
+        )
+        quantiles: NDArray[np.float64] = np.asarray(
+            np.quantile(values, probabilities, method="linear"),
+            dtype=np.float64,
+        )
+        unique: dict[float, float] = {}
+        for score, probability in zip(quantiles, probabilities, strict=True):
+            unique[float(score)] = float(probability)
+    elif strategy == "smoothed_empirical_cdf":
+        scores, counts = np.unique(values, return_counts=True)
+        preceding = np.cumsum(counts) - counts
+        midranks = (preceding + counts / 2.0) / len(values)
+        unique = {
+            float(score): float(probability)
+            for score, probability in zip(scores, midranks, strict=True)
+        }
+    elif strategy == "robust_percentile_scaling":
+        percentiles = np.asarray(
+            np.quantile(values, (0.05, 0.95), method="linear"),
+            dtype=np.float64,
+        )
+        lower = float(percentiles[0])
+        upper = float(percentiles[1])
+        unique = {lower: 0.0} if lower == upper else {lower: 0.0, upper: 1.0}
+    else:
+        raise AnomalyTrainingError("unsupported anomaly normalization strategy")
     return ScoreNormalization(
         version=version,
-        method="benign_training_quantile_cdf",
+        method=strategy,
         score_direction="higher_is_more_anomalous",
         reference_partition="benign_training",
         canonical_score_knots=tuple(unique),
