@@ -14,7 +14,9 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The branch-aware suite includes bounded training/E2E checks and can exceed
+    # 15 minutes on a slower hosted runner even when every test passes.
+    timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

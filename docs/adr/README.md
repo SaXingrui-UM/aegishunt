@@ -17,3 +17,4 @@ decision. Phase 0 establishes:
 11. [Deterministic packet-to-flow contract](0011-deterministic-packet-to-flow-contract.md)
 12. [File-based dataset quality boundary](0012-file-based-dataset-quality-boundary.md)
 13. [Validation-frozen supervised model bundles](0013-validation-frozen-supervised-model-bundles.md)
+14. [Validation-frozen benign-baseline anomaly engine](0014-validation-frozen-benign-anomaly-engine.md)

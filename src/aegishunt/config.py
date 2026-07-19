@@ -120,6 +120,16 @@ class SupervisedSettings(BaseModel):
     reports_root: Path = Path("reports/models/supervised")
 
 
+class AnomalySettings(BaseModel):
+    """Configured Phase 6 policy and ignored anomaly artifact roots."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    training_config_path: Path = Path("configs/models/anomaly.yaml")
+    artifact_root: Path = Path("artifacts/models/anomaly")
+    reports_root: Path = Path("reports/models/anomaly")
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -131,6 +141,7 @@ class ApplicationSettings(BaseModel):
     flows: FlowSettings = Field(default_factory=FlowSettings)
     datasets: DatasetSettings = Field(default_factory=DatasetSettings)
     supervised: SupervisedSettings = Field(default_factory=SupervisedSettings)
+    anomaly: AnomalySettings = Field(default_factory=AnomalySettings)
 
     @property
     def environment(self) -> str:

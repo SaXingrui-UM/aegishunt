@@ -1,0 +1,282 @@
+"""Evidence-backed Phase 6 anomaly model-card rendering."""
+
+from __future__ import annotations
+
+from aegishunt.datasets.reports import DatasetManifest, SplitManifest
+from aegishunt.ml.anomaly.contracts import (
+    AnomalyFrozenTestReport,
+    AnomalyPredictionResult,
+    AnomalySelectionRecord,
+)
+
+
+def _metric_rows(metrics: object) -> str:
+    names = (
+        "accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "macro_f1",
+        "weighted_f1",
+        "balanced_accuracy",
+        "mcc",
+        "roc_auc",
+        "pr_auc",
+        "specificity",
+        "benign_false_positive_rate",
+        "anomaly_false_negative_rate",
+    )
+    return "\n".join(f"| {name} | {getattr(metrics, name)} |" for name in names)
+
+
+def _algorithm_name(value: str) -> str:
+    names = {
+        "isolation_forest": "Isolation Forest",
+        "local_outlier_factor": "Local Outlier Factor (novelty mode)",
+    }
+    return names.get(value, value)
+
+
+def render_candidate_model_card(
+    selection: AnomalySelectionRecord,
+    dataset: DatasetManifest,
+    split: SplitManifest,
+    smoke: AnomalyPredictionResult,
+) -> str:
+    """Describe a validation-qualified candidate without implying holdout validation."""
+
+    algorithm = _algorithm_name(selection.algorithm)
+    return f"""# AegisHunt Anomaly Candidate Model Card
+
+**CONTROLLED SYNTHETIC PIPELINE VERIFICATION ONLY — not a public benchmark,
+production result, real-world performance claim, or proof of zero-day detection.**
+
+## Candidate status
+
+- Model ID/version: `{selection.model_id}` / `{selection.model_version}`
+- Status: **validation-qualified candidate only**
+- Algorithm/candidate: {algorithm} / `{selection.selected_candidate_id}`
+- Feature schema: `{selection.feature_schema_version}` with
+  {len(selection.feature_names)} ordered `float64` features
+- Preprocessing: `{selection.preprocessing}` fitted on benign training only
+- Normalization: `{selection.normalizer.method}` version `{selection.normalizer.version}`
+- Selected validation threshold: `{selection.threshold}`
+- Untouched independent holdout: **not available in the registered 48-row pool**
+
+This candidate has not been evaluated on a new independent holdout and is not final-tested,
+production-validated, or production-ready. The previously viewed original test partition was not
+opened or reused by this corrective experiment. A score is relative deviation, not probability,
+causality, severity, or proof of malicious activity.
+
+## Evidence boundary
+
+- Dataset: `{dataset.dataset_id}` version `{dataset.dataset_version}`
+- Dataset manifest SHA-256: `{selection.dataset_manifest_checksum}`
+- Split manifest SHA-256: `{selection.split_manifest_checksum}`
+- Benign fit: {selection.benign_training_rows} rows /
+  {len(selection.benign_training_groups)} groups
+- Benign row-identity digest: `{selection.benign_training_identity_digest}`
+- Validation: {selection.validation_rows} rows / {len(selection.validation_groups)} groups
+- Split strategy: `{split.split_strategy}` grouped by `{split.group_key}`
+- Test affected selection: **false**
+
+Only benign train rows fitted the scaler, {algorithm}, and normalizer. Validation labels
+selected the bounded configuration and threshold. Malicious train rows, all test rows, metadata,
+labels, addresses, ports, filenames, and local paths were excluded from model inputs.
+
+## Validation metrics
+
+| Metric | Value |
+| --- | ---: |
+{_metric_rows(selection.validation_metrics)}
+
+The validation confusion matrix is `{selection.validation_metrics.confusion_matrix}` and benign
+FPR is `{selection.validation_metrics.benign_false_positive_rate}` against the fixed ceiling
+`{selection.false_positive_rate_limit}`.
+
+## Fixed post-selection smoke
+
+- Fixture: `phase-06-fixed-syn-burst-v1`
+- Ran only after selection freeze: yes
+- Normalized score: `{smoke.normalized_anomaly_score}`
+- Frozen candidate threshold: `{smoke.selected_threshold}`
+- Smoke decision: `{smoke.is_anomaly}`
+- Smoke affected selection: no
+
+The smoke is a fixed schema/decision regression, not representative performance evidence and not
+a substitute for an untouched independent holdout.
+
+## Comparator and scope limits
+
+- LOF production-candidate eligibility follows ADR 0015; its status here is
+  `{selection.lof_comparison.production_eligible}` and it still requires an independent holdout.
+- One-Class SVM and autoencoder remain unimplemented in this bounded corrective scope.
+- Phase 7 fusion, risk, alerts, explainability, correlation, hypotheses, and response are absent.
+- DEF-004 remains: a fully unavailable database cannot record its own failure in that database.
+
+## Integrity and next evidence gate
+
+The four-file skops bundle is exact-inventory and SHA-256 verified and rejects path escape,
+pickle/joblib, missing/extra/corrupt files, schema drift, unsafe types, and version collisions.
+Promotion requires a separately registered, never-viewed, group-isolated independent holdout.
+Until then this artifact must remain `validation_qualified`.
+"""
+
+
+def render_model_card(
+    selection: AnomalySelectionRecord,
+    frozen: AnomalyFrozenTestReport,
+    dataset: DatasetManifest,
+    split: SplitManifest,
+) -> str:
+    """Describe actual evidence without equating anomaly with attack probability."""
+
+    marker = (
+        "**CONTROLLED SYNTHETIC PIPELINE VERIFICATION ONLY — not a public benchmark, "
+        "production result, or real-world performance claim.**"
+        if selection.pipeline_verification_only
+        else "Evaluation uses the registered benchmark and license evidence below."
+    )
+    provenance = (
+        "The AegisHunt project generated this controlled fixture offline. No public dataset "
+        "license or external benchmark status is claimed."
+        if selection.pipeline_verification_only
+        else "Dataset provenance and licensing follow the registered provider evidence."
+    )
+    validation_rows = split.row_counts["validation"]
+    test_rows = split.row_counts["test"]
+    validation_groups = split.group_counts["validation"]
+    test_groups = split.group_counts["test"]
+    operational = selection.operational_metrics
+    feature_summary = (
+        f"`{selection.feature_schema_version}` "
+        f"({len(selection.feature_names)} ordered float64 features)"
+    )
+    benign_training_summary = (
+        f"{selection.benign_training_rows} rows / "
+        f"{len(selection.benign_training_groups)} groups"
+    )
+    normalization_summary = (
+        f"`{selection.normalizer.method}` version `{selection.normalizer.version}` "
+        "using only benign-training scores"
+    )
+    one_class_svm_summary = (
+        f"`{selection.one_class_svm_comparison.status}` — "
+        f"{selection.one_class_svm_comparison.limitations[0]}"
+    )
+    latency_summary = " / ".join(
+        f"{value:.6f}"
+        for value in (
+            operational.batch_latency_p50_ms,
+            operational.batch_latency_p95_ms,
+            operational.batch_latency_p99_ms,
+        )
+    )
+    bootstrap_draws = min(
+        interval.successful_iterations for interval in frozen.confidence_intervals.values()
+    )
+    return f"""# AegisHunt Anomaly Model Card
+
+{marker}
+
+## Model details
+
+- Model ID: `{selection.model_id}`
+- Version: `{selection.model_version}`
+- Model type: unsupervised anomaly detector
+- Production algorithm: Isolation Forest (`{selection.selected_candidate_id}`)
+- Status: validated research prototype
+- Feature schema: {feature_summary}
+- Preprocessing: `{selection.preprocessing}` fitted on benign training only
+
+## Intended and out-of-scope use
+
+The model identifies flow-feature deviation from its current benign training baseline for offline
+research. `is_anomaly` is a thresholded model decision, not confirmation of malicious activity.
+The normalized score is bounded but is **not a probability**. Legitimate rare behavior can receive
+a high score. This model does not guarantee zero-day detection and must not be a sole production
+blocking control.
+
+Phase 6 does not create alerts, severity, supervised/anomaly fusion, reason codes, explanations,
+correlation, MITRE mappings, hypotheses, cases, or automated response. Fusion begins in Phase 7.
+
+## Data and research boundary
+
+- Dataset: `{dataset.dataset_id}` version `{dataset.dataset_version}`
+- Dataset type: `{dataset.dataset_type}`
+- Provider: {dataset.provider}
+- License: {dataset.license_name}
+- Source: {dataset.source}
+- Split strategy: {split.split_strategy}; group key `{split.group_key}`
+- Benign training: {benign_training_summary}
+- Validation: {validation_rows} rows / {validation_groups} groups
+- Frozen test: {test_rows} rows / {test_groups} groups
+
+{provenance}
+
+Only benign rows from the Phase 4 training partition fitted preprocessing, Isolation Forest, and
+the score normalizer. Malicious training rows were excluded. Validation labels selected the
+candidate and threshold. The frozen test opened once only after selection was checksummed.
+
+## Score and threshold contract
+
+- Raw score: sklearn `score_samples`; larger means more normal
+- Canonical transform: `{selection.canonical_score_transform}`; larger means more anomalous
+- Normalization: {normalization_summary}
+- Normalized range: `[0.0, 1.0]` with explicit clipping; not a probability
+- Threshold policy: `{selection.threshold_policy}`
+- Validation benign-FPR limit: {selection.false_positive_rate_limit}
+- Selected threshold: {selection.threshold}
+
+## Validation metrics
+
+| Metric | Value |
+| --- | ---: |
+{_metric_rows(selection.validation_metrics)}
+
+## Frozen test metrics
+
+| Metric | Value |
+| --- | ---: |
+{_metric_rows(frozen.metrics)}
+
+The frozen confusion matrix is {frozen.metrics.confusion_matrix}. Group-resampled 95% confidence
+intervals used at least {bootstrap_draws} successful fixed-seed draws per reported metric.
+
+## Comparator evidence
+
+- LOF: `{selection.lof_comparison.status}`; novelty mode, offline only, never production-selected
+- One-Class SVM: {one_class_svm_summary}
+- Autoencoder: not implemented in Phase 6
+
+## Operational observations
+
+- Training duration: {operational.training_duration_seconds:.6f} seconds
+- Batch latency p50/p95/p99: {latency_summary} ms
+- Per-sample p50: {operational.per_sample_latency_p50_ms:.6f} ms
+- Throughput: {operational.throughput_samples_per_second:.3f} samples/second
+- Serialized preprocessing + estimator size: {operational.estimator_serialized_size_bytes} bytes
+- Peak traced scoring memory: {operational.peak_memory_bytes} bytes
+
+These development-machine observations are not a production SLA.
+
+## Limitations and known failure modes
+
+- Controlled synthetic evidence cannot establish benchmark or deployment performance.
+- The baseline is limited to observed benign training groups;
+  domain and concept drift can raise FPR.
+- Rare legitimate behavior may look anomalous; familiar attacks may look normal.
+- Score normalization is distribution-relative and not probabilistic or causal.
+- LOF is sensitive to high dimensionality and scale; One-Class SVM was intentionally omitted.
+- A complete database outage still cannot record its own failure in that database (DEF-004).
+
+## Security and reproducibility
+
+The four-file bundle requires exact inventory and SHA-256 checksums, loads only a system-created
+skops pipeline with an empty untrusted-type allowlist, and rejects pickle/joblib, schema drift,
+missing/extra/corrupt files, and version collisions. Reproduction requires dataset manifest
+`{selection.dataset_manifest_checksum}`, split manifest `{selection.split_manifest_checksum}`,
+configuration `{selection.training_config_checksum}`, seed `{selection.random_seed}`, feature
+schema `{selection.feature_schema_version}`, and the recorded software environment. Do not reuse
+the frozen test for iterative optimization; retrain only under a new versioned experiment.
+"""
