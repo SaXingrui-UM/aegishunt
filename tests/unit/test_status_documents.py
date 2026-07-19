@@ -10,12 +10,11 @@ def _section(content: str, start: str, end: str) -> str:
     return content.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
 
 
-def test_readme_reports_phase_six_review_state_without_starting_phase_seven() -> None:
+def test_readme_preserves_phase_six_boundary_without_starting_phase_seven() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "Phase 5 is fully closed on `main`" in content
     assert "Phase 6 anomaly-engine implementation is complete" in content
-    assert "awaits PR review" in content
     assert "Phase 7 has not started" in content
     assert "pipeline verification only" in content
     assert "Forest missed all labeled anomalies" in content
@@ -40,7 +39,7 @@ def test_pm_def_001_is_resolved_without_erasing_history() -> None:
     assert "not public\n  benchmark or real-world performance evidence" in pm_def_001
 
 
-def test_progress_and_release_record_phase_six_without_phase_seven_scope() -> None:
+def test_progress_and_release_record_completed_phase_six_without_phase_seven_scope() -> None:
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
     release = (PROJECT_ROOT / "docs/releases/phase-06.md").read_text(encoding="utf-8")
 
@@ -59,23 +58,34 @@ def test_progress_and_release_record_phase_six_without_phase_seven_scope() -> No
 
     for content in (progress, release):
         assert "phase/06-anomaly-detection" in content
-        assert "Implementation complete — awaiting PR review" in content
         assert "Phase 7" in content and "Not started" in content
         assert "pipeline verification only" in content.lower()
         assert "phase-06-complete" in content
+        assert "validation-qualified" in content.lower()
+        assert "no untouched independent holdout" in " ".join(content.lower().split())
+        assert "not a public benchmark" in " ".join(content.lower().split())
 
+    assert "Implementation complete — awaiting PR review" not in progress_current
+    assert "Implementation complete — awaiting PR review" not in release_current
     assert "Current phase | Phase 6" in normalized_progress_current
-    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
+    assert "Status | Phase complete" in normalized_progress_current
     assert "Phase 7 status | Not started" in normalized_progress_current
-    assert "Phase complete" not in progress_current
+    assert "PR #18 was squash-merged to `main`" in progress_current
+    assert "40692d0f576b70fd57719ca2f74d869e27891e13" in progress_current
+    assert "Annotated `phase-06-complete`" in progress_current
+    assert "pushed and remotely verified" in progress_current
 
-    assert "Implementation complete — awaiting PR review" in normalized_release_current
+    assert "Status: **Phase complete**" in release_current
+    assert "was squash-merged" in normalized_release_current
+    assert "40692d0f576b70fd57719ca2f74d869e27891e13" in release_current
+    assert "Annotated Tag `phase-06-complete` is pushed and remotely verified" in release_current
     assert "Phase 7 has not started" in normalized_release_current
-    assert "PR, merge commit, and completion Tag are `pending`" in normalized_release_current
 
     assert "iforest-64-full" in release
     assert "Isolation Forest missed all controlled validation/test anomalies" in release
     assert "lof-novelty-5--benign_training_quantile_cdf" in progress
     assert "ADR 0015" in release
     assert "no untouched independent holdout" in " ".join(release.lower().split())
+    assert "no final-test metric is claimed" in release
+    assert "not final-tested, production-validated, or deployable" in release
     assert "not a public benchmark" in release

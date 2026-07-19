@@ -6,9 +6,12 @@ Build a benign-training-only anomaly engine over the frozen Phase 4 feature and
 split contracts, preserving validation/test isolation and producing auditable,
 safe, deterministic scoring artifacts.
 
-Status: **Implementation complete — awaiting PR review** on
-`phase/06-anomaly-detection`. Phase 7 has not started. PR, merge commit, and
-completion Tag are `pending`; no `phase-06-complete` Tag may exist before merge.
+Status: **Phase complete**. PR
+[#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) was squash-merged from
+`phase/06-anomaly-detection` into `main` as
+`40692d0f576b70fd57719ca2f74d869e27891e13` on 2026-07-20 (Asia/Shanghai).
+Annotated Tag `phase-06-complete` is pushed and remotely verified at that merged
+commit. Phase 7 has not started.
 
 ## Completed scope
 
@@ -121,8 +124,12 @@ match its own exact inventory/checksums and reproduce numeric scoring.
   tracking, repeat rejection, and independent-process reload.
 - Ruff: pass.
 - Strict mypy: pass for 120 source files.
-- Full Pytest/coverage: 288 passed, 0 failed, 0 skipped, and 0 xfailed in
-  999.93 seconds; branch-aware coverage was 87.34% (85% required).
+- Post-merge full Pytest/coverage: 288 passed, 0 failed, 0 skipped, and 0 xfailed
+  in 991.05 seconds; branch-aware coverage was 87.34% (85% required).
+- A selected anomaly/frontend/status run executed 87 tests and every assertion
+  passed. Its subset-only invocation returned nonzero because the unchanged
+  whole-project 85% coverage gate measured only that subset (61.27%); the
+  required full suite above passed the unchanged gate.
 - Offline controlled E2E: pass, including benign-only fit, validation freeze,
   frozen test, bundle, independent-process reload, and identical numeric scoring.
 - Bundle checks reject path escape, arbitrary joblib, extra/missing/corrupt files,
@@ -157,7 +164,16 @@ was canceled at the previous 15-minute job limit while pytest was still running
 on a slower worker; no test failure was reported. Commit `f03f75f` raises only
 the bounded job timeout to 30 minutes while retaining Ruff, mypy, full pytest,
 and the 85% branch-coverage requirement unchanged.
-Both updated GitHub Actions `quality` runs then passed in 15m26s and 15m57s.
+The final PR #18 required GitHub Actions `quality` runs both passed, in 15m24s
+and 13m58s. No required check was pending or failing when the PR was merged.
+
+The post-merge native `codex review --base
+030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b` again failed to start because the
+installed arm64 executable is missing (`ENOENT`); no native-review success is
+claimed. The equivalent read-only review found zero Blocking, zero High, and
+zero correctness-related Medium findings. It confirmed benign-only fitting,
+validation/test isolation, score direction, candidate status, bundle
+fail-closed behavior, evidence non-overwrite, and absence of Phase 7 scope.
 
 ## Generated artifacts
 
@@ -188,6 +204,11 @@ figures.
 - Public benchmark acquisition/conversion remains provisional.
 - LOF is sensitive to dimensionality/sample size. The candidate has no untouched
   independent holdout and is not final-tested, production-validated, or deployable.
+- The preserved historical `1.0.0` temporary bundle bytes predate the later
+  required benign-training identity field. The current strict loader therefore
+  rejects that legacy manifest rather than weakening validation. Its original
+  experiment, frozen report, manifest, binary, and `d6ab14b4...` checksum remain
+  unchanged; the active `1.1.0-candidate` bundle verifies successfully.
 - One-Class SVM and Autoencoder are not implemented.
 - DEF-004 remains open and non-blocking: total database failure cannot persist a
   failure event into that same unavailable database.
@@ -208,12 +229,17 @@ figures.
 - Candidate evidence-contract hardening: `0c83a2d`
 - Cross-platform score-reference test: `d85689b`
 - Bounded CI timeout correction: `f03f75f`
-- Pull request: [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18), open and ready for review
-- Merge commit: pending
-- Annotated Tag: pending; do not create before user merge authorization
+- Pull request: [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18), merged
+  from `phase/06-anomaly-detection` into `main`
+- Merge commit: `40692d0f576b70fd57719ca2f74d869e27891e13`
+- Merge date: 2026-07-20 (Asia/Shanghai)
+- Annotated Tag: `phase-06-complete`
+- Tag object: `908095a1e62d02f55eecb28034f5a26a2cd303e2`
+- Tag commit: `40692d0f576b70fd57719ca2f74d869e27891e13`
+- Tag status: pushed; local and remote annotated objects/peeled commits match
 
 ## Next phase
 
 Phase 7 — Fusion and Evaluation (`phase/07-fusion-evaluation`) is **Not started**.
-It may begin only after Phase 6 PR review/merge, a user-directed checkpoint Tag,
-clean synchronized `main`, and explicit user authorization.
+It may begin only after this metadata PR is reviewed and merged, `main` is
+synchronized and clean, and the user gives explicit authorization.
