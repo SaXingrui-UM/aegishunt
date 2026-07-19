@@ -19,8 +19,10 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 ## Current status
 
 Phase 5 is fully closed on `main`; its original and PM-DEF-001 corrective Tags
-remain immutable. Phase 6 anomaly-engine implementation is complete on
-`phase/06-anomaly-detection` and awaits PR review. It enforces Phase 4
+remain immutable. Phase 6 anomaly-engine implementation is complete and fully
+closed on `main`: implementation PR #18 and post-merge metadata PR #19 are
+merged, and annotated Tag `phase-06-complete` is remotely verified. The anomaly
+engine enforces Phase 4
 quality/leakage and frozen-split evidence and fits preprocessing, anomaly
 estimators, and score normalization only on benign training rows. The original
 Isolation Forest `1.0.0` evidence remains immutable. ADR 0015 permits the fixed
@@ -38,7 +40,7 @@ result is retained. The LOF eligibility decision was made after its validation
 evidence was known, is explicitly post-hoc, did not reuse the viewed test, and
 still requires independently sourced holdout evidence. Fusion, alerts,
 correlation, hypotheses, replay orchestration, and cases are **not implemented**.
-Phase 7 has not started.
+Phase 7 has not started and requires explicit user authorization.
 
 ## Planned architecture
 
