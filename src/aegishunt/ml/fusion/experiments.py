@@ -90,7 +90,7 @@ def _candidate(
         satisfies_fpr_ceiling=(
             metrics.benign_false_positive_rate <= selection.false_positive_rate_ceiling
         ),
-        validation_only=True,
+        selection_used_validation_only=True,
     )
 
 

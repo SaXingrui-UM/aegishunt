@@ -53,7 +53,7 @@ def _baseline(
         threshold=threshold,
         metrics=metrics,
         satisfies_fpr_ceiling=metrics.benign_false_positive_rate <= fpr_ceiling,
-        validation_only=True,
+        selection_used_validation_only=True,
     )
 
 
@@ -124,7 +124,7 @@ def select_fusion_policy(
                         metrics.benign_false_positive_rate
                         <= config.false_positive_rate_ceiling
                     ),
-                    validation_only=True,
+                    selection_used_validation_only=True,
                 )
             )
     compliant = tuple(

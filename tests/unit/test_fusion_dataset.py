@@ -26,6 +26,7 @@ def test_controlled_dataset_has_new_identity_quality_and_group_isolation() -> No
     assert len(dataset.manifest.attack_families) == 5
     assert dataset.manifest.public_benchmark is False
     assert dataset.manifest.historical_frozen_test_reused is False
+    assert dataset.manifest.conflicting_label_fingerprint_count == 0
     assert dataset.split_manifest.group_overlap == ()
     assert dataset.split_manifest.source_overlap == ()
     assert dataset.split_manifest.session_overlap == ()

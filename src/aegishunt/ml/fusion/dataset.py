@@ -264,6 +264,10 @@ def build_controlled_experiment_dataset(
         dataset_checksum=checksum,
         quality_status="pass",
         exact_duplicate_count=quality.exact_duplicate_count,
+        feature_duplicate_count=quality.feature_duplicate_count,
+        conflicting_label_fingerprint_count=(
+            quality.conflicting_label_fingerprint_count
+        ),
         near_duplicate_count=quality.near_duplicate_count,
         controlled_synthetic_only=True,
         public_benchmark=False,

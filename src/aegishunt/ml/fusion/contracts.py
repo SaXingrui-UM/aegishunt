@@ -83,7 +83,7 @@ class CandidateEvaluation(FusionModel):
     threshold: float = Field(ge=0.0, le=1.0)
     metrics: AnomalyMetrics
     satisfies_fpr_ceiling: bool
-    validation_only: Literal[True]
+    selection_used_validation_only: Literal[True]
 
     @model_validator(mode="after")
     def validate_mode(self) -> Self:
@@ -185,6 +185,8 @@ class Phase7DatasetManifest(FusionModel):
     dataset_checksum: str
     quality_status: Literal["pass"]
     exact_duplicate_count: int = Field(ge=0)
+    feature_duplicate_count: int = Field(ge=0)
+    conflicting_label_fingerprint_count: int = Field(ge=0)
     near_duplicate_count: int = Field(ge=0)
     controlled_synthetic_only: Literal[True]
     public_benchmark: Literal[False]

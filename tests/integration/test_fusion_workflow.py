@@ -61,6 +61,7 @@ def test_full_controlled_workflow_writes_truthful_evidence_and_verified_policy(
     assert len(result.experiment.parameter_shifts) == 4
     assert result.experiment.selection.evaluation_data_accessed is False
     assert result.experiment.selection.held_out_family_accessed is False
+    assert result.experiment.known.fusion.selection_used_validation_only is True
     assert set(result.experiment.known.fusion_minus_supervised) == {
         "recall",
         "f1",
