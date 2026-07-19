@@ -22,7 +22,7 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open from `phase/06-anomaly-detection` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | After `d85689b`, the PR-triggered Linux `quality` run passed all checks; the duplicate push run was canceled only by the old 15-minute job limit while pytest was still running. `f03f75f` raises the bounded timeout to 30 minutes without changing checks or coverage; updated CI is pending |
+| CI status | After `d85689b`, the first PR-triggered Linux `quality` run passed while its duplicate push run hit the old 15-minute job limit. With bounded timeout fix `f03f75f`, both updated `quality` checks passed in 15m26s and 15m57s without changing checks or coverage |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -120,6 +120,9 @@ have not started.
   15-minute job limit while pytest was still running, not because a test failed.
   Commit `f03f75f` raises only that bounded CI timeout to 30 minutes; Ruff, mypy,
   pytest, and the 85% coverage gate remain unchanged.
+- Both post-timeout-fix GitHub Actions `quality` runs completed successfully in
+  15m26s and 15m57s. The longer successful run confirms that the previous
+  cancellation was a timeout configuration problem rather than a test failure.
 - The local `.venv` editable `.pth` was not visible to a standalone Python
   process, so the first formal command stopped at import with no artifact writes.
   The recorded `PYTHONPATH=src` workaround then ran successfully; this is not a

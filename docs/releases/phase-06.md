@@ -157,6 +157,7 @@ was canceled at the previous 15-minute job limit while pytest was still running
 on a slower worker; no test failure was reported. Commit `f03f75f` raises only
 the bounded job timeout to 30 minutes while retaining Ruff, mypy, full pytest,
 and the 85% branch-coverage requirement unchanged.
+Both updated GitHub Actions `quality` runs then passed in 15m26s and 15m57s.
 
 ## Generated artifacts
 
