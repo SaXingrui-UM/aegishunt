@@ -152,6 +152,12 @@ same-platform local/independent-process comparisons and applies only a strict
 `1e-12` relative/`1e-15` absolute tolerance to the fixed cross-platform reference
 values. The targeted E2E passed after this portability correction.
 
+The next PR-triggered Linux workflow passed in 9m44s. Its duplicate push workflow
+was canceled at the previous 15-minute job limit while pytest was still running
+on a slower worker; no test failure was reported. Commit `f03f75f` raises only
+the bounded job timeout to 30 minutes while retaining Ruff, mypy, full pytest,
+and the 85% branch-coverage requirement unchanged.
+
 ## Generated artifacts
 
 Actual controlled evidence generated under an isolated `/tmp` root includes all
@@ -200,6 +206,7 @@ figures.
 - Direction-B evidence documentation: `d6552fa`
 - Candidate evidence-contract hardening: `0c83a2d`
 - Cross-platform score-reference test: `d85689b`
+- Bounded CI timeout correction: `f03f75f`
 - Pull request: [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18), open and ready for review
 - Merge commit: pending
 - Annotated Tag: pending; do not create before user merge authorization

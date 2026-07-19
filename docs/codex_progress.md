@@ -11,7 +11,7 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
 | Current activity | Direction B is implemented on Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18); the LOF candidate passed its unchanged smoke gate, and Phase 7 has not started |
 | Verification status | Ruff passes; strict mypy passes for 120 source files; all 288 tests pass with 87.34% branch-aware coverage and no skipped/xfailed tests; the full suite includes 83 focused Phase 6 tests |
-| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, `ca830fd`, `d6552fa`, `0c83a2d`, and `d85689b` |
+| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, `ca830fd`, `d6552fa`, `0c83a2d`, `d85689b`, and `f03f75f` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -22,7 +22,7 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open from `phase/06-anomaly-detection` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | The first direction-B CI run exposed a one-ULP Linux/macOS reference-score assertion difference; `d85689b` preserves exact same-platform reload checks and adds a `1e-12`/`1e-15` cross-platform reference tolerance. Updated CI is pending |
+| CI status | After `d85689b`, the PR-triggered Linux `quality` run passed all checks; the duplicate push run was canceled only by the old 15-minute job limit while pytest was still running. `f03f75f` raises the bounded timeout to 30 minutes without changing checks or coverage; updated CI is pending |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -115,6 +115,11 @@ have not started.
   local-versus-independent-process comparisons and applies only a strict
   `1e-12` relative/`1e-15` absolute tolerance to the cross-platform reference
   constants. The targeted E2E passed after the test portability correction.
+- On the next SHA, the PR-triggered Linux workflow passed fully in 9m44s. The
+  duplicate push workflow ran on a slower worker and was canceled at the old
+  15-minute job limit while pytest was still running, not because a test failed.
+  Commit `f03f75f` raises only that bounded CI timeout to 30 minutes; Ruff, mypy,
+  pytest, and the 85% coverage gate remain unchanged.
 - The local `.venv` editable `.pth` was not visible to a standalone Python
   process, so the first formal command stopped at import with no artifact writes.
   The recorded `PYTHONPATH=src` workaround then ran successfully; this is not a
