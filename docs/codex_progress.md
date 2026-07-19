@@ -1,6 +1,6 @@
 # Codex Progress
 
-Last updated: 2026-07-18 (Asia/Shanghai)
+Last updated: 2026-07-19 (Asia/Shanghai)
 
 ## Current state
 
@@ -8,10 +8,10 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | --- | --- |
 | Current phase | Phase 6 - Unsupervised Anomaly Detection Engine |
 | Status | Implementation complete — awaiting PR review |
-| Phase 6 implementation | Benign-only Isolation Forest, offline novelty LOF, bounded normalization, validation threshold, one-time frozen test, safe bundle, prediction, CLI, evidence, and tests |
-| Current activity | Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open and ready for review; Phase 7 has not started |
-| Verification status | Ruff passes; strict mypy passes for 118 source files; all 249 tests pass with 87.15% branch-aware coverage and no skipped/xfailed tests |
-| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; implementation commits `d710b09` and `352205f` |
+| Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
+| Current activity | Direction B is implemented on Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18); the LOF candidate passed its unchanged smoke gate, and Phase 7 has not started |
+| Verification status | Ruff passes; strict mypy passes for 120 source files; all 286 tests pass with 87.33% branch-aware coverage and no skipped/xfailed tests; 81 focused Phase 6 tests pass |
+| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, and `ca830fd` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -22,7 +22,7 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open from `phase/06-anomaly-detection` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 5 checks passed; PR #18 has two `quality` checks in progress at publication time and no reported failure |
+| CI status | The two `quality` checks on the previously pushed PR #18 head passed; updated direction-B commits are not yet pushed, so new CI has not run |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -31,10 +31,10 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | `phase-06-complete` is pending user review, PR merge, and an explicit post-merge checkpoint instruction; it has not been created |
 | Current branch | `phase/06-anomaly-detection` |
-| Working tree | Clean on the Phase 6 branch after the PR publication metadata update |
+| Working tree | Clean after the direction-B documentation checkpoint commit |
 | Phase 7 status | Not started |
 | Next planned branch | `phase/07-fusion-evaluation` (must not be created before Phase 6 merge/checkpoint and explicit authorization) |
-| Next action | Wait for PR #18 CI, user review, and Squash and merge; do not begin Phase 7 |
+| Next action | Complete full checks and Review, push the existing Phase 6 branch, update PR #18, then wait for CI and user review; do not begin Phase 7 |
 
 Phase 0 through Phase 5 remain complete. Phase 5's original and corrective Tags
 remain unchanged. Phase 6 implementation is isolated on its declared branch and
@@ -47,47 +47,68 @@ have not started.
 - Phase 4 quality, leakage, checksum, feature-order, label-mapping, frozen-test,
   and group/source/session/scenario isolation remain mandatory before training.
 - Only 10 benign rows from 5 Phase 4 training groups fit StandardScaler,
-  Isolation Forest, LOF, and the quantile-CDF normalizer. Eighteen malicious
+  Isolation Forest, novelty-mode LOF, and each registered normalizer. Eighteen malicious
   training rows are explicitly excluded; validation and test are never fit data.
-- Three configured fixed-seed Isolation Forest candidates are compared on
-  validation. `iforest-64-full` was selected under policy `1.0.0`; LOF runs in
-  novelty mode as an offline-only comparator. One-Class SVM is truthfully not
-  implemented and Autoencoder is absent.
+- The original `1.0.0` experiment selected `iforest-64-full` under policy
+  `1.0.0`; its frozen evidence remains immutable. The validation-only corrective
+  matrix evaluated 8 fixed Isolation Forest configurations across 3 fixed
+  normalizers. Its best eligible candidate had positive validation utility but
+  failed the unchanged post-selection SYN-burst smoke decision, so no
+  `1.0.1-candidate` bundle was created.
+- User-authorized direction B is recorded in ADR 0015 and experiment
+  `phase-06-controlled-demo-lof-production-candidate-001`. Policy `2.0.0`
+  permits the already-evaluated fixed novelty-mode LOF to compete as a
+  production candidate. Because this follows observed validation evidence, it
+  is explicitly post-hoc and does not count as independent confirmation.
 - Raw sklearn scores are retained, canonical scores reverse direction so higher
   means more anomalous, and normalizer `1.0.0` maps benign-training quantiles to
   `[0,1]`. The normalized score is not probability.
-- Validation-only benign-FPR-constrained threshold selection chose `0.9` under
-  FPR ceiling `0.25`. Selection/config/artifact checksums were frozen before one
-  explicit test evaluation; repeats are rejected.
+- Direction B selected `lof-novelty-5--benign_training_quantile_cdf`, threshold
+  `0.9`, under FPR ceiling `0.25`. Validation Accuracy is `0.6`, Precision
+  `1.0`, Recall `0.3333`, F1 `0.5`, Macro F1 `0.5833`, ROC-AUC `0.6667`,
+  PR-AUC `0.8083`, benign FPR `0.0`, and confusion `4/0/4/2`.
+- The fixed smoke fixture ran only after selection freeze, produced normalized
+  score `1.0`, and passed before/after bundle reload. Independent-process reload
+  reproduced the same result. The candidate remains `validation_qualified`:
+  all 48 registered rows are already assigned and no untouched holdout exists.
+- The original viewed test was not opened by either corrective candidate run.
+  Formal partition tracking recorded only `train.jsonl` and `validation.jsonl`;
+  a repeat of the direction-B experiment identity is rejected.
 - Actual controlled validation: Accuracy `0.4`, F1/recall `0.0`, Macro F1
   `0.2857`, ROC-AUC `0.5`, PR-AUC `0.6389`, benign FPR `0.0`, confusion
   `4/0/6/0`. Frozen test: Accuracy `0.4`, F1/recall `0.0`, Macro F1 `0.2857`,
   ROC-AUC `0.0833`, PR-AUC `0.4704`, benign FPR `0.0`, confusion `4/0/6/0`.
   Poor anomaly recall is retained, not used for retuning.
-- LOF validation comparison reached recall `0.3333`, F1 `0.5`, PR-AUC `0.8083`,
-  and FPR `0.0`, but did not replace the roadmap-defined production algorithm.
+- The direction-B candidate skops checksum is
+  `4e2c7e6cb905875285c56d2df820655f386a7cf950ac3fcffdabae47ff8e4bb0`;
+  bundle/evidence bytes are ignored and not committed. Exact type validation
+  requires LOF `novelty=True` and rejects algorithm/manifest mismatch.
 - The four-file skops bundle preserves scaler/estimator, score direction,
   normalizer, threshold, schema, provenance, metrics, environment, and model
   card. It rejects path escape, pickle/joblib, missing/extra/corrupt files,
   unsafe types, schema drift, and version collision. Independent-process scoring
   reproduced raw, canonical, normalized, and decision output exactly.
-- The verified temporary model checksum was `d6ab14b4...`; model bytes and
-  machine reports remain ignored. The checksum identifies one bundle, not a
-  reproducible-build hash.
+- The historical `d6ab14b4...` Isolation Forest checksum remains unchanged.
+  Neither old experiment evidence nor the old bundle was overwritten.
 - The controlled synthetic demo verifies pipeline mechanics only. It is not a
   public benchmark, research/production conclusion, real-world evidence, or
   proof of zero-day detection.
-- Phase 6 generated-artifact plots are not claimed. Real score-distribution and
-  threshold-sensitivity CSV inputs are generated by the explicit train command.
+- Five source-backed validation plots and their SHA-256 inventory are generated
+  from actual scores/thresholds; they are ignored machine evidence, not invented
+  metrics or public-benchmark figures.
 - The first equivalent read-only Review found one High selection-integrity gap
   and two Medium threshold/version-collision gaps. Commit `0ad6fb6` added a
   persisted selection checksum, FPR fail-closed behavior, pre-test version
   collision rejection, and three regressions. Native `codex review --base main`
   could not start because its arm64 executable is missing (`ENOENT`); the second
   equivalent review found no remaining Blocking, High, or unhandled Medium issue.
-- Final branch verification passed Ruff, strict mypy for 118 source files, and
-  all 249 tests in 408.16 seconds with 87.15% branch-aware coverage. There were
-  no failures, skips, or xfails.
+- Direction-B branch verification passed Ruff, strict mypy for 120 source files,
+  and all 286 tests in 1,043.34 seconds with 87.33% branch-aware coverage. There
+  were no failures, skips, or xfails; the focused Phase 6 suite passed 81 tests.
+- The local `.venv` editable `.pth` was not visible to a standalone Python
+  process, so the first formal command stopped at import with no artifact writes.
+  The recorded `PYTHONPATH=src` workaround then ran successfully; this is not a
+  standard-install success claim.
 - DEF-004 remains open and non-blocking; Phase 6 adds no alternate database or
   broker merely to record total database unavailability.
 

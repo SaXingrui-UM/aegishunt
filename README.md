@@ -21,20 +21,24 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 Phase 5 is fully closed on `main`; its original and PM-DEF-001 corrective Tags
 remain immutable. Phase 6 anomaly-engine implementation is complete on
 `phase/06-anomaly-detection` and awaits PR review. It enforces Phase 4
-quality/leakage and frozen-split evidence, fits preprocessing, Isolation Forest,
-LOF, and score normalization only on benign training rows, selects the production
-Isolation Forest configuration and external threshold only from validation, and
-opens frozen test through one explicit command. Safe bundles preserve raw,
-canonical, and bounded normalized score semantics. The normalized anomaly score is not probability
-and must not be interpreted as attack likelihood.
+quality/leakage and frozen-split evidence and fits preprocessing, anomaly
+estimators, and score normalization only on benign training rows. The original
+Isolation Forest `1.0.0` evidence remains immutable. ADR 0015 permits the fixed
+novelty-mode LOF to become a separate `1.1.0-candidate`; validation-only policy
+`2.0.0` selected it and the unchanged post-selection smoke gate passed. This
+artifact is only validation-qualified because no new independent holdout exists.
+Safe bundles preserve raw, canonical, and bounded normalized score semantics.
+The normalized anomaly score is not probability or attack likelihood.
 
 The checked Phase 6 run uses only the small synthetic controlled demo and is
 **pipeline verification only**, not a public benchmark, research conclusion,
-deployment result, or proof of zero-day detection. Its Isolation Forest missed
-all labeled anomalies in validation and frozen test; that poor result is retained
-rather than tuned against test or hidden behind the stronger offline LOF
-comparison. Fusion, alerts, correlation, hypotheses, replay orchestration, and
-cases are **not implemented**. Phase 7 has not started.
+deployment result, or proof of zero-day detection. The historical Isolation
+Forest missed all labeled anomalies in validation and frozen test; that poor
+result is retained. The LOF eligibility decision was made after its validation
+evidence was known, is explicitly post-hoc, did not reuse the viewed test, and
+still requires independently sourced holdout evidence. Fusion, alerts,
+correlation, hypotheses, replay orchestration, and cases are **not implemented**.
+Phase 7 has not started.
 
 ## Planned architecture
 
@@ -123,19 +127,22 @@ and [`docs/model_card.md`](docs/model_card.md).
 ## Anomaly model workflow
 
 `anomaly train` validates the same Phase 4 evidence, excludes malicious training
-rows from every fit, compares configured Isolation Forest candidates, runs LOF in
-novelty mode as an offline comparator, fits a benign-training quantile normalizer,
-and freezes a validation-only FPR-constrained threshold. It does not read test
-rows. `anomaly test` explicitly performs the single frozen evaluation and refuses
-a repeat.
+rows from every fit, compares configured Isolation Forest candidates, and runs
+LOF in novelty mode. Legacy policy `1.0.0` keeps LOF offline-only. The separately
+registered ADR 0015 policy `2.0.0` permits fixed LOF as a validation-qualified
+candidate and still forbids test access. `anomaly test` performs the legacy
+one-time frozen evaluation and refuses a repeat; validation-qualified corrective
+candidates require a new independent holdout and cannot reuse that command.
 
-Anomaly bundles persist the StandardScaler/IsolationForest pipeline, raw score
+Anomaly bundles persist the exact StandardScaler/estimator pipeline, raw score
 direction, canonical transform, normalizer, threshold, fixed feature schema,
 provenance, metrics, and environment. Prediction returns raw, canonical, and
 normalized anomaly scores plus `is_anomaly`; it creates no alert or combined risk.
 See [`docs/anomaly_experiment_protocol.md`](docs/anomaly_experiment_protocol.md),
-[`docs/anomaly_model_card.md`](docs/anomaly_model_card.md), and
-[`docs/adr/0014-validation-frozen-benign-anomaly-engine.md`](docs/adr/0014-validation-frozen-benign-anomaly-engine.md).
+[`docs/anomaly_lof_candidate_protocol.md`](docs/anomaly_lof_candidate_protocol.md),
+[`docs/anomaly_model_card.md`](docs/anomaly_model_card.md),
+[`docs/adr/0014-validation-frozen-benign-anomaly-engine.md`](docs/adr/0014-validation-frozen-benign-anomaly-engine.md),
+and [`docs/adr/0015-lof-validation-qualified-production-candidate.md`](docs/adr/0015-lof-validation-qualified-production-candidate.md).
 
 ## Telemetry ingestion
 

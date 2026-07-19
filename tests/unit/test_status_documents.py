@@ -18,7 +18,10 @@ def test_readme_reports_phase_six_review_state_without_starting_phase_seven() ->
     assert "awaits PR review" in content
     assert "Phase 7 has not started" in content
     assert "pipeline verification only" in content
-    assert "missed\nall labeled anomalies" in content
+    assert "Forest missed all labeled anomalies" in content
+    assert "1.1.0-candidate" in content
+    assert "validation-qualified" in content
+    assert "Phase 7 has not started" in content
     assert "normalized anomaly score is not probability" in content
 
 
@@ -72,4 +75,7 @@ def test_progress_and_release_record_phase_six_without_phase_seven_scope() -> No
 
     assert "iforest-64-full" in release
     assert "Isolation Forest missed all controlled validation/test anomalies" in release
+    assert "lof-novelty-5--benign_training_quantile_cdf" in progress
+    assert "ADR 0015" in release
+    assert "no untouched independent holdout" in " ".join(release.lower().split())
     assert "not a public benchmark" in release

@@ -143,13 +143,18 @@ and schema drift are rejected.
 
 The anomaly portion reuses the same Phase 4 gate and fixed feature order. Only
 benign training rows fit StandardScaler, Isolation Forest, novelty-mode LOF, and
-the quantile-CDF score normalizer. Validation selects an external
-benign-FPR-constrained threshold; a checksummed immutable record precedes one
-frozen test. Raw estimator scores are reversed into a higher-is-more-anomalous
-canonical score and mapped to `[0,1]` without probability semantics. LOF remains
-an offline comparator, One-Class SVM is explicitly not implemented, and no test
-metric can replace Isolation Forest or modify the saved threshold. Exact-inventory
-skops bundles preserve the pipeline, direction, normalizer, threshold, and schema.
+the score normalizer. Validation selects an external benign-FPR-constrained
+threshold; a checksummed immutable record precedes either one legacy frozen test
+or the fixed validation-candidate smoke gate. Raw estimator scores are reversed
+into a higher-is-more-anomalous canonical score and mapped to `[0,1]` without
+probability semantics. ADR 0014 records the original Isolation Forest-only
+eligibility boundary. ADR 0015 transparently supersedes that narrow boundary and
+permits fixed novelty-mode LOF as a validation-qualified candidate after the
+registered Isolation Forest corrective matrix failed the unchanged smoke gate.
+The viewed test cannot affect policy `2.0.0`, and a new independent holdout is
+required before final validation. One-Class SVM remains unimplemented.
+Exact-inventory skops bundles validate the declared estimator type, require LOF
+`novelty=True`, and preserve direction, normalizer, threshold, and schema.
 Fusion remains Phase 7. No online self-modification occurs.
 
 ## Planned threat-hunting lifecycle
