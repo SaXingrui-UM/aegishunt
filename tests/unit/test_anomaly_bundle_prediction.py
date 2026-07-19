@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from aegishunt.flows.registry import FEATURE_SCHEMA_VERSION, feature_names
 from aegishunt.ml.anomaly.bundle import load_bundle, save_bundle
 from aegishunt.ml.anomaly.errors import AnomalyArtifactError, AnomalyPredictionError
 from aegishunt.ml.anomaly.prediction import AnomalyPredictionBatch, score_batch
-from tests.fixtures.anomaly import anomaly_service
+from tests.fixtures.anomaly import anomaly_service, predefined_sample_anomaly
 
 
 def _validated(tmp_path: Path) -> tuple[object, Path, Path]:
@@ -45,6 +46,37 @@ def test_bundle_round_trip_preserves_raw_normalized_and_decision(tmp_path: Path)
     assert first.canonical_anomaly_score == -first.raw_model_score
     assert 0.0 <= first.normalized_anomaly_score <= 1.0
     assert first.model_version == "1.0.0"
+
+
+def test_original_predefined_sample_result_is_preserved_truthfully(tmp_path: Path) -> None:
+    _, data_root, model_root = _validated(tmp_path)
+    from aegishunt.datasets.io import read_canonical_jsonl
+
+    benign = next(
+        row
+        for row in read_canonical_jsonl(data_root / "train.jsonl")
+        if row.labels.binary_label == 0
+    )
+    model = load_bundle(model_root / "1.0.0", artifact_root=model_root)
+    benign_result = score_batch(model, _batch(benign.features.values))[0]
+    first = score_batch(model, _batch(predefined_sample_anomaly()))[0]
+    second = score_batch(model, _batch(predefined_sample_anomaly()))[0]
+
+    assert np.isfinite(first.raw_model_score)
+    assert np.isfinite(first.canonical_anomaly_score)
+    assert 0.0 <= first.normalized_anomaly_score <= 1.0
+    assert benign_result.is_anomaly is False
+    assert first.raw_model_score == pytest.approx(-0.5342412669946718)
+    assert first.canonical_anomaly_score == pytest.approx(0.5342412669946718)
+    assert first.normalized_anomaly_score == pytest.approx(0.791111455384955)
+    assert first.selected_threshold == 0.9
+    assert first.is_anomaly is False
+    assert first.model_dump(exclude={"scored_at"}) == second.model_dump(exclude={"scored_at"})
+    payload = first.model_dump(mode="json")
+    assert not any(
+        field in payload
+        for field in ("security_alert", "fusion_score", "hypothesis", "risk", "severity")
+    )
 
 
 def test_prediction_rejects_schema_order_dtype_nonfinite_and_empty(tmp_path: Path) -> None:
