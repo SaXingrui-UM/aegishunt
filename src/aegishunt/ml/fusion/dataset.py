@@ -202,6 +202,10 @@ def build_controlled_experiment_dataset(
             source_group_rows = sorted(
                 groups[original_group], key=lambda item: item.metadata.record_id
             )
+            if len(source_group_rows) != config.rows_per_group:
+                raise FusionDatasetError(
+                    "controlled source rows per group differ from the frozen protocol"
+                )
             for row_index, row in enumerate(source_group_rows):
                 observed_at = config.protocol_frozen_at + timedelta(
                     days=stage_index * 30,

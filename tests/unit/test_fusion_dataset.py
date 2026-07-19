@@ -1,6 +1,7 @@
 """Phase 7 controlled dataset, leakage, timeline, and shift tests."""
 
 import numpy as np
+import pytest
 
 from aegishunt.datasets.labels import LabelMapper
 from aegishunt.ml.fusion.dataset import (
@@ -8,6 +9,7 @@ from aegishunt.ml.fusion.dataset import (
     build_controlled_experiment_dataset,
     build_parameter_shift_partition,
 )
+from aegishunt.ml.fusion.errors import FusionDatasetError
 from tests.fixtures.datasets import LABEL_ROOT
 from tests.fixtures.fusion import fusion_config
 
@@ -45,6 +47,13 @@ def test_controlled_dataset_is_deterministic_and_temporally_strict() -> None:
     assert ranges["early"][1] < ranges["middle"][0] < ranges["late"][0]
     assert set(first.stage("early").groups).isdisjoint(first.stage("middle").groups)
     assert set(first.stage("middle").groups).isdisjoint(first.stage("late").groups)
+
+
+def test_controlled_dataset_enforces_frozen_rows_per_group() -> None:
+    mapper = LabelMapper.load(LABEL_ROOT / "aegishunt-controlled-demo-v1.yaml")
+
+    with pytest.raises(FusionDatasetError, match="rows per group"):
+        build_controlled_experiment_dataset(fusion_config(rows_per_group=1), mapper)
 
 
 def test_leave_one_family_out_removes_family_from_fit_and_selection() -> None:

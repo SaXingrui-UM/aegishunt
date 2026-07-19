@@ -180,3 +180,13 @@ def test_policy_reload_is_deterministic_and_rejects_extra_corrupt_or_unsafe_file
         load_policy(missing, root=copies / "missing")
     with pytest.raises(FusionArtifactError, match="outside"):
         load_policy(result.policy_directory, root=tmp_path / "different-root")
+
+    symlink = copies / "symlink" / "1.0.0"
+    shutil.copytree(result.policy_directory, symlink)
+    card = symlink / "fusion_policy_card.md"
+    external = tmp_path / "external-card.md"
+    external.write_text("outside policy root\n", encoding="utf-8")
+    card.unlink()
+    card.symlink_to(external)
+    with pytest.raises(FusionArtifactError, match="regular files"):
+        load_policy(symlink, root=copies / "symlink")

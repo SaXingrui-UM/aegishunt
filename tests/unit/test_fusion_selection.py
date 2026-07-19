@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from aegishunt.ml.fusion.errors import FusionSelectionError
 from aegishunt.ml.fusion.selection import select_fusion_policy
@@ -55,6 +56,11 @@ def test_select_policy_uses_true_fusion_and_is_deterministic() -> None:
     assert first.supervised_baseline.mode == "supervised_only"
     assert first.anomaly_baseline.mode == "anomaly_only"
     assert all(candidate.mode == "dual_engine_fusion" for candidate in first.candidates)
+    inconsistent = first.model_copy(
+        update={"selected_threshold": first.selected_threshold + 0.01}
+    )
+    with pytest.raises(ValidationError, match="internally inconsistent"):
+        type(first).model_validate(inconsistent.model_dump())
 
 
 def test_select_policy_respects_fpr_ceiling_and_negative_result_path() -> None:

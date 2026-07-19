@@ -444,8 +444,11 @@ def load_policy(policy_dir: Path, *, root: Path) -> PolicyManifest:
     resolved = _within(policy_dir, root)
     if resolved.suffix in {".pkl", ".pickle", ".joblib", ".skops"} or not resolved.is_dir():
         raise FusionArtifactError("fusion policy must be a system-generated directory")
-    if {path.name for path in resolved.iterdir()} != _POLICY_FILES:
+    entries = tuple(resolved.iterdir())
+    if {path.name for path in entries} != _POLICY_FILES:
         raise FusionArtifactError("fusion policy file inventory is invalid")
+    if any(path.is_symlink() or not path.is_file() for path in entries):
+        raise FusionArtifactError("fusion policy inventory must contain regular files")
     try:
         manifest_payload = (resolved / POLICY_MANIFEST_FILENAME).read_bytes()
         card_payload = (resolved / POLICY_CARD_FILENAME).read_bytes()

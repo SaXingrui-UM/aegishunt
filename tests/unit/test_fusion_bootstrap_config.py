@@ -93,3 +93,22 @@ def test_group_bootstrap_rejects_row_level_or_too_few_draws() -> None:
             draws=1000,
             random_seed=1,
         )
+
+
+def test_group_bootstrap_excludes_metrics_undefined_in_single_class_draws() -> None:
+    labels = np.asarray([0, 0, 1, 1], dtype=np.int64)
+    groups = np.asarray(["benign", "benign", "attack", "attack"])
+    scores = np.asarray([0.1, 0.2, 0.8, 0.9])
+
+    intervals = group_bootstrap_intervals(
+        labels,
+        scores,
+        groups,
+        threshold=0.5,
+        draws=1000,
+        random_seed=7,
+    )
+
+    assert 0 < intervals["recall"].successful_draws < 1000
+    assert 0 < intervals["benign_false_positive_rate"].successful_draws < 1000
+    assert 0 < intervals["macro_f1"].successful_draws < 1000

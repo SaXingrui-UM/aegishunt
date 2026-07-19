@@ -159,30 +159,34 @@ def _fast_metric_values(
     positive_total = true_positive + false_negative
     negative_total = true_negative + false_positive
     precision_denominator = true_positive + false_positive
-    recall = true_positive / positive_total if positive_total else 0.0
+    recall = true_positive / positive_total if positive_total else None
     precision = true_positive / precision_denominator if precision_denominator else 0.0
     f1 = (
         2.0 * precision * recall / (precision + recall)
-        if precision + recall
-        else 0.0
+        if recall is not None and precision + recall
+        else (0.0 if recall is not None else None)
     )
     benign_precision_denominator = true_negative + false_negative
     benign_precision = (
         true_negative / benign_precision_denominator if benign_precision_denominator else 0.0
     )
-    benign_recall = true_negative / negative_total if negative_total else 0.0
+    benign_recall = true_negative / negative_total if negative_total else None
     benign_f1 = (
         2.0 * benign_precision * benign_recall / (benign_precision + benign_recall)
-        if benign_precision + benign_recall
-        else 0.0
+        if benign_recall is not None and benign_precision + benign_recall
+        else (0.0 if benign_recall is not None else None)
     )
     return {
         "recall": recall,
         "f1": f1,
-        "macro_f1": (f1 + benign_f1) / 2.0,
+        "macro_f1": (
+            (f1 + benign_f1) / 2.0
+            if f1 is not None and benign_f1 is not None
+            else None
+        ),
         "pr_auc": _average_precision(labels, scores),
         "benign_false_positive_rate": (
-            false_positive / negative_total if negative_total else 0.0
+            false_positive / negative_total if negative_total else None
         ),
     }
 

@@ -146,6 +146,47 @@ class FusionSelectionRecord(FusionModel):
     def validate_protocol_frozen_at(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
 
+    @model_validator(mode="after")
+    def validate_selection_evidence(self) -> Self:
+        if not self.selected_weights.is_dual_engine:
+            raise ValueError("selected policy must retain both engines")
+        if not self.candidates:
+            raise ValueError("fusion selection candidates cannot be empty")
+        candidate_ids = tuple(item.candidate_id for item in self.candidates)
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("fusion selection candidate identifiers must be unique")
+        selected = tuple(
+            item for item in self.candidates if item.candidate_id == self.selected_candidate_id
+        )
+        if len(selected) != 1:
+            raise ValueError("selected fusion candidate is missing or ambiguous")
+        selected_candidate = selected[0]
+        if (
+            selected_candidate.weights != self.selected_weights
+            or selected_candidate.threshold != self.selected_threshold
+            or not selected_candidate.satisfies_fpr_ceiling
+            or selected_candidate.metrics.recall <= 0.0
+            or selected_candidate.metrics.f1 <= 0.0
+        ):
+            raise ValueError("selected fusion evidence is internally inconsistent")
+        evaluated = (*self.candidates, self.supervised_baseline, self.anomaly_baseline)
+        if any(
+            item.satisfies_fpr_ceiling
+            != (item.metrics.benign_false_positive_rate <= self.false_positive_rate_ceiling)
+            for item in evaluated
+        ):
+            raise ValueError("fusion FPR-ceiling evidence is internally inconsistent")
+        if (
+            self.supervised_baseline.mode != "supervised_only"
+            or self.anomaly_baseline.mode != "anomaly_only"
+        ):
+            raise ValueError("fusion baseline identities are invalid")
+        if not self.validation_groups or tuple(sorted(set(self.validation_groups))) != (
+            self.validation_groups
+        ):
+            raise ValueError("validation group evidence must be non-empty, sorted, and unique")
+        return self
+
 
 class ScoreDistributionEvidence(FusionModel):
     sample_class: Literal["benign", "attack"]
@@ -435,6 +476,26 @@ class PolicyManifest(FusionModel):
     @classmethod
     def validate_policy_timestamp(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
+
+    @model_validator(mode="after")
+    def validate_policy_evidence(self) -> Self:
+        if not self.candidate_weights:
+            raise ValueError("fusion policy candidate weights cannot be empty")
+        if any(not weights.is_dual_engine for weights in self.candidate_weights):
+            raise ValueError("fusion policy candidates must retain both engines")
+        serialized = tuple(
+            (weights.supervised_weight, weights.anomaly_weight)
+            for weights in self.candidate_weights
+        )
+        if len(serialized) != len(set(serialized)):
+            raise ValueError("fusion policy candidate weights must be unique")
+        if not self.selected_weights.is_dual_engine or self.selected_weights not in (
+            self.candidate_weights
+        ):
+            raise ValueError("selected fusion weights are outside the declared candidates")
+        if self.created_at < self.protocol_frozen_at:
+            raise ValueError("fusion policy predates its frozen protocol")
+        return self
 
 
 class PolicyChecksums(FusionModel):

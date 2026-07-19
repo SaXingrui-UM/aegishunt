@@ -128,3 +128,25 @@ def test_fuse_score_validates_engine_identity_and_truthful_semantics() -> None:
             _input().model_copy(update={"anomaly_model_version": "wrong"}),
             _policy(),
         )
+
+
+def test_policy_rejects_inconsistent_weight_and_protocol_evidence() -> None:
+    policy = _policy()
+
+    with pytest.raises(ValidationError, match="outside the declared candidates"):
+        PolicyManifest.model_validate(
+            {
+                **policy.model_dump(),
+                "selected_weights": {
+                    "supervised_weight": 0.75,
+                    "anomaly_weight": 0.25,
+                },
+            }
+        )
+    with pytest.raises(ValidationError, match="predates"):
+        PolicyManifest.model_validate(
+            {
+                **policy.model_dump(),
+                "created_at": datetime(2026, 7, 18, tzinfo=UTC),
+            }
+        )
