@@ -36,11 +36,13 @@ def _policy() -> PolicyManifest:
         anomaly_model_version="1.1.0-candidate",
         anomaly_score_semantics="bounded normalized anomaly score; not probability",
         selected_candidate_id="supervised-50-anomaly-50-t0.500",
+        candidate_weights=(FusionWeights(supervised_weight=0.5, anomaly_weight=0.5),),
         selected_weights=FusionWeights(supervised_weight=0.5, anomaly_weight=0.5),
         selected_threshold=0.5,
         selection_policy_version="1.0.0",
         false_positive_rate_ceiling=0.25,
         recommendation_status="inconclusive",
+        selection_evidence_checksum=CHECKSUM,
         known_evidence_checksum=CHECKSUM,
         unseen_evidence_checksum=CHECKSUM,
         temporal_evidence_checksum=CHECKSUM,
@@ -55,6 +57,7 @@ def _policy() -> PolicyManifest:
             "experimental suspiciousness score; not probability, risk, severity, "
             "or attack confirmation"
         ),
+        protocol_frozen_at=datetime(2026, 7, 19, tzinfo=UTC),
         created_at=datetime(2026, 7, 20, tzinfo=UTC),
     )
 
