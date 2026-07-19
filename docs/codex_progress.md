@@ -10,7 +10,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
 | Current activity | Phase 7 implementation and controlled evidence are complete on `phase/07-fusion-evaluation`; logical commits and focused checks pass, documentation is being finalized, and Phase 8 has not started |
-| Verification status | Phase 0–6 baseline: Ruff pass, strict mypy pass for 120 source files, 288 tests pass with 87.34% branch-aware coverage; Phase 7 focused Ruff/mypy and 25 unit/integration/E2E tests pass; final full Phase 0–7 result will replace this line before PR creation |
+| Verification status | Final Ruff pass; strict mypy pass for 134 source files; all 313 tests pass in 1,146.54 seconds with 87.47% branch-aware coverage and zero failures, skips, or xfails; the 29-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes |
 | Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -95,6 +95,10 @@ severity, explanations, correlation, or hunting logic. Phase 8 has not started.
 - Generated machine evidence is repository-external/ignored and is not
   committed. Reviewed config, contracts, protocol, card, ADR, release notes,
   CLI, and tests are committed.
+- Final quality gate: Ruff passed; strict mypy passed for 134 source files; all
+  313 tests passed in 1,146.54 seconds with 87.47% branch-aware coverage and no
+  failures, skips, or xfails. The focused Phase 7/frontend/status selection
+  passed all 29 tests in 26.04 seconds.
 - The fusion score is experimental suspiciousness, not probability, final risk,
   severity, or confirmation. `DetectionResult`, `SecurityAlert`, reason codes,
   explanations, correlation, hypotheses, cases, and automated response are not

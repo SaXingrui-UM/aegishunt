@@ -95,9 +95,10 @@ are executed development evidence, not an SLA.
 
 ## Tests
 
-Focused Phase 7 Ruff and strict mypy checks pass. The current focused suite has
-25 tests and will be recorded with the final full Phase 0–7 test and coverage
-result before the pull request is created.
+Final Ruff passes. Strict mypy passes for 134 source files. All 313 tests pass in
+1,146.54 seconds with zero failures, skips, or xfails and 87.47% branch-aware
+coverage. The focused Phase 7/frontend/status unit, integration, and offline E2E
+selection passes all 29 tests in 26.04 seconds.
 
 ## Generated artifacts
 
