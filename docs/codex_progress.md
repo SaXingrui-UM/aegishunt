@@ -1,17 +1,17 @@
 # Codex Progress
 
-Last updated: 2026-07-19 (Asia/Shanghai)
+Last updated: 2026-07-20 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 6 - Unsupervised Anomaly Detection Engine |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
-| Current activity | Direction B is implemented on Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18); the LOF candidate passed its unchanged smoke gate, and Phase 7 has not started |
-| Verification status | Ruff passes; strict mypy passes for 120 source files; all 288 tests pass with 87.34% branch-aware coverage and no skipped/xfailed tests; the full suite includes 83 focused Phase 6 tests |
-| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, `ca830fd`, `d6552fa`, `0c83a2d`, `d85689b`, and `f03f75f` |
+| Current activity | Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is merged; annotated Tag `phase-06-complete` is remotely verified; this metadata-only branch is awaiting review and Phase 7 has not started |
+| Verification status | Post-merge Ruff passes; strict mypy passes for 120 source files; all 288 tests pass in 991.05 seconds with 87.34% branch-aware coverage and no failures, skips, or xfails; the 87-test anomaly/frontend/status selection also passed every assertion |
+| Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -19,28 +19,28 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open from `phase/06-anomaly-detection` to `main` |
+| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) merged from `phase/06-anomaly-detection` to `main` on 2026-07-20 (Asia/Shanghai) |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | After `d85689b`, the first PR-triggered Linux `quality` run passed while its duplicate push run hit the old 15-minute job limit. With bounded timeout fix `f03f75f`, both updated `quality` checks passed in 15m26s and 15m57s without changing checks or coverage |
+| CI status | PR #18 required `quality` checks both passed: 15m24s and 13m58s; no required check was pending or failing at merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
 | Phase 3 tag | Annotated `phase-03-complete`, locally and remotely verified at merge commit `5df43bc` |
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
-| Phase 6 tag | `phase-06-complete` is pending user review, PR merge, and an explicit post-merge checkpoint instruction; it has not been created |
-| Current branch | `phase/06-anomaly-detection` |
-| Working tree | Clean after the direction-B documentation checkpoint commit |
+| Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
+| Current branch | `docs/phase-06-post-merge-metadata` |
+| Working tree | Clean after the Phase 6 post-merge metadata commit |
 | Phase 7 status | Not started |
-| Next planned branch | `phase/07-fusion-evaluation` (must not be created before Phase 6 merge/checkpoint and explicit authorization) |
-| Next action | Complete full checks and Review, push the existing Phase 6 branch, update PR #18, then wait for CI and user review; do not begin Phase 7 |
+| Next planned branch | `phase/07-fusion-evaluation` (must not be created before metadata review/merge and explicit authorization) |
+| Next action | Review and merge the Phase 6 post-merge metadata PR; then synchronize `main` and wait for explicit user authorization before Phase 7 |
 
-Phase 0 through Phase 5 remain complete. Phase 5's original and corrective Tags
-remain unchanged. Phase 6 implementation is isolated on its declared branch and
-has not modified frozen Phase 4 splits or Phase 5 model/evidence contracts. Phase
-7 fusion, combined risk, alerts, explanations, correlation, and hunting logic
-have not started.
+Phase 0 through Phase 6 are checkpointed. Phase 5's original and corrective Tags
+remain unchanged. Phase 6 is merged, locally reverified, and tagged without
+modifying frozen Phase 4 splits, Phase 5 model/evidence contracts, or ignored
+Phase 6 evidence. Phase 7 fusion, combined risk, alerts, explanations,
+correlation, and hunting logic have not started.
 
 ## Phase 6 implementation checkpoint
 
@@ -70,7 +70,8 @@ have not started.
 - The fixed smoke fixture ran only after selection freeze, produced normalized
   score `1.0`, and passed before/after bundle reload. Independent-process reload
   reproduced the same result. The candidate remains `validation_qualified`:
-  all 48 registered rows are already assigned and no untouched holdout exists.
+  all 48 registered rows are already assigned and no untouched independent
+  holdout exists.
 - The original viewed test was not opened by either corrective candidate run.
   Formal partition tracking recorded only `train.jsonl` and `validation.jsonl`;
   a repeat of the direction-B experiment identity is rejected.
@@ -102,9 +103,12 @@ have not started.
   collision rejection, and three regressions. Native `codex review --base main`
   could not start because its arm64 executable is missing (`ENOENT`); the second
   equivalent review found no remaining Blocking, High, or unhandled Medium issue.
-- Final direction-B verification passed Ruff, strict mypy for 120 source files,
-  and all 288 tests in 999.93 seconds with 87.34% branch-aware coverage. There
-  were no failures, skips, or xfails; 83 Phase 6-focused tests are included.
+- Post-merge verification on merged `main` passed Ruff, strict mypy for 120
+  source files, and all 288 tests in 991.05 seconds with 87.34% branch-aware
+  coverage. There were no failures, skips, or xfails. A selected 87-test
+  anomaly/frontend/status run passed every assertion; its subset-only command
+  returned nonzero solely because the unchanged whole-project coverage gate was
+  evaluated against that subset, while the required full suite passed the gate.
 - The final equivalent read-only review found one Medium audit-contract gap:
   structurally valid metadata could overstate LOF eligibility or alter the fixed
   Isolation Forest comparison matrix. Commit `0c83a2d` added cross-field
@@ -127,6 +131,13 @@ have not started.
   process, so the first formal command stopped at import with no artifact writes.
   The recorded `PYTHONPATH=src` workaround then ran successfully; this is not a
   standard-install success claim.
+- Post-merge native `codex review` again failed to start because the installed
+  arm64 executable is missing (`ENOENT`). The equivalent read-only review found
+  zero Blocking, zero High, and zero correctness-related Medium findings. One
+  Low limitation remains: preserved historical `1.0.0` temporary bundle bytes
+  predate the strengthened identity field and therefore fail closed under the
+  current strict loader; their original checksum/evidence remain unchanged, and
+  the active `1.1.0-candidate` bundle verifies and scores deterministically.
 - DEF-004 remains open and non-blocking; Phase 6 adds no alternate database or
   broker merely to record total database unavailability.
 
