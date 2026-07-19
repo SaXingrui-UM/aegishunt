@@ -78,12 +78,16 @@ class FusionExperimentConfig(FusionConfigModel):
     supervised_model_id: str
     supervised_model_version: str
     supervised_algorithm: Literal["random_forest"]
+    supervised_hyperparameters: dict[str, bool | int | float | str]
     supervised_calibration: Literal["isotonic"]
     supervised_threshold_candidates: tuple[float, ...]
     anomaly_model_id: str
     anomaly_model_version: str
     anomaly_algorithm: Literal["local_outlier_factor"]
+    anomaly_hyperparameters: dict[str, bool | int | float | str]
+    anomaly_normalization: Literal["benign_training_quantile_cdf"]
     anomaly_threshold_candidates: tuple[float, ...]
+    anomaly_false_positive_rate_ceiling: float = Field(ge=0.0, lt=1.0)
     weight_candidates: tuple[WeightCandidate, ...]
     fusion_threshold_candidates: tuple[float, ...]
     false_positive_rate_ceiling: float = Field(ge=0.0, lt=1.0)
@@ -102,17 +106,22 @@ class FusionExperimentConfig(FusionConfigModel):
     def validate_timestamp(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
 
-    @field_validator(
-        "supervised_threshold_candidates",
-        "anomaly_threshold_candidates",
-        "fusion_threshold_candidates",
-    )
+    @field_validator("supervised_threshold_candidates", "fusion_threshold_candidates")
     @classmethod
     def validate_thresholds(cls, value: tuple[float, ...]) -> tuple[float, ...]:
         if not value or tuple(sorted(set(value))) != value:
             raise ValueError("threshold candidates must be sorted and unique")
         if value[0] <= 0.0 or value[-1] >= 1.0:
             raise ValueError("threshold candidates must be strictly inside zero and one")
+        return value
+
+    @field_validator("anomaly_threshold_candidates")
+    @classmethod
+    def validate_anomaly_thresholds(cls, value: tuple[float, ...]) -> tuple[float, ...]:
+        if not value or tuple(sorted(set(value))) != value:
+            raise ValueError("anomaly thresholds must be sorted and unique")
+        if value[0] < 0.0 or value[-1] > 1.0:
+            raise ValueError("anomaly thresholds must be inside zero and one")
         return value
 
     @model_validator(mode="after")
@@ -145,6 +154,27 @@ class FusionExperimentConfig(FusionConfigModel):
         )
         if self.tie_break_order != expected_tie_break:
             raise ValueError("fusion tie-break order differs from policy 1.0.0")
+        expected_supervised = {
+            "class_weight": "none",
+            "max_depth": 8,
+            "max_features": "sqrt",
+            "min_samples_leaf": 1,
+            "min_samples_split": 2,
+            "n_estimators": 64,
+            "n_jobs": 1,
+        }
+        if self.supervised_hyperparameters != expected_supervised:
+            raise ValueError("fusion research must retain the corrected Phase 5 configuration")
+        expected_anomaly = {
+            "n_neighbors": 5,
+            "metric": "minkowski",
+            "algorithm": "auto",
+            "leaf_size": 30,
+            "n_jobs": 1,
+            "novelty": True,
+        }
+        if self.anomaly_hyperparameters != expected_anomaly:
+            raise ValueError("fusion research must retain the approved Phase 6 LOF configuration")
         return self
 
     @classmethod

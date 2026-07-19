@@ -8,13 +8,13 @@ from aegishunt.ml.fusion.bootstrap import (
     group_bootstrap_delta_intervals,
     group_bootstrap_intervals,
 )
-from aegishunt.ml.fusion.config import WeightCandidate
+from aegishunt.ml.fusion.config import FusionExperimentConfig, WeightCandidate
 from aegishunt.ml.fusion.errors import FusionContractError
-from tests.fixtures.fusion import fusion_config
+from tests.fixtures.fusion import FUSION_CONFIG_PATH, fusion_config
 
 
 def test_config_requires_dual_weights_fixed_axes_and_protocol_order() -> None:
-    config = fusion_config()
+    config = FusionExperimentConfig.load(FUSION_CONFIG_PATH)
 
     assert len(config.weight_candidates) == 3
     assert {shift.axis for shift in config.parameter_shifts} == {

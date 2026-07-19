@@ -80,7 +80,7 @@ class CandidateEvaluation(FusionModel):
     candidate_id: str
     mode: EvaluationMode
     weights: FusionWeights | None
-    threshold: float = Field(gt=0.0, lt=1.0)
+    threshold: float = Field(ge=0.0, le=1.0)
     metrics: AnomalyMetrics
     satisfies_fpr_ceiling: bool
     validation_only: Literal[True]
@@ -92,6 +92,8 @@ class CandidateEvaluation(FusionModel):
                 raise ValueError("dual-engine evidence requires two positive weights")
         elif self.weights is not None:
             raise ValueError("baseline evidence cannot masquerade as weighted fusion")
+        if self.mode != "anomaly_only" and not 0.0 < self.threshold < 1.0:
+            raise ValueError("supervised and fusion thresholds must be inside zero and one")
         return self
 
 
@@ -168,6 +170,95 @@ class ComparisonResult(FusionModel):
     fpr_ceiling_satisfied: bool
     recommendation_status: RecommendationStatus
     limitations: tuple[str, ...]
+
+
+class Phase7DatasetManifest(FusionModel):
+    manifest_schema_version: Literal["1.0.0"]
+    dataset_id: str
+    dataset_version: str
+    generator_version: str
+    feature_schema_version: str
+    row_count: int = Field(ge=1)
+    group_count: int = Field(ge=1)
+    attack_families: tuple[str, ...]
+    family_distribution: dict[str, int]
+    dataset_checksum: str
+    quality_status: Literal["pass"]
+    exact_duplicate_count: int = Field(ge=0)
+    near_duplicate_count: int = Field(ge=0)
+    controlled_synthetic_only: Literal[True]
+    public_benchmark: Literal[False]
+    network_access: Literal[False]
+    external_target: Literal[False]
+    historical_frozen_test_reused: Literal[False]
+    random_seed: int
+
+    @field_validator("dataset_checksum")
+    @classmethod
+    def validate_dataset_checksum(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("Phase 7 dataset checksum must be SHA-256")
+        return normalized
+
+
+class Phase7SplitManifest(FusionModel):
+    manifest_schema_version: Literal["1.0.0"]
+    dataset_id: str
+    dataset_version: str
+    dataset_checksum: str
+    time_field: Literal["metadata.observed_at"]
+    early_groups: tuple[str, ...]
+    middle_groups: tuple[str, ...]
+    late_groups: tuple[str, ...]
+    row_counts: dict[str, int]
+    group_counts: dict[str, int]
+    time_ranges: dict[str, tuple[datetime, datetime]]
+    group_overlap: tuple[str, ...]
+    source_overlap: tuple[str, ...]
+    session_overlap: tuple[str, ...]
+    scenario_overlap: tuple[str, ...]
+    future_data_used_for_fit: Literal[False]
+    historical_test_reused: Literal[False]
+
+    @field_validator("dataset_checksum")
+    @classmethod
+    def validate_split_dataset_checksum(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("Phase 7 split checksum must be SHA-256")
+        return normalized
+
+    @field_validator("time_ranges")
+    @classmethod
+    def validate_time_ranges(
+        cls, value: dict[str, tuple[datetime, datetime]]
+    ) -> dict[str, tuple[datetime, datetime]]:
+        return {
+            name: (require_aware_utc(bounds[0]), require_aware_utc(bounds[1]))
+            for name, bounds in value.items()
+        }
+
+    @model_validator(mode="after")
+    def validate_isolation(self) -> Self:
+        if any(
+            (
+                self.group_overlap,
+                self.source_overlap,
+                self.session_overlap,
+                self.scenario_overlap,
+            )
+        ):
+            raise ValueError("Phase 7 split identities overlap")
+        required = {"early", "middle", "late"}
+        if set(self.row_counts) != required or set(self.group_counts) != required:
+            raise ValueError("Phase 7 split counts are incomplete")
+        early = self.time_ranges["early"]
+        middle = self.time_ranges["middle"]
+        late = self.time_ranges["late"]
+        if not early[1] < middle[0] or not middle[1] < late[0]:
+            raise ValueError("Phase 7 temporal ranges are not strictly ordered")
+        return self
 
 
 class PolicyManifest(FusionModel):
