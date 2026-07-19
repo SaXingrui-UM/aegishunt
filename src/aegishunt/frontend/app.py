@@ -1,4 +1,4 @@
-"""Minimal Streamlit page for the Phase 6 anomaly research foundation."""
+"""Minimal Streamlit page for the completed Phase 6 research foundation."""
 
 from __future__ import annotations
 
@@ -17,13 +17,14 @@ PLANNED_MODULES = (
 
 
 def main() -> None:
-    """Render truthful Phase 6 implementation status and planned capabilities."""
+    """Render truthful completed Phase 6 status and planned capabilities."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 6 implementation complete — awaiting PR review. "
+        "Current status: Phase 6 complete. PR #18 and post-merge metadata PR #19 "
+        "are merged; annotated checkpoint phase-06-complete is verified. "
         "Phase 7: Not started."
     )
     st.success(

@@ -9,7 +9,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Current phase | Phase 6 - Unsupervised Anomaly Detection Engine |
 | Status | Phase complete |
 | Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
-| Current activity | Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is merged; annotated Tag `phase-06-complete` is remotely verified; this metadata-only branch is awaiting review and Phase 7 has not started |
+| Current activity | Phase 6 is fully closed on `main`: PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) from `phase/06-anomaly-detection` and post-merge metadata PR [#19](https://github.com/SaXingrui-UM/aegishunt/pull/19) are merged, annotated Tag `phase-06-complete` is remotely verified, and Phase 7 has not started |
 | Verification status | Post-merge Ruff passes; strict mypy passes for 120 source files; all 288 tests pass in 991.05 seconds with 87.34% branch-aware coverage and no failures, skips, or xfails; the 87-test anomaly/frontend/status selection also passed every assertion |
 | Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -19,10 +19,10 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) merged from `phase/06-anomaly-detection` to `main` on 2026-07-20 (Asia/Shanghai) |
+| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) merged as `40692d0f576b70fd57719ca2f74d869e27891e13`; metadata PR [#19](https://github.com/SaXingrui-UM/aegishunt/pull/19) merged as `a49d334591236a2d3bf21d8b3d7b94f9b9803ee9` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | PR #18 required `quality` checks both passed: 15m24s and 13m58s; no required check was pending or failing at merge |
+| CI status | PR #18 required `quality` checks passed in 15m24s and 13m58s; PR #19 required `quality` check passed in 15m22s; no required check was pending or failing at merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -30,11 +30,11 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
-| Current branch | `docs/phase-06-post-merge-metadata` |
-| Working tree | Clean after the Phase 6 post-merge metadata commit |
+| Current branch | Stable branch `main`; no Phase 7 branch exists |
+| Working tree | Clean after Phase 6 final status closure and synchronization |
 | Phase 7 status | Not started |
-| Next planned branch | `phase/07-fusion-evaluation` (must not be created before metadata review/merge and explicit authorization) |
-| Next action | Review and merge the Phase 6 post-merge metadata PR; then synchronize `main` and wait for explicit user authorization before Phase 7 |
+| Next planned branch | `phase/07-fusion-evaluation` (create only after explicit user authorization and a clean synchronized baseline) |
+| Next action | Wait for explicit user authorization; then synchronize `main`, run the Phase 0–6 baseline, and create the Phase 7 branch only if every gate passes |
 
 Phase 0 through Phase 6 are checkpointed. Phase 5's original and corrective Tags
 remain unchanged. Phase 6 is merged, locally reverified, and tagged without
