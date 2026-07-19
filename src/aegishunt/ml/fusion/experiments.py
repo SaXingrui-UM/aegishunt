@@ -367,7 +367,7 @@ def _fit_and_select(
         supervised_threshold=engines.supervised_threshold,
         anomaly_threshold=engines.anomaly_threshold,
         config=fusion_config,
-        created_at=fusion_config.protocol_frozen_at,
+        protocol_frozen_at=fusion_config.protocol_frozen_at,
     )
     return engines, selection
 
@@ -416,6 +416,10 @@ def _measure_latency(
         "dual_batch_p50_ms": _percentile(total_ms, 50),
         "dual_batch_p95_ms": _percentile(total_ms, 95),
         "dual_batch_p99_ms": _percentile(total_ms, 99),
+        "dual_minus_supervised_p50_ms": (
+            _percentile(total_ms, 50) - _percentile(supervised_ms, 50)
+        ),
+        "dual_minus_anomaly_p50_ms": (_percentile(total_ms, 50) - _percentile(anomaly_ms, 50)),
         "per_sample_p50_ms": _percentile(total_ms, 50) / batch_size,
         "throughput_samples_per_second": batch_size * repetitions / total_seconds,
         "temporary_supervised_model_size_bytes": supervised_size,

@@ -106,6 +106,8 @@ def test_full_controlled_workflow_writes_truthful_evidence_and_verified_policy(
         )
     )
     assert result.policy.public_benchmark is False
+    assert len(result.policy.candidate_weights) == 3
+    assert result.policy.protocol_frozen_at < result.policy.created_at
     assert "not probability" in result.policy.fusion_score_semantics
     assert service.verify("1.0.0") == result.policy
     assert not any(path.suffix in {".pkl", ".joblib", ".skops"} for path in tmp_path.rglob("*"))

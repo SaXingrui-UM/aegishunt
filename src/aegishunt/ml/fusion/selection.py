@@ -66,7 +66,7 @@ def select_fusion_policy(
     supervised_threshold: float,
     anomaly_threshold: float,
     config: FusionExperimentConfig,
-    created_at: datetime | None = None,
+    protocol_frozen_at: datetime | None = None,
 ) -> FusionSelectionRecord:
     """Freeze one policy using validation vectors only."""
 
@@ -121,8 +121,7 @@ def select_fusion_policy(
                     threshold=threshold,
                     metrics=metrics,
                     satisfies_fpr_ceiling=(
-                        metrics.benign_false_positive_rate
-                        <= config.false_positive_rate_ceiling
+                        metrics.benign_false_positive_rate <= config.false_positive_rate_ceiling
                     ),
                     selection_used_validation_only=True,
                 )
@@ -130,11 +129,11 @@ def select_fusion_policy(
     compliant = tuple(
         item
         for item in candidates
-        if item.satisfies_fpr_ceiling and item.metrics.macro_f1 > 0.0
+        if item.satisfies_fpr_ceiling and item.metrics.recall > 0.0 and item.metrics.f1 > 0.0
     )
     if not compliant:
         raise FusionSelectionError(
-            "no dual-engine candidate satisfies validation FPR and positive utility"
+            "no dual-engine candidate satisfies validation FPR and positive attack utility"
         )
     selected = max(compliant, key=_rank)
     best_baseline = max((supervised, anomaly), key=_rank)
@@ -156,14 +155,10 @@ def select_fusion_policy(
         )
     elif macro_delta < 0.0 or fpr_delta > config.recommendation_max_fpr_increase:
         recommendation = "fusion_not_recommended"
-        rationale = (
-            "validation fusion did not satisfy the pre-registered improvement rule",
-        )
+        rationale = ("validation fusion did not satisfy the pre-registered improvement rule",)
     else:
         recommendation = "inconclusive"
-        rationale = (
-            "validation evidence did not establish a pre-registered fusion advantage",
-        )
+        rationale = ("validation evidence did not establish a pre-registered fusion advantage",)
     if selected.weights is None:
         raise FusionSelectionError("selected fusion candidate has no weights")
     return FusionSelectionRecord(
@@ -185,5 +180,5 @@ def select_fusion_policy(
         validation_groups=tuple(sorted(set(groups.tolist()))),
         evaluation_data_accessed=False,
         held_out_family_accessed=False,
-        created_at=created_at or datetime.now(UTC),
+        protocol_frozen_at=protocol_frozen_at or datetime.now(UTC),
     )

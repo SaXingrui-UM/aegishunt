@@ -139,11 +139,11 @@ class FusionSelectionRecord(FusionModel):
     validation_groups: tuple[str, ...]
     evaluation_data_accessed: Literal[False]
     held_out_family_accessed: Literal[False]
-    created_at: datetime
+    protocol_frozen_at: datetime
 
-    @field_validator("created_at")
+    @field_validator("protocol_frozen_at")
     @classmethod
-    def validate_created_at(cls, value: datetime) -> datetime:
+    def validate_protocol_frozen_at(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
 
 
@@ -390,11 +390,13 @@ class PolicyManifest(FusionModel):
     anomaly_model_version: str
     anomaly_score_semantics: Literal["bounded normalized anomaly score; not probability"]
     selected_candidate_id: str
+    candidate_weights: tuple[FusionWeights, ...]
     selected_weights: FusionWeights
     selected_threshold: float = Field(gt=0.0, lt=1.0)
     selection_policy_version: str
     false_positive_rate_ceiling: float = Field(ge=0.0, lt=1.0)
     recommendation_status: RecommendationStatus
+    selection_evidence_checksum: str
     known_evidence_checksum: str
     unseen_evidence_checksum: str
     temporal_evidence_checksum: str
@@ -408,12 +410,14 @@ class PolicyManifest(FusionModel):
     fusion_score_semantics: Literal[
         "experimental suspiciousness score; not probability, risk, severity, or attack confirmation"
     ]
+    protocol_frozen_at: datetime
     created_at: datetime
 
     @field_validator(
         "dataset_manifest_checksum",
         "split_manifest_checksum",
         "experiment_protocol_checksum",
+        "selection_evidence_checksum",
         "known_evidence_checksum",
         "unseen_evidence_checksum",
         "temporal_evidence_checksum",
@@ -427,7 +431,7 @@ class PolicyManifest(FusionModel):
             raise ValueError("fusion evidence checksum must be SHA-256")
         return normalized
 
-    @field_validator("created_at")
+    @field_validator("protocol_frozen_at", "created_at")
     @classmethod
     def validate_policy_timestamp(cls, value: datetime) -> datetime:
         return require_aware_utc(value)
@@ -435,6 +439,11 @@ class PolicyManifest(FusionModel):
 
 class PolicyChecksums(FusionModel):
     checksum_schema_version: Literal["1.0.0"]
+    file_inventory: tuple[
+        Literal["fusion_policy_manifest.json"],
+        Literal["fusion_policy_checksums.json"],
+        Literal["fusion_policy_card.md"],
+    ]
     manifest_checksum: str
     policy_card_checksum: str
 

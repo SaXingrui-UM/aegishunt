@@ -13,7 +13,7 @@ data_seed: 7207
 model_seed: 7307
 bootstrap_seed: 7407
 bootstrap_draws: 1000
-protocol_frozen_at: 2026-07-20T00:00:00Z
+protocol_frozen_at: 2026-07-19T22:31:34Z
 supervised_model_id: aegishunt-supervised-1.0.1
 supervised_model_version: 1.0.1
 supervised_algorithm: random_forest

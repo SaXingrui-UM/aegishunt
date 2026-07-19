@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import platform
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +23,12 @@ from aegishunt.ml.fusion.artifacts import (
     write_final_experiment_evidence,
 )
 from aegishunt.ml.fusion.config import FusionExperimentConfig
-from aegishunt.ml.fusion.contracts import FusionScoreInput, FusionScoreResult, PolicyManifest
+from aegishunt.ml.fusion.contracts import (
+    FusionScoreInput,
+    FusionScoreResult,
+    FusionWeights,
+    PolicyManifest,
+)
 from aegishunt.ml.fusion.dataset import (
     ControlledExperimentDataset,
     build_controlled_experiment_dataset,
@@ -136,9 +142,7 @@ class FusionEvaluationService:
             experiment_id=config.experiment_id,
             dataset_id=config.dataset_id,
             dataset_version=config.dataset_version,
-            dataset_manifest_checksum=sha256_file(
-                store.path("phase_07_dataset_manifest.json")
-            ),
+            dataset_manifest_checksum=sha256_file(store.path("phase_07_dataset_manifest.json")),
             split_manifest_checksum=sha256_file(store.path("phase_07_split_manifest.json")),
             experiment_protocol_checksum=sha256_file(
                 store.path("phase_07_experiment_protocol.json")
@@ -151,20 +155,24 @@ class FusionEvaluationService:
             anomaly_model_version=config.anomaly_model_version,
             anomaly_score_semantics="bounded normalized anomaly score; not probability",
             selected_candidate_id=run.selection.selected_candidate_id,
+            candidate_weights=tuple(
+                FusionWeights(
+                    supervised_weight=item.supervised_weight,
+                    anomaly_weight=item.anomaly_weight,
+                )
+                for item in config.weight_candidates
+            ),
             selected_weights=run.selection.selected_weights,
             selected_threshold=run.selection.selected_threshold,
             selection_policy_version=config.selection_policy_version,
             false_positive_rate_ceiling=config.false_positive_rate_ceiling,
             recommendation_status=run.selection.recommendation_status,
+            selection_evidence_checksum=sha256_file(store.path("fusion_selection.json")),
             known_evidence_checksum=sha256_file(store.path("known_attack_metrics.csv")),
             unseen_evidence_checksum=sha256_file(store.path("unseen_attack_metrics.csv")),
             temporal_evidence_checksum=sha256_file(store.path("temporal_holdout.csv")),
-            parameter_shift_evidence_checksum=sha256_file(
-                store.path("parameter_shift.csv")
-            ),
-            confidence_interval_checksum=sha256_file(
-                store.path("confidence_intervals.json")
-            ),
+            parameter_shift_evidence_checksum=sha256_file(store.path("parameter_shift.csv")),
+            confidence_interval_checksum=sha256_file(store.path("confidence_intervals.json")),
             git_commit_sha=safe_git_sha(),
             python_version=platform.python_version(),
             dependency_versions={
@@ -177,7 +185,8 @@ class FusionEvaluationService:
                 "experimental suspiciousness score; not probability, risk, severity, "
                 "or attack confirmation"
             ),
-            created_at=config.protocol_frozen_at,
+            protocol_frozen_at=config.protocol_frozen_at,
+            created_at=datetime.now(UTC),
         )
 
     @staticmethod

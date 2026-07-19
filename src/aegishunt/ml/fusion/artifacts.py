@@ -414,6 +414,11 @@ def save_policy(root: Path, manifest: PolicyManifest, policy_card: str) -> Path:
         card_payload = policy_card.encode()
         checksums = PolicyChecksums(
             checksum_schema_version="1.0.0",
+            file_inventory=(
+                "fusion_policy_manifest.json",
+                "fusion_policy_checksums.json",
+                "fusion_policy_card.md",
+            ),
             manifest_checksum=sha256_bytes(manifest_payload),
             policy_card_checksum=sha256_bytes(card_payload),
         )

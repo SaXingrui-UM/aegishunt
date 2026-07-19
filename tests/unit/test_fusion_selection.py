@@ -35,7 +35,7 @@ def test_select_policy_uses_true_fusion_and_is_deterministic() -> None:
         supervised_threshold=0.5,
         anomaly_threshold=0.6,
         config=fusion_config(),
-        created_at=timestamp,
+        protocol_frozen_at=timestamp,
     )
     second = select_fusion_policy(
         labels=labels,
@@ -45,7 +45,7 @@ def test_select_policy_uses_true_fusion_and_is_deterministic() -> None:
         supervised_threshold=0.5,
         anomaly_threshold=0.6,
         config=fusion_config(),
-        created_at=timestamp,
+        protocol_frozen_at=timestamp,
     )
 
     assert first == second
@@ -100,3 +100,39 @@ def test_selection_fails_closed_without_both_classes_or_compliant_candidate() ->
             anomaly_threshold=0.6,
             config=fusion_config(false_positive_rate_ceiling=0.0),
         )
+    with pytest.raises(FusionSelectionError, match="positive attack utility"):
+        select_fusion_policy(
+            labels=labels,
+            groups=groups,
+            supervised_scores=np.zeros_like(supervised),
+            anomaly_scores=np.zeros_like(anomaly),
+            supervised_threshold=0.5,
+            anomaly_threshold=0.6,
+            config=fusion_config(),
+        )
+
+
+def test_selection_records_fusion_not_recommended_without_more_search() -> None:
+    labels, groups, _, _ = _evidence()
+    supervised = np.asarray([0.1, 0.2, 0.3, 0.49, 0.51, 0.7, 0.8, 0.9])
+    anomaly = np.asarray([0.1, 0.2, 0.3, 1.0, 0.0, 0.7, 0.8, 0.9])
+
+    selection = select_fusion_policy(
+        labels=labels,
+        groups=groups,
+        supervised_scores=supervised,
+        anomaly_scores=anomaly,
+        supervised_threshold=0.5,
+        anomaly_threshold=0.6,
+        config=fusion_config(false_positive_rate_ceiling=0.5),
+    )
+
+    selected = next(
+        item
+        for item in selection.candidates
+        if item.candidate_id == selection.selected_candidate_id
+    )
+    assert selected.metrics.recall > 0.0
+    assert selected.metrics.f1 > 0.0
+    assert selection.supervised_baseline.metrics.macro_f1 == 1.0
+    assert selection.recommendation_status == "fusion_not_recommended"
