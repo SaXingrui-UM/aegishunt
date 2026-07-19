@@ -115,14 +115,14 @@ match its own exact inventory/checksums and reproduce numeric scoring.
 
 ## Tests
 
-- Phase 6 focused suite: 81 tests passed, including the validation-only
+- The full suite includes 83 Phase 6-focused tests, including the validation-only
   Isolation Forest correction, direction-B LOF selection/smoke, exact bundle
-  algorithm checks, no-test-access tracking, repeat rejection, and
-  independent-process reload.
+  algorithm and eligibility-state checks, fixed-matrix validation, no-test-access
+  tracking, repeat rejection, and independent-process reload.
 - Ruff: pass.
 - Strict mypy: pass for 120 source files.
-- Full Pytest/coverage: 286 passed, 0 failed, 0 skipped, and 0 xfailed in
-  1,043.34 seconds; branch-aware coverage was 87.33% (85% required).
+- Full Pytest/coverage: 288 passed, 0 failed, 0 skipped, and 0 xfailed in
+  999.93 seconds; branch-aware coverage was 87.34% (85% required).
 - Offline controlled E2E: pass, including benign-only fit, validation freeze,
   frozen test, bundle, independent-process reload, and identical numeric scoring.
 - Bundle checks reject path escape, arbitrary joblib, extra/missing/corrupt files,
@@ -138,7 +138,13 @@ model-version collision could be discovered after frozen evidence was written.
 Commit `0ad6fb6` added the independent selection checksum, fail-closed FPR
 selection, pre-test version-collision check, and three regression tests. Fifteen
 focused tests and the complete suite then passed. The second equivalent review
-found zero remaining Blocking, High, or unhandled Medium findings.
+found zero remaining Blocking, High, or unhandled Medium findings. A final
+direction-B equivalent review found one Medium audit-contract gap: metadata could
+overstate LOF eligibility or substitute a different Isolation Forest comparison
+matrix while remaining structurally valid. Commit `0c83a2d` added cross-field
+fail-closed evidence contracts and exact-matrix regressions. Ruff, mypy, and all
+288 tests passed afterward; zero Blocking, zero High, and zero unhandled Medium
+findings remain.
 
 ## Generated artifacts
 
@@ -185,6 +191,8 @@ figures.
 - Direction-B decision registration: `265df40`
 - Candidate implementation: `32e24ee`
 - Candidate regression/E2E coverage: `ca830fd`
+- Direction-B evidence documentation: `d6552fa`
+- Candidate evidence-contract hardening: `0c83a2d`
 - Pull request: [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18), open and ready for review
 - Merge commit: pending
 - Annotated Tag: pending; do not create before user merge authorization

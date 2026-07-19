@@ -10,8 +10,8 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
 | Current activity | Direction B is implemented on Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18); the LOF candidate passed its unchanged smoke gate, and Phase 7 has not started |
-| Verification status | Ruff passes; strict mypy passes for 120 source files; all 286 tests pass with 87.33% branch-aware coverage and no skipped/xfailed tests; 81 focused Phase 6 tests pass |
-| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, and `ca830fd` |
+| Verification status | Ruff passes; strict mypy passes for 120 source files; all 288 tests pass with 87.34% branch-aware coverage and no skipped/xfailed tests; the full suite includes 83 focused Phase 6 tests |
+| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, `ca830fd`, `d6552fa`, and `0c83a2d` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -102,9 +102,14 @@ have not started.
   collision rejection, and three regressions. Native `codex review --base main`
   could not start because its arm64 executable is missing (`ENOENT`); the second
   equivalent review found no remaining Blocking, High, or unhandled Medium issue.
-- Direction-B branch verification passed Ruff, strict mypy for 120 source files,
-  and all 286 tests in 1,043.34 seconds with 87.33% branch-aware coverage. There
-  were no failures, skips, or xfails; the focused Phase 6 suite passed 81 tests.
+- Final direction-B verification passed Ruff, strict mypy for 120 source files,
+  and all 288 tests in 999.93 seconds with 87.34% branch-aware coverage. There
+  were no failures, skips, or xfails; 83 Phase 6-focused tests are included.
+- The final equivalent read-only review found one Medium audit-contract gap:
+  structurally valid metadata could overstate LOF eligibility or alter the fixed
+  Isolation Forest comparison matrix. Commit `0c83a2d` added cross-field
+  fail-closed contracts and exact-matrix regressions. The complete suite passed
+  afterward; zero Blocking, zero High, and zero unhandled Medium findings remain.
 - The local `.venv` editable `.pth` was not visible to a standalone Python
   process, so the first formal command stopped at import with no artifact writes.
   The recorded `PYTHONPATH=src` workaround then ran successfully; this is not a
