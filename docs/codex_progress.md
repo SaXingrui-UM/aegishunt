@@ -11,7 +11,7 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
 | Current activity | Direction B is implemented on Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18); the LOF candidate passed its unchanged smoke gate, and Phase 7 has not started |
 | Verification status | Ruff passes; strict mypy passes for 120 source files; all 288 tests pass with 87.34% branch-aware coverage and no skipped/xfailed tests; the full suite includes 83 focused Phase 6 tests |
-| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, `ca830fd`, `d6552fa`, and `0c83a2d` |
+| Stable branch checkpoint | Phase 6 branch started from synchronized `main` `030e4e2f2bfeb05dc8ca8288afd642c7b8d8f14b`; latest direction-B commits are `265df40`, `32e24ee`, `ca830fd`, `d6552fa`, `0c83a2d`, and `d85689b` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -22,7 +22,7 @@ Last updated: 2026-07-19 (Asia/Shanghai)
 | Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) is open from `phase/06-anomaly-detection` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | The two `quality` checks on the previously pushed PR #18 head passed; updated direction-B commits are not yet pushed, so new CI has not run |
+| CI status | The first direction-B CI run exposed a one-ULP Linux/macOS reference-score assertion difference; `d85689b` preserves exact same-platform reload checks and adds a `1e-12`/`1e-15` cross-platform reference tolerance. Updated CI is pending |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -110,6 +110,11 @@ have not started.
   Isolation Forest comparison matrix. Commit `0c83a2d` added cross-field
   fail-closed contracts and exact-matrix regressions. The complete suite passed
   afterward; zero Blocking, zero High, and zero unhandled Medium findings remain.
+- The first Linux CI run passed 287 tests but exposed a one-ULP difference in a
+  hard-coded Isolation Forest reference score. Commit `d85689b` retains exact
+  local-versus-independent-process comparisons and applies only a strict
+  `1e-12` relative/`1e-15` absolute tolerance to the cross-platform reference
+  constants. The targeted E2E passed after the test portability correction.
 - The local `.venv` editable `.pth` was not visible to a standalone Python
   process, so the first formal command stopped at import with no artifact writes.
   The recorded `PYTHONPATH=src` workaround then ran successfully; this is not a

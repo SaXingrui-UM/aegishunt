@@ -146,6 +146,12 @@ fail-closed evidence contracts and exact-matrix regressions. Ruff, mypy, and all
 288 tests passed afterward; zero Blocking, zero High, and zero unhandled Medium
 findings remain.
 
+The first direction-B Linux CI run passed 287 tests and failed one E2E reference
+constant by one ULP (`...6717` versus `...6718`). Commit `d85689b` retains exact
+same-platform local/independent-process comparisons and applies only a strict
+`1e-12` relative/`1e-15` absolute tolerance to the fixed cross-platform reference
+values. The targeted E2E passed after this portability correction.
+
 ## Generated artifacts
 
 Actual controlled evidence generated under an isolated `/tmp` root includes all
@@ -193,6 +199,7 @@ figures.
 - Candidate regression/E2E coverage: `ca830fd`
 - Direction-B evidence documentation: `d6552fa`
 - Candidate evidence-contract hardening: `0c83a2d`
+- Cross-platform score-reference test: `d85689b`
 - Pull request: [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18), open and ready for review
 - Merge commit: pending
 - Annotated Tag: pending; do not create before user merge authorization
