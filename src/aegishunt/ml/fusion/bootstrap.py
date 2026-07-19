@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import numpy as np
 from numpy.typing import NDArray
 
 from aegishunt.ml.fusion.contracts import MetricInterval
 from aegishunt.ml.fusion.errors import FusionContractError
-from aegishunt.ml.fusion.metrics import evaluate_scores
 
 _METRICS = (
     "recall",
@@ -46,15 +43,17 @@ def group_bootstrap_intervals(
 ) -> dict[str, MetricInterval]:
     """Resample whole groups and retain unavailable metrics as null evidence."""
 
-    return _bootstrap(
-        labels,
-        groups,
-        draws=draws,
-        random_seed=random_seed,
-        evaluator=lambda indices: evaluate_scores(
-            labels[indices], scores[indices], threshold=threshold
-        ),
-    )
+    unique = _validate_bootstrap(labels, groups, draws)
+    _validate_scores(scores, labels)
+    random = np.random.default_rng(random_seed)
+    samples: dict[str, list[float]] = {name: [] for name in _METRICS}
+    for _ in range(draws):
+        indices = _sample_indices(unique, groups, random)
+        values = _fast_metric_values(labels[indices], scores[indices], threshold)
+        for name, value in values.items():
+            if value is not None:
+                samples[name].append(value)
+    return _build_intervals(samples, draws=draws, unavailable="metric unavailable")
 
 
 def group_bootstrap_delta_intervals(
@@ -70,29 +69,25 @@ def group_bootstrap_delta_intervals(
 ) -> dict[str, MetricInterval]:
     """Use paired group resamples for fusion-minus-baseline deltas."""
 
-    def evaluator(indices: NDArray[np.int64]) -> object:
-        fusion = evaluate_scores(
-            labels[indices], fusion_scores[indices], threshold=fusion_threshold
+    unique = _validate_bootstrap(labels, groups, draws)
+    _validate_scores(fusion_scores, labels)
+    _validate_scores(baseline_scores, labels)
+    random = np.random.default_rng(random_seed)
+    samples: dict[str, list[float]] = {name: [] for name in _METRICS}
+    for _ in range(draws):
+        indices = _sample_indices(unique, groups, random)
+        fusion = _fast_metric_values(
+            labels[indices], fusion_scores[indices], fusion_threshold
         )
-        baseline = evaluate_scores(
-            labels[indices], baseline_scores[indices], threshold=baseline_threshold
+        baseline = _fast_metric_values(
+            labels[indices], baseline_scores[indices], baseline_threshold
         )
-        return {
-            name: (
-                None
-                if getattr(fusion, name) is None or getattr(baseline, name) is None
-                else float(getattr(fusion, name) - getattr(baseline, name))
-            )
-            for name in _METRICS
-        }
-
-    return _bootstrap_delta(
-        labels,
-        groups,
-        draws=draws,
-        random_seed=random_seed,
-        evaluator=evaluator,
-    )
+        for name in _METRICS:
+            fusion_value = fusion[name]
+            baseline_value = baseline[name]
+            if fusion_value is not None and baseline_value is not None:
+                samples[name].append(float(fusion_value - baseline_value))
+    return _build_intervals(samples, draws=draws, unavailable="paired delta unavailable")
 
 
 def _validate_bootstrap(
@@ -118,57 +113,88 @@ def _sample_indices(
     return np.concatenate([by_group[str(group)] for group in selected])
 
 
-def _bootstrap(
-    labels: NDArray[np.int64],
-    groups: NDArray[np.str_],
-    *,
-    draws: int,
-    random_seed: int,
-    evaluator: Callable[[NDArray[np.int64]], object],
-) -> dict[str, MetricInterval]:
-    unique = _validate_bootstrap(labels, groups, draws)
-    random = np.random.default_rng(random_seed)
-    samples: dict[str, list[float]] = {name: [] for name in _METRICS}
-    for _ in range(draws):
-        metrics = evaluator(_sample_indices(unique, groups, random))
-        for name in _METRICS:
-            value = getattr(metrics, name)
-            if value is not None:
-                samples[name].append(float(value))
+def _validate_scores(scores: NDArray[np.float64], labels: NDArray[np.int64]) -> None:
+    if (
+        scores.shape != labels.shape
+        or not np.isfinite(scores).all()
+        or np.any((scores < 0.0) | (scores > 1.0))
+    ):
+        raise FusionContractError("fusion bootstrap scores must be finite and bounded")
+
+
+def _average_precision(labels: NDArray[np.int64], scores: NDArray[np.float64]) -> float | None:
+    positives = int(np.sum(labels == 1))
+    if positives == 0 or positives == len(labels):
+        return None
+    order = np.argsort(-scores, kind="mergesort")
+    sorted_labels = labels[order]
+    sorted_scores = scores[order]
+    cumulative_true = np.cumsum(sorted_labels == 1)
+    cumulative_false = np.cumsum(sorted_labels == 0)
+    boundaries = np.flatnonzero(
+        np.r_[sorted_scores[1:] != sorted_scores[:-1], True]
+    )
+    previous_recall = 0.0
+    average_precision = 0.0
+    for index in boundaries:
+        true_positive = int(cumulative_true[index])
+        false_positive = int(cumulative_false[index])
+        recall = true_positive / positives
+        precision = true_positive / (true_positive + false_positive)
+        average_precision += (recall - previous_recall) * precision
+        previous_recall = recall
+    return average_precision
+
+
+def _fast_metric_values(
+    labels: NDArray[np.int64], scores: NDArray[np.float64], threshold: float
+) -> dict[str, float | None]:
+    predictions = scores >= threshold
+    positives = labels == 1
+    negatives = labels == 0
+    true_positive = int(np.sum(predictions & positives))
+    false_positive = int(np.sum(predictions & negatives))
+    false_negative = int(np.sum(~predictions & positives))
+    true_negative = int(np.sum(~predictions & negatives))
+    positive_total = true_positive + false_negative
+    negative_total = true_negative + false_positive
+    precision_denominator = true_positive + false_positive
+    recall = true_positive / positive_total if positive_total else 0.0
+    precision = true_positive / precision_denominator if precision_denominator else 0.0
+    f1 = (
+        2.0 * precision * recall / (precision + recall)
+        if precision + recall
+        else 0.0
+    )
+    benign_precision_denominator = true_negative + false_negative
+    benign_precision = (
+        true_negative / benign_precision_denominator if benign_precision_denominator else 0.0
+    )
+    benign_recall = true_negative / negative_total if negative_total else 0.0
+    benign_f1 = (
+        2.0 * benign_precision * benign_recall / (benign_precision + benign_recall)
+        if benign_precision + benign_recall
+        else 0.0
+    )
     return {
-        name: _interval(
-            values,
-            draws=draws,
-            unavailable="metric unavailable in every group-bootstrap draw",
-        )
-        for name, values in samples.items()
+        "recall": recall,
+        "f1": f1,
+        "macro_f1": (f1 + benign_f1) / 2.0,
+        "pr_auc": _average_precision(labels, scores),
+        "benign_false_positive_rate": (
+            false_positive / negative_total if negative_total else 0.0
+        ),
     }
 
 
-def _bootstrap_delta(
-    labels: NDArray[np.int64],
-    groups: NDArray[np.str_],
-    *,
-    draws: int,
-    random_seed: int,
-    evaluator: Callable[[NDArray[np.int64]], object],
+def _build_intervals(
+    samples: dict[str, list[float]], *, draws: int, unavailable: str
 ) -> dict[str, MetricInterval]:
-    unique = _validate_bootstrap(labels, groups, draws)
-    random = np.random.default_rng(random_seed)
-    samples: dict[str, list[float]] = {name: [] for name in _METRICS}
-    for _ in range(draws):
-        result = evaluator(_sample_indices(unique, groups, random))
-        if not isinstance(result, dict):
-            raise FusionContractError("fusion delta evaluator returned invalid evidence")
-        for name in _METRICS:
-            value = result[name]
-            if value is not None:
-                samples[name].append(float(value))
     return {
         name: _interval(
             values,
             draws=draws,
-            unavailable="paired delta unavailable in every group-bootstrap draw",
+            unavailable=f"{unavailable} in every group-bootstrap draw",
         )
         for name, values in samples.items()
     }

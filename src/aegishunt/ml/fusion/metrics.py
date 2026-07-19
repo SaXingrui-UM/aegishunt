@@ -21,8 +21,8 @@ def evaluate_scores(
     """Evaluate score semantics without treating the score as a probability."""
 
     values = np.asarray(scores, dtype=np.float64)
-    if not np.isfinite(threshold) or not 0.0 < threshold < 1.0:
-        raise FusionContractError("evaluation threshold must be finite and inside zero and one")
+    if not np.isfinite(threshold) or not 0.0 <= threshold <= 1.0:
+        raise FusionContractError("evaluation threshold must be finite and bounded")
     if values.ndim != 1 or not len(values) or not np.isfinite(values).all():
         raise FusionContractError("evaluation scores must be a finite non-empty vector")
     if np.any((values < 0.0) | (values > 1.0)):

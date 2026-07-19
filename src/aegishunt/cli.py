@@ -21,6 +21,7 @@ from aegishunt.errors import AegisHuntError
 from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 from aegishunt.ml.anomaly.cli import anomaly_app
+from aegishunt.ml.fusion.cli import fusion_app
 from aegishunt.ml.supervised.cli import model_app
 from aegishunt.storage import Database
 
@@ -33,6 +34,7 @@ app.add_typer(ingest_app)
 app.add_typer(dataset_app)
 app.add_typer(model_app)
 app.add_typer(anomaly_app)
+app.add_typer(fusion_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 
