@@ -6,10 +6,14 @@ Implement auditable supervised/anomaly fusion and compare supervised-only,
 anomaly-only, and true dual-engine fusion across known behavior, held-out attack
 families, a strict controlled timeline, and preregistered parameter shifts.
 
-Status: **Implementation complete — awaiting PR review**. Development branch:
+Status: **Phase complete**. Development branch:
 `phase/07-fusion-evaluation`. PR
-[#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is open and ready for
-review; its merge commit and completion Tag are pending. Phase 8 has not started.
+[#21](https://github.com/SaXingrui-UM/aegishunt/pull/21), titled
+`[Phase 07] Dual-engine fusion and unknown-behavior evaluation`, was
+squash-merged from `phase/07-fusion-evaluation` into `main` on 2026-07-20 as
+`2465f8de67be7638670f9d30c1198ff76a60d17c`. Annotated checkpoint Tag
+`phase-07-complete` is pushed and remotely verified at that commit. Phase 8 has
+not started.
 
 All reported evidence is controlled synthetic pipeline verification only, not a
 public benchmark, deployment result, or real-world performance claim.
@@ -110,12 +114,20 @@ Review found zero Blocking, High, or remaining correctness-related Medium
 findings. Known synthetic-evidence and external-validity limitations remain
 documented rather than hidden.
 
+Post-merge native Review failed with the same missing arm64 executable
+(`ENOENT`) and is not claimed as successful. The equivalent read-only review of
+the merged change, current evidence contracts, tests, tracked artifacts, and
+Phase 8 boundary found zero Blocking, zero High, and zero correctness-related
+Medium findings.
+
 ## Tests
 
-Final Ruff passes. Strict mypy passes for 134 source files. All 316 tests pass in
-1,147.27 seconds with zero failures, skips, or xfails and 87.37% branch-aware
-coverage. The focused Phase 7/frontend/status unit, integration, and offline E2E
-selection passes all 32 tests in 26.34 seconds.
+Post-merge Ruff passes. Strict mypy passes for 134 source files. All 316 tests
+pass in 1,050.77 seconds with zero failures, skips, or xfails and 87.37%
+branch-aware coverage. The focused Phase 7/frontend/status unit, integration,
+and offline E2E selection passes all 32 tests in 24.74 seconds. The CLI help and
+fresh repository-external `fusion evaluate`, `verify`, and `describe` workflow
+passed. Both required PR #21 GitHub Actions `quality` checks passed.
 
 ## Generated artifacts
 
@@ -145,8 +157,7 @@ secret, or large dataset is added.
 
 ## Next phase
 
-Phase 8 — Alert Generation and Explainability. Planned branch:
-`phase/08-alert-explainability`. It must not begin before this Phase 7 PR is
-reviewed and merged, `main` is synchronized, the user authorizes the next phase,
-and an annotated `phase-07-complete` checkpoint is created under the project
-policy.
+Phase 8 — Alerts, Risk Scoring and Explainability. Status: **Not started**.
+Planned branch: `phase/08-alert-explainability`. It must not begin before the
+post-merge metadata closure is reviewed and merged, `main` is synchronized, and
+the user explicitly authorizes the next phase.
