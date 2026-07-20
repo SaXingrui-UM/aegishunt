@@ -9,8 +9,8 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Current phase | Phase 7 - Dual-Engine Fusion and Unknown-Behavior Evaluation |
 | Status | Phase complete |
 | Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
-| Current activity | Phase 7 PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is merged, its post-merge implementation and evidence checks passed, annotated Tag `phase-07-complete` is remotely verified, metadata PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) awaits review, and Phase 8 has not started |
-| Verification status | Post-merge Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,050.77 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; the 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes in 24.74 seconds |
+| Current activity | Phase 7 implementation PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21), metadata PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22), and visible-status closure PR [#23](https://github.com/SaXingrui-UM/aegishunt/pull/23) are merged; annotated Tag `phase-07-complete` is remotely verified and Phase 8 has not started |
+| Verification status | Final metadata-closure Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,039.30 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; all 3 status-document tests pass, and the earlier 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passed |
 | Stable branch checkpoint | PR #21 was squash-merged to `main` as `2465f8de67be7638670f9d30c1198ff76a60d17c`; annotated Tag `phase-07-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -19,10 +19,10 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, and Phase 7 PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) are merged; PR #21 used base `main`, head `phase/07-fusion-evaluation`, and merge commit `2465f8de67be7638670f9d30c1198ff76a60d17c` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, and Phase 7 PRs [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21), [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22), and [#23](https://github.com/SaXingrui-UM/aegishunt/pull/23) are merged; PR #21 used head `phase/07-fusion-evaluation`, and their merge commits are `2465f8de67be7638670f9d30c1198ff76a60d17c`, `59e1cd05b36fd3718db10e1cb7f0662b11efc08a`, and `3c2950f7d9c5e3b0ffd385cf2d44cd7c96a03fde` respectively |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both required Phase 7 PR #21 `quality` runs passed; post-merge local Ruff, mypy, full pytest, focused tests, CLI, artifact verification, and deterministic policy checks passed |
+| CI status | Required `quality` checks passed for Phase 7 PRs #21, #22, and #23; final synchronized-main checks passed Ruff, mypy for 134 source files, and all 4 focused frontend/status tests |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -31,12 +31,12 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
-| Current branch | `docs/phase-07-post-merge-metadata` |
-| Working tree | Metadata-only closure branch; production code and controlled evidence are unchanged |
-| Phase 7 status | Phase complete; post-merge metadata closure is awaiting review and merge |
+| Current branch | `main` is the synchronized stable branch; no Phase 8 branch exists |
+| Working tree | Clean on synchronized `main` at the Phase 7 closure baseline; no experiment, policy, model, database, or Tag was modified |
+| Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Not started |
-| Next planned branch | `phase/08-alert-explainability` (do not create before metadata closure and explicit authorization) |
-| Next action | Review and merge Phase 7 post-merge metadata PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22), synchronize `main`, and wait for explicit authorization; do not start Phase 8 |
+| Next planned branch | `phase/08-alert-explainability` (do not create without explicit user authorization) |
+| Next action | Wait for explicit user authorization before creating `phase/08-alert-explainability`; do not start Phase 8 automatically |
 
 Phase 0 through Phase 7 are checkpointed and their Tags remain unchanged. Phase
 7 fusion remains only an offline research score and comparison policy;

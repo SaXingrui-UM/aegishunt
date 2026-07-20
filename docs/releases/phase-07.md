@@ -14,7 +14,13 @@ squash-merged from `phase/07-fusion-evaluation` into `main` on 2026-07-20 as
 `2465f8de67be7638670f9d30c1198ff76a60d17c`. Annotated checkpoint Tag
 `phase-07-complete` is pushed and remotely verified at that commit. Phase 8 has
 not started. Post-merge metadata PR
-[#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) awaits review and merge.
+[#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) was merged as
+`59e1cd05b36fd3718db10e1cb7f0662b11efc08a`; final visible-status closure PR
+[#23](https://github.com/SaXingrui-UM/aegishunt/pull/23) was merged as
+`3c2950f7d9c5e3b0ffd385cf2d44cd7c96a03fde`. Required CI passed for all three
+Phase 7 PRs, and the final read-only verification confirmed synchronized `main`,
+an unchanged completion Tag, truthful README/Streamlit status, and no Phase 8
+branch or implementation.
 
 All reported evidence is controlled synthetic pipeline verification only, not a
 public benchmark, deployment result, or real-world performance claim.
@@ -123,12 +129,13 @@ Medium findings.
 
 ## Tests
 
-Post-merge Ruff passes. Strict mypy passes for 134 source files. All 316 tests
-pass in 1,050.77 seconds with zero failures, skips, or xfails and 87.37%
-branch-aware coverage. The focused Phase 7/frontend/status unit, integration,
-and offline E2E selection passes all 32 tests in 24.74 seconds. The CLI help and
-fresh repository-external `fusion evaluate`, `verify`, and `describe` workflow
-passed. Both required PR #21 GitHub Actions `quality` checks passed.
+Final metadata-closure Ruff passes. Strict mypy passes for 134 source files. All
+316 tests pass in 1,039.30 seconds with zero failures, skips, or xfails and
+87.37% branch-aware coverage; all 3 status-document tests pass. The earlier
+focused Phase 7/frontend/status unit, integration, and offline E2E selection
+passed all 32 tests. The CLI help and fresh repository-external `fusion
+evaluate`, `verify`, and `describe` workflow passed. Required GitHub Actions
+checks passed for PRs #21, #22, and #23.
 
 ## Generated artifacts
 
@@ -159,6 +166,5 @@ secret, or large dataset is added.
 ## Next phase
 
 Phase 8 — Alerts, Risk Scoring and Explainability. Status: **Not started**.
-Planned branch: `phase/08-alert-explainability`. It must not begin before the
-post-merge metadata closure is reviewed and merged, `main` is synchronized, and
-the user explicitly authorizes the next phase.
+Planned branch: `phase/08-alert-explainability`. It may begin only after `main`
+is synchronized and the user explicitly authorizes the next phase.
