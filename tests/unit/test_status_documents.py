@@ -80,10 +80,9 @@ def test_progress_and_release_record_phase_eight_without_phase_nine_scope() -> N
     assert "phase/08-alert-explainability" in progress_current
 
     assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert (
-        "Pull request, merge commit, and completion Tag are pending"
-        in normalized_release_current
-    )
+    assert "Ready PR [#25]" in normalized_release_current
+    assert "targets `main`" in normalized_release_current
+    assert "merge commit and completion Tag are pending" in normalized_release_current
     assert "Phase 9 has not started" in normalized_release_current
 
     assert "ADR 0017" in release

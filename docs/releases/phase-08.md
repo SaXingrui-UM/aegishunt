@@ -7,8 +7,9 @@ analyst-reviewable detection evidence, configured operational risk/severity,
 threshold-gated alerts, non-causal explanations, and an audited alert verdict.
 
 Status: **Implementation complete — awaiting PR review**. Development branch:
-`phase/08-alert-explainability`. Pull request, merge commit, and completion Tag
-are pending. Phase 9 has not started.
+`phase/08-alert-explainability`. Ready PR
+[#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) targets `main`; its merge
+commit and completion Tag are pending. Phase 9 has not started.
 
 ## Completed scope
 
