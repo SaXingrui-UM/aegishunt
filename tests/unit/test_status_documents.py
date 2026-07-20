@@ -16,7 +16,6 @@ def test_readme_records_phase_seven_without_starting_phase_eight() -> None:
 
     assert "Phases 0–6 are closed" in content
     assert "Phase 7 dual-engine fusion implementation is complete" in normalized
-    assert "awaiting PR review" in content
     assert "Phase 8" in content and "not implemented" in content
     assert "pipeline verification only" in content
     assert "recommendation is **inconclusive**" in normalized
@@ -65,15 +64,20 @@ def test_progress_and_release_record_phase_seven_without_phase_eight_scope() -> 
         assert "not a public benchmark" in " ".join(content.lower().split())
 
     assert "Current phase | Phase 7" in normalized_progress_current
-    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
+    assert "Status | Phase complete" in normalized_progress_current
     assert "Phase 8 status | Not started" in normalized_progress_current
     assert "phase/07-fusion-evaluation" in progress_current
+    assert "phase-07-complete" in progress_current
+    assert "PR [#21]" in normalized_progress_current
+    assert "are merged" in normalized_progress_current
 
-    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Status: **Phase complete**" in release_current
     assert "PR [#21]" in normalized_release_current
-    assert "open and ready for review" in normalized_release_current
-    assert "merge commit and completion Tag are pending" in normalized_release_current
+    assert "was squash-merged" in normalized_release_current
+    assert "2465f8de67be7638670f9d30c1198ff76a60d17c" in normalized_release_current
+    assert "phase-07-complete" in normalized_release_current
     assert "Phase 8 has not started" in normalized_release_current
+    assert "Implementation complete — awaiting PR review" not in release_current
 
     assert "supervised-75-anomaly-25-t0.700" in release
     assert "fusion missed all held-out" in release.lower()
