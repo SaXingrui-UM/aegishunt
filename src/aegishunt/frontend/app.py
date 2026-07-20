@@ -1,4 +1,4 @@
-"""Minimal Streamlit page for the completed Phase 6 research foundation."""
+"""Minimal Streamlit page for the Phase 7 research checkpoint."""
 
 from __future__ import annotations
 
@@ -9,34 +9,36 @@ from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 PLANNED_MODULES = (
     "PCAP replay and runtime orchestration",
     "Public benchmark acquisition and validated label joining",
-    "Supervised/anomaly signal fusion",
-    "Risk fusion, alerting, and correlation",
+    "Detection results, alerting, and explanations",
+    "Alert correlation and entity grouping",
     "Threat hypotheses, cases, and analyst feedback",
     "Model activation and controlled retraining",
 )
 
 
 def main() -> None:
-    """Render truthful completed Phase 6 status and planned capabilities."""
+    """Render truthful Phase 7 status without inventing evaluation output."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 6 complete. PR #18 and post-merge metadata PR #19 "
-        "are merged; annotated checkpoint phase-06-complete is verified. "
-        "Phase 7: Not started."
+        "Current status: Phase 7 implementation complete — awaiting PR review. "
+        "Phase 8: Not started."
     )
     st.success(
-        "Benign-only anomaly training, one-time evaluation, and safe bundle workflows "
-        "are implemented. No anomaly model metric is displayed as a deployment claim."
+        "Configurable dual-engine fusion, validation-only policy selection, known and "
+        "held-out-family comparisons, temporal holdout, bounded parameter shifts, "
+        "group-aware confidence intervals, and integrity-checked policy artifacts are "
+        "implemented. The experiment did not establish a fusion advantage."
     )
     st.subheader("Planned system modules")
     for module in PLANNED_MODULES:
         st.markdown(f"- {module}")
     st.warning(
         "Research prototype only. AegisHunt is not a production security product, "
-        "does not confirm attacks, and does not perform automated response actions."
+        "does not confirm attacks, and does not perform automated response actions. "
+        "Fusion score is not probability, risk, severity, or attack confirmation."
     )
 
 

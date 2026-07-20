@@ -1,0 +1,87 @@
+config_schema_version: 1.0.0
+experiment_id: phase-07-controlled-fusion-001
+policy_id: aegishunt-fusion-controlled
+policy_version: 1.0.0
+dataset_id: aegishunt-phase-07-controlled
+dataset_version: 1.0.0
+feature_schema_version: 1.0.0
+controlled_synthetic_only: true
+public_benchmark: false
+groups_per_pattern: 9
+rows_per_group: 2
+data_seed: 7207
+model_seed: 7307
+bootstrap_seed: 7407
+bootstrap_draws: 1000
+protocol_frozen_at: 2026-07-19T22:31:34Z
+supervised_model_id: aegishunt-supervised-1.0.1
+supervised_model_version: 1.0.1
+supervised_algorithm: random_forest
+supervised_hyperparameters:
+  class_weight: none
+  max_depth: 8
+  max_features: sqrt
+  min_samples_leaf: 1
+  min_samples_split: 2
+  n_estimators: 64
+  n_jobs: 1
+supervised_calibration: isotonic
+supervised_threshold_candidates: [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
+anomaly_model_id: aegishunt-anomaly-1.1.0-candidate
+anomaly_model_version: 1.1.0-candidate
+anomaly_algorithm: local_outlier_factor
+anomaly_hyperparameters:
+  n_neighbors: 5
+  metric: minkowski
+  algorithm: auto
+  leaf_size: 30
+  n_jobs: 1
+  novelty: true
+anomaly_normalization: benign_training_quantile_cdf
+anomaly_threshold_candidates: [0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
+anomaly_false_positive_rate_ceiling: 0.35
+weight_candidates:
+  - candidate_id: supervised-25-anomaly-75
+    supervised_weight: 0.25
+    anomaly_weight: 0.75
+  - candidate_id: supervised-50-anomaly-50
+    supervised_weight: 0.50
+    anomaly_weight: 0.50
+  - candidate_id: supervised-75-anomaly-25
+    supervised_weight: 0.75
+    anomaly_weight: 0.25
+fusion_threshold_candidates: [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
+false_positive_rate_ceiling: 0.25
+recommendation_min_macro_f1_delta: 0.01
+recommendation_max_fpr_increase: 0.05
+selection_policy_version: 1.0.0
+selection_objective: macro_f1_under_fpr_ceiling
+tie_break_order:
+  - positive_macro_f1
+  - macro_f1
+  - recall
+  - pr_auc
+  - balanced_accuracy
+  - lower_false_negative_rate
+  - lower_false_positive_rate
+  - stable_candidate_id
+parameter_shifts:
+  - shift_id: flow-duration-125
+    axis: flow_duration
+    factor: 1.25
+    description: Increase duration and IAT while reducing derived rates by a fixed factor.
+  - shift_id: packet-rate-125
+    axis: packet_rate
+    factor: 1.25
+    description: Increase packet and byte rates within the controlled feature contract.
+  - shift_id: packet-size-pattern-125
+    axis: packet_size_pattern
+    factor: 1.25
+    description: Increase byte and packet-size summaries with a fixed bounded factor.
+  - shift_id: connection-frequency-150
+    axis: connection_frequency
+    factor: 1.50
+    description: Increase the bounded single-flow burst proxy without network activity.
+latency_repetitions: 25
+no_historical_test_access: true
+negative_results_retained: true

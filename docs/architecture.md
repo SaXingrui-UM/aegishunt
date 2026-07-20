@@ -10,8 +10,11 @@ quality/leakage gates, and group-exclusive frozen splits. Phase 5 adds supervise
 candidate training, validation-frozen selection, one-time test evaluation, safe
 bundles, and strict prediction. Phase 6 adds benign-only Isolation Forest,
 novelty-mode LOF comparison, score normalization, validation-selected threshold,
-one-time anomaly test, and safe anomaly bundles. Fusion, alerts, correlation,
-hunting workflows, cases, PCAP replay orchestration, and runtime workers remain planned.
+one-time anomaly test, and safe anomaly bundles. Phase 7 adds configured
+dual-engine score fusion, validation-frozen policy selection, isolated robustness
+experiments, group-bootstrap evidence, and a JSON-only policy artifact. Detection
+results, alerts, explanations, correlation, hunting workflows, cases, PCAP
+replay orchestration, and runtime workers remain planned.
 
 ## System context
 
@@ -44,7 +47,7 @@ One deployable Python application is divided by responsibility:
 | datasets | Implemented registry, conversion, split, manifests, leakage and quality | 4 |
 | ML supervised | Implemented group-CV, validation selection, bundles, prediction | 5 |
 | ML anomaly | Implemented benign fit, normalization, validation threshold, bundle | 6 |
-| ML fusion/evaluation | Planned supervised/anomaly signal fusion | 7 |
+| ML fusion/evaluation | Implemented validation-selected research fusion and comparisons | 7 |
 | detection and explainability | Results, risk, alerts, reasons, explanations | 8 |
 | correlation and hunting | Entity/time groups and deterministic hypotheses | 9 |
 | cases and feedback | Investigation workflow and retraining candidates | 10 |
@@ -70,7 +73,7 @@ flowchart TD
     Quality --> Split["Group-exclusive frozen splits"]
     Split --> Supervised["Phase 5 supervised detector"]
     Split --> Anomaly["Phase 6 benign-baseline anomaly detector"]
-    Supervised --> Fusion["Configured signal fusion"]
+    Supervised --> Fusion["Phase 7 configured research signal fusion"]
     Anomaly --> Fusion
     Fusion --> Detection["Detection result + explanation"]
     Detection --> Alert["Security alert"]
@@ -83,9 +86,11 @@ flowchart TD
 The boundary through `Supervised` and `Anomaly` is implemented for supported PCAP-derived
 features and the controlled demo. Public benchmark acquisition and label joining
 remain manual/provisional gates, so current model metrics verify the pipeline
-only. Fusion and all downstream nodes remain planned. IDs and provenance are
-preserved; raw evidence, labels, supervised probability, future inference,
-fusion, correlation, and analyst judgment remain distinguishable.
+only. The Fusion node is implemented for the Phase 7 controlled experiment;
+Detection and every downstream node remain planned. IDs and provenance are
+preserved; raw evidence, labels, supervised probability, normalized anomaly
+score, experimental fusion score, future detection, correlation, and analyst
+judgment remain distinguishable.
 
 ## Dataset lifecycle
 
@@ -155,7 +160,16 @@ The viewed test cannot affect policy `2.0.0`, and a new independent holdout is
 required before final validation. One-Class SVM remains unimplemented.
 Exact-inventory skops bundles validate the declared estimator type, require LOF
 `novelty=True`, and preserve direction, normalizer, threshold, and schema.
-Fusion remains Phase 7. No online self-modification occurs.
+The fusion portion consumes either exact verified engine-output identities or
+temporary engines refitted from the fixed Phase 5/6 configurations inside new
+Phase 7 groups. Early groups fit, middle groups calibrate/select, and late or
+held-out groups evaluate. True fusion candidates use two positive configured
+weights that sum to one; supervised-only and anomaly-only remain separate modes.
+The selected JSON-only policy stores score semantics, candidates, selected
+weights/threshold, FPR ceiling, recommendation state, engine/schema identities,
+evidence hashes, environment, and exact inventory. It does not contain an ML
+binary and cannot produce alerts, risk, severity, or explanation records.
+ADR 0016 records this boundary. No online self-modification occurs.
 
 ## Planned threat-hunting lifecycle
 
@@ -175,8 +189,9 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 3, Streamlit remains a
-truthful static status shell rather than a flow explorer. FastAPI exposes
+application services for batch workflows. In Phase 7, Streamlit remains a
+truthful static status shell rather than an evaluation or alert dashboard.
+FastAPI exposes
 `/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
 initializes and verifies the empty or existing configured database. PCAP upload
 uses the same service as the CLI and produces persistent flows synchronously.
@@ -219,6 +234,14 @@ The configured supervised and anomaly model registries verify root containment, 
 hash, manifest, and skops type inventory before loading. User uploads can never
 be treated as arbitrary serialized Python models. Machine experiment reports
 and model binaries are ignored; reviewed protocols and model cards are source.
+
+Phase 7 experiment directories are caller-configured, exclusive, and
+non-overwriting. Machine JSON/CSV/Markdown evidence and temporary refitted
+estimators remain ignored or repository-external. A fusion policy contains
+exactly a manifest, checksum inventory, and card. Loading verifies root
+containment, exact filenames, SHA-256, version-directory agreement, evidence
+hashes, and score/model/schema semantics before pure arithmetic scoring. It does
+not deserialize a model and does not write `DetectionResult` or `SecurityAlert`.
 
 ## Deployment and trust boundaries
 

@@ -1,11 +1,14 @@
-# AegisHunt Data Model Through Phase 3
+# AegisHunt Data and Artifact Model Through Phase 7
 
 ## Scope
 
-Phase 1 defined the core contracts and tables. Phase 2 began persisting telemetry
-lifecycles, and Phase 3 now creates canonical `NetworkFlow` rows for supported
-PCAP packets. Dataset selection, models, detections, alerts, correlation,
-hypotheses, and investigations remain unimplemented.
+Phase 1 defined core contracts and tables. Phase 2 persists telemetry lifecycles,
+Phase 3 creates canonical `NetworkFlow` rows, Phase 4 adds file-based canonical
+dataset/manifests, Phases 5–6 add controlled model/evidence bundles, and Phase 7
+adds a JSON-only fusion-policy/evaluation artifact. The `DetectionResult` and
+downstream table foundations exist, but no Phase 7 service persists detections,
+creates alerts, maps severity, explains results, correlates evidence, creates
+hypotheses, or opens investigations.
 
 ## Contract layers
 
@@ -39,6 +42,25 @@ for the local prototype where their internal shape evolves in later phases.
 Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
+
+## Phase 4–7 artifact integrity
+
+- Canonical datasets keep the fixed Phase 3 feature order separate from source,
+  group, session, scenario, timestamp, provenance, and label metadata.
+- Dataset/split manifests and quality/leakage reports bind checksums, identities,
+  and group-exclusive partitions before a model can fit.
+- Supervised and anomaly bundles are independently versioned exact-inventory
+  artifacts. Their loaders verify configured-root containment, checksums, schema,
+  estimator types, and version identity before prediction.
+- The Phase 7 fusion policy contains no estimator binary. Its manifest binds the
+  supervised/anomaly IDs and score semantics, feature schema, candidate and
+  selected weights, selected threshold, FPR ceiling, recommendation, evidence
+  hashes, environment, protocol/creation times, and experimental claim boundary.
+- The policy directory has exactly a manifest, checksum inventory, and card.
+  Missing, extra, corrupt, escaped, or colliding versions fail closed.
+- A pure fusion output is an ephemeral typed result. It is not written to the
+  `detection_results` table and is not a `SecurityAlert`, risk, severity, or
+  confirmed attack.
 
 ## Phase 3 flow integrity
 

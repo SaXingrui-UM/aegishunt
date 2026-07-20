@@ -6,11 +6,11 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 6 - Unsupervised Anomaly Detection Engine |
-| Status | Phase complete |
-| Phase 6 implementation | Benign-only Isolation Forest and novelty-mode LOF, bounded normalization, validation thresholding, legacy frozen test, ADR 0015 validation-qualified LOF candidate, safe bundles, prediction, CLI, evidence, and tests |
-| Current activity | Phase 6 is fully closed on `main`: PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) from `phase/06-anomaly-detection` and post-merge metadata PR [#19](https://github.com/SaXingrui-UM/aegishunt/pull/19) are merged, annotated Tag `phase-06-complete` is remotely verified, and Phase 7 has not started |
-| Verification status | Post-merge Ruff passes; strict mypy passes for 120 source files; all 288 tests pass in 991.05 seconds with 87.34% branch-aware coverage and no failures, skips, or xfails; the 87-test anomaly/frontend/status selection also passed every assertion |
+| Current phase | Phase 7 - Dual-Engine Fusion and Unknown-Behavior Evaluation |
+| Status | Implementation complete — awaiting PR review |
+| Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
+| Current activity | Phase 7 implementation, controlled evidence, final quality gates, and equivalent read-only Review are complete; PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is open for review and Phase 8 has not started |
+| Verification status | Final Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,147.27 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; the 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes |
 | Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -19,10 +19,10 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17 are merged; Phase 6 PR [#18](https://github.com/SaXingrui-UM/aegishunt/pull/18) merged as `40692d0f576b70fd57719ca2f74d869e27891e13`; metadata PR [#19](https://github.com/SaXingrui-UM/aegishunt/pull/19) merged as `a49d334591236a2d3bf21d8b3d7b94f9b9803ee9` |
+| Pull requests | Phase 5 PRs #13–#17 and Phase 6 PRs #18–#20 are merged; Phase 7 PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is open, ready for review, with base `main` and head `phase/07-fusion-evaluation` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | PR #18 required `quality` checks passed in 15m24s and 13m58s; PR #19 required `quality` check passed in 15m22s; no required check was pending or failing at merge |
+| CI status | Phase 6 closure CI passed; both Phase 7 PR #21 quality runs were in progress at the post-creation check and no success is claimed yet |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -30,17 +30,82 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 4 tag | Annotated `phase-04-complete`, locally and remotely verified at merge commit `2ecaaae` |
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
-| Current branch | Stable branch `main`; no Phase 7 branch exists |
-| Working tree | Clean after Phase 6 final status closure and synchronization |
-| Phase 7 status | Not started |
-| Next planned branch | `phase/07-fusion-evaluation` (create only after explicit user authorization and a clean synchronized baseline) |
-| Next action | Wait for explicit user authorization; then synchronize `main`, run the Phase 0–6 baseline, and create the Phase 7 branch only if every gate passes |
+| Current branch | `phase/07-fusion-evaluation` |
+| Working tree | Clean after the final Phase 7 implementation, review-fix, test, and documentation commits |
+| Phase 7 status | Implementation complete — awaiting PR review |
+| Phase 8 status | Not started |
+| Next planned branch | `phase/08-alert-explainability` (do not create before Phase 7 merge/checkpoint and explicit authorization) |
+| Next action | Wait for PR #21 CI, review the phase diff, then user Squash and merge; do not start Phase 8 |
 
-Phase 0 through Phase 6 are checkpointed. Phase 5's original and corrective Tags
-remain unchanged. Phase 6 is merged, locally reverified, and tagged without
-modifying frozen Phase 4 splits, Phase 5 model/evidence contracts, or ignored
-Phase 6 evidence. Phase 7 fusion, combined risk, alerts, explanations,
-correlation, and hunting logic have not started.
+Phase 0 through Phase 6 are checkpointed and their Tags remain unchanged. Phase
+7 fusion is implemented only as an offline research score and comparison policy;
+it does not add combined production risk, detection persistence, alerts,
+severity, explanations, correlation, or hunting logic. Phase 8 has not started.
+
+## Phase 7 implementation checkpoint
+
+- Config schema, experiment identity, candidate weights/thresholds, FPR limits,
+  fixed engine configurations, eligible families, temporal order, four shift
+  axes, seeds, and 1,000 bootstrap draws were committed before the first run.
+- Phase 7 dataset `aegishunt-phase-07-controlled` `1.0.0` contains 144 rows and
+  72 new groups across benign plus five attack families. Early/middle/late each
+  contain 48 rows and 24 groups. Exact, feature, conflicting-label, and near
+  duplicates are zero; group/source/session/scenario overlaps are empty.
+- Dataset checksum is
+  `4d3319d0a66ff204c9b9cd3720caf83fe66d9bb17d32140edda898f33e2acb40`.
+  Historical Phase 5/6 frozen tests were not reused and no old bundle/evidence
+  was overwritten.
+- The fixed corrected Phase 5 Random Forest/isotonic and fixed Phase 6
+  novelty-mode LOF/StandardScaler/benign-quantile configurations are refitted
+  only inside isolated early/middle groups. LOF remains validation-qualified;
+  temporary research estimators are not registered as active bundles.
+- Fusion formula is `sw * supervised_probability + aw * normalized_anomaly_score`.
+  Inputs and true dual weights are finite/bounded; weights sum to one and both
+  are positive. Missing or mismatched engine/schema evidence fails closed.
+- Validation selected candidate `supervised-75-anomaly-25-t0.700`, policy
+  `1.0.0`, under FPR ceiling `0.25`. Its recommendation is `inconclusive`
+  because it did not improve over the perfect controlled supervised baseline.
+- Known/controlled-temporal supervised and fusion Recall/F1/Macro F1/PR-AUC are
+  `1.0` with FPR `0.0`; anomaly Recall is `0.9333`, Macro F1 `0.8125`, PR-AUC
+  `0.8103`, FPR `0.3333`. Fusion-minus-supervised primary deltas are zero.
+- Across five LOAO folds, family-macro Recall is supervised `0.6000`, anomaly
+  `0.9333`, fusion `0.3333`; mean FPR is `0.0000`, `0.3333`, `0.0000`.
+  Fusion missed held-out exfiltration and reconnaissance. Negative evidence was
+  retained without expanding the grid.
+- Four fixed feature-space shifts produce separate groups and record base versus
+  shifted ranges. Fusion Recall/FPR is `1.0/0.0` on each controlled shift; this
+  is not a real-world robustness or zero-day claim.
+- Every comparison includes score distributions, identical evaluation rows per
+  mode, isolation counts, full metrics, absolute deltas, and fixed-seed 95%
+  whole-group/paired-delta intervals with 1,000 requested draws.
+- A 48-row/25-repeat development-host measurement observed supervised/anomaly/
+  fusion p50 `1.0952/0.6729/0.0381 ms`, total p50/p95/p99
+  `1.8157/2.1595/2.3857 ms`, per-sample p50 `0.0378 ms`, and throughput
+  `25,834.5/s`. These measurements are not an SLA.
+- The three-file JSON/Markdown policy has an exact inventory, evidence hashes,
+  selected contract, environment, and SHA-256 checks. Manifest checksum
+  `808bd05e2e5a648324fe6052e65a6602f04c15f24e39f2a043a72b73ca3b29c7`
+  verified independently. Missing/extra/corrupt/outside/colliding artifacts fail
+  closed; no pickle or model binary is used.
+- The first focused integration run exposed a protocol timestamp later than the
+  UTC execution time. It was corrected to the actual preregistration commit time
+  before the final evidence run. A separate selection review exposed that
+  Macro F1 alone could admit an all-negative candidate; positive attack Recall
+  and F1 are now mandatory, with regression coverage.
+- Final equivalent Review also made class-conditional Bootstrap metrics
+  unavailable for one-class resamples, enforced selection/policy cross-field
+  consistency and frozen rows-per-group, and rejected policy-internal symlinks.
+- Generated machine evidence is repository-external/ignored and is not
+  committed. Reviewed config, contracts, protocol, card, ADR, release notes,
+  CLI, and tests are committed.
+- Final quality gate: Ruff passed; strict mypy passed for 134 source files; all
+  316 tests passed in 1,147.27 seconds with 87.37% branch-aware coverage and no
+  failures, skips, or xfails. The focused Phase 7/frontend/status selection
+  passed all 32 tests in 26.34 seconds.
+- The fusion score is experimental suspiciousness, not probability, final risk,
+  severity, or confirmation. `DetectionResult`, `SecurityAlert`, reason codes,
+  explanations, correlation, hypotheses, cases, and automated response are not
+  implemented.
 
 ## Phase 6 implementation checkpoint
 

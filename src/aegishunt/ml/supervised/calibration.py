@@ -45,7 +45,7 @@ class ProbabilityCalibrator:
         return np.asarray(values, dtype=np.float64)
 
 
-def _fit_method(
+def fit_calibration_method(
     method: CalibrationMethod,
     raw_scores: NDArray[np.float64],
     labels: NDArray[np.int64],
@@ -86,7 +86,7 @@ def select_calibration(
             )
             continue
         try:
-            calibrator = _fit_method(
+            calibrator = fit_calibration_method(
                 method,
                 raw_scores,
                 labels,
