@@ -13,7 +13,8 @@ Status: **Phase complete**. Development branch:
 squash-merged from `phase/07-fusion-evaluation` into `main` on 2026-07-20 as
 `2465f8de67be7638670f9d30c1198ff76a60d17c`. Annotated checkpoint Tag
 `phase-07-complete` is pushed and remotely verified at that commit. Phase 8 has
-not started.
+not started. Post-merge metadata PR
+[#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) awaits review and merge.
 
 All reported evidence is controlled synthetic pipeline verification only, not a
 public benchmark, deployment result, or real-world performance claim.

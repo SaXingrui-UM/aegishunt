@@ -9,7 +9,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Current phase | Phase 7 - Dual-Engine Fusion and Unknown-Behavior Evaluation |
 | Status | Phase complete |
 | Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
-| Current activity | Phase 7 PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is merged, its post-merge implementation and evidence checks passed, annotated Tag `phase-07-complete` is remotely verified, and Phase 8 has not started |
+| Current activity | Phase 7 PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is merged, its post-merge implementation and evidence checks passed, annotated Tag `phase-07-complete` is remotely verified, metadata PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) awaits review, and Phase 8 has not started |
 | Verification status | Post-merge Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,050.77 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; the 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes in 24.74 seconds |
 | Stable branch checkpoint | PR #21 was squash-merged to `main` as `2465f8de67be7638670f9d30c1198ff76a60d17c`; annotated Tag `phase-07-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -36,7 +36,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 7 status | Phase complete; post-merge metadata closure is awaiting review and merge |
 | Phase 8 status | Not started |
 | Next planned branch | `phase/08-alert-explainability` (do not create before metadata closure and explicit authorization) |
-| Next action | Review and merge the Phase 7 post-merge metadata PR, synchronize `main`, and wait for explicit authorization; do not start Phase 8 |
+| Next action | Review and merge Phase 7 post-merge metadata PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22), synchronize `main`, and wait for explicit authorization; do not start Phase 8 |
 
 Phase 0 through Phase 7 are checkpointed and their Tags remain unchanged. Phase
 7 fusion remains only an offline research score and comparison policy;
