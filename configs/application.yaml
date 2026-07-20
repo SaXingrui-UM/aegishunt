@@ -47,3 +47,9 @@ anomaly:
   training_config_path: configs/models/anomaly.yaml
   artifact_root: artifacts/models/anomaly
   reports_root: reports/models/anomaly
+
+detection:
+  risk_policy_path: configs/models/detection.yaml
+  explanation_artifact_root: artifacts/explainability
+  local_explanation_top_k: 5
+  local_explanation_max_features: 43
