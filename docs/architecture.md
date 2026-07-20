@@ -13,8 +13,10 @@ novelty-mode LOF comparison, score normalization, validation-selected threshold,
 one-time anomaly test, and safe anomaly bundles. Phase 7 adds configured
 dual-engine score fusion, validation-frozen policy selection, isolated robustness
 experiments, group-bootstrap evidence, and a JSON-only policy artifact. Detection
-results, alerts, explanations, correlation, hunting workflows, cases, PCAP
-replay orchestration, and runtime workers remain planned.
+results, configured risk/severity, threshold-gated alerts, non-causal
+explanations, and audited verdicts are implemented in Phase 8. Correlation,
+hunting workflows, cases, PCAP replay orchestration, and runtime workers remain
+planned.
 
 ## System context
 
@@ -189,8 +191,9 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 7, Streamlit remains a
-truthful static status shell rather than an evaluation or alert dashboard.
+application services for batch workflows. In Phase 8, Streamlit remains a
+truthful static status shell rather than a runtime alert dashboard; full alert
+API/frontend workflows remain Phase 12 scope.
 FastAPI exposes
 `/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
 initializes and verifies the empty or existing configured database. PCAP upload
@@ -201,8 +204,9 @@ uses the same service as the CLI and produces persistent flows synchronously.
 SQLite with SQLAlchemy and WAL mode is the implemented default local store.
 Foreign keys and a bounded busy timeout are enabled for SQLite connections.
 Typed repositories prevent SQL from leaking into business logic and preserve a
-future PostgreSQL migration path. Schema version `1` is registered explicitly;
-an incompatible database is rejected rather than silently mutated. Core entity
+future PostgreSQL migration path. Schema version `2` is registered explicitly;
+an ordered additive SQLite migration upgrades version 1 without deleting rows,
+while unknown versions are rejected. Core entity
 tables exist now. Phase 2 persists ingestion lifecycle state in
 `telemetry_sources` and writes an audit event in the same transaction as every
 create or transition. Phase 3 parses a complete staged PCAP before committing its
@@ -242,6 +246,14 @@ exactly a manifest, checksum inventory, and card. Loading verifies root
 containment, exact filenames, SHA-256, version-directory agreement, evidence
 hashes, and score/model/schema semantics before pure arithmetic scoring. It does
 not deserialize a model and does not write `DetectionResult` or `SecurityAlert`.
+
+Phase 8 loads those verified contracts through one score adapter. An
+identity-checked YAML policy maps one explicitly selected score to operational
+risk without fallback. Detection and optional alert persistence share a
+transaction; a stable duplicate identity is rejected instead of overwritten.
+Explanation artifacts contain exactly seven checksummed JSON/Markdown files and
+no model binary. Verdict updates mutate only the nullable verdict and timestamp
+and append an audit event. No alert grouping or cross-flow state is introduced.
 
 ## Deployment and trust boundaries
 

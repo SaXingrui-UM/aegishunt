@@ -1,14 +1,15 @@
-# AegisHunt Data and Artifact Model Through Phase 7
+# AegisHunt Data and Artifact Model Through Phase 8
 
 ## Scope
 
 Phase 1 defined core contracts and tables. Phase 2 persists telemetry lifecycles,
 Phase 3 creates canonical `NetworkFlow` rows, Phase 4 adds file-based canonical
 dataset/manifests, Phases 5–6 add controlled model/evidence bundles, and Phase 7
-adds a JSON-only fusion-policy/evaluation artifact. The `DetectionResult` and
-downstream table foundations exist, but no Phase 7 service persists detections,
-creates alerts, maps severity, explains results, correlates evidence, creates
-hypotheses, or opens investigations.
+adds a JSON-only fusion-policy/evaluation artifact. Phase 8 extends the existing
+`DetectionResult` and `SecurityAlert` foundations, persists complete score/risk
+identity, creates threshold-gated alerts, explains results, and audits alert
+verdicts. It does not correlate evidence, create hypotheses, or open
+investigations.
 
 ## Contract layers
 
@@ -28,8 +29,8 @@ return naive values, so the storage type restores UTC awareness on reads.
 | --- | --- | --- |
 | `TelemetrySource` | `source_id` UUID | Source type, ingestion mode/status, timestamps, non-negative count, optional SHA-256, JSON metadata |
 | `NetworkFlow` | `flow_id` UUID | Foreign key to source; first-observed direction; aware ordered timestamps; valid IPs/ports; non-negative counts; flat finite numeric features |
-| `DetectionResult` | `detection_id` UUID | Foreign key to flow; declared score ranges; model-version references; explanation JSON; detection time |
-| `SecurityAlert` | `alert_id` UUID | Foreign key to detection; severity/status; involved entities, evidence, and reason codes |
+| `DetectionResult` | `detection_id` UUID | Foreign key to flow; engine/fusion scores and thresholds; risk source/score/severity; model/policy versions and checksums; feature schema; reasons; explanation; detection time |
+| `SecurityAlert` | `alert_id` UUID | Foreign key to detection; configured risk/severity; immutable entities/evidence/reasons/explanation/identities; status; nullable verdict; created/updated times |
 | `AlertGroup` | `group_id` UUID | Referenced alert IDs, entity keys, bounded correlation score, ordered time window, summary |
 | `ThreatHypothesis` | `hypothesis_id` UUID | Structured evidence and uncertainty; category/mappings are possible, not confirmed; default status is `proposed` |
 | `InvestigationCase` | `case_id` UUID | Optional foreign key to hypothesis; priority/status, assignment, evidence, notes, related objects, verdict, ordered timestamps |
@@ -43,7 +44,7 @@ Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
 
-## Phase 4–7 artifact integrity
+## Phase 4–8 artifact integrity
 
 - Canonical datasets keep the fixed Phase 3 feature order separate from source,
   group, session, scenario, timestamp, provenance, and label metadata.
@@ -58,9 +59,14 @@ and reports remain controlled filesystem artifacts referenced by metadata.
   hashes, environment, protocol/creation times, and experimental claim boundary.
 - The policy directory has exactly a manifest, checksum inventory, and card.
   Missing, extra, corrupt, escaped, or colliding versions fail closed.
-- A pure fusion output is an ephemeral typed result. It is not written to the
-  `detection_results` table and is not a `SecurityAlert`, risk, severity, or
-  confirmed attack.
+- A pure fusion output remains an ephemeral typed result. Phase 8 persists a
+  separate identity-verified `DetectionResult` only after the configured risk
+  policy accepts all upstream identities. A resulting alert is evidence for
+  review, never a confirmed attack.
+- The Phase 8 explanation artifact is data-only with an exact seven-file
+  manifest/checksum inventory. It binds benign training references, supported
+  native importance, fixed-validation permutation importance, reason catalog,
+  model/policy identities, feature schema, and non-causal protocol.
 
 ## Phase 3 flow integrity
 
@@ -94,14 +100,12 @@ workflow-specific rules.
 
 ## Schema version
 
-`schema_versions` records integer version `1` and its UTC application time.
-Initialization is idempotent: missing tables and version `1` are created, while a
-database whose highest version differs from the supported version is rejected.
-No automatic destructive migration is attempted.
-
-The Phase 1 approach is deliberately smaller than a full migration framework.
-Before the first schema-changing phase, add an ordered migration mechanism and
-advance the version only after forward and rollback behavior is tested.
+`schema_versions` records ordered integer versions and UTC application times.
+Fresh initialization records version `2`. An existing supported version-1 SQLite
+database is upgraded additively to version 2 and retains both version records and
+all existing rows. Repeated initialization is idempotent. Unknown versions,
+unversioned non-empty databases, and unsupported migration dialects fail closed.
+No destructive or rollback-by-deletion migration is attempted.
 
 ## SQLite behavior
 

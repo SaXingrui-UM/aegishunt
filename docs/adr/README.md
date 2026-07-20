@@ -18,3 +18,6 @@ decision. Phase 0 establishes:
 12. [File-based dataset quality boundary](0012-file-based-dataset-quality-boundary.md)
 13. [Validation-frozen supervised model bundles](0013-validation-frozen-supervised-model-bundles.md)
 14. [Validation-frozen benign-baseline anomaly engine](0014-validation-frozen-benign-anomaly-engine.md)
+15. [LOF validation-qualified production candidate](0015-lof-validation-qualified-production-candidate.md)
+16. [Validation-selected dual-engine fusion](0016-validation-selected-dual-engine-fusion.md)
+17. [Configured risk and non-causal alert explanations](0017-configured-risk-and-noncausal-explanations.md)
