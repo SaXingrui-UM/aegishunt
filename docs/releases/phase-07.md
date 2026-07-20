@@ -91,7 +91,23 @@ are executed development evidence, not an SLA.
 - `f75291d` — clarified validation-selection and quality audit fields.
 - `cd4c29e` — enriched experiment isolation, distribution, shift, and aggregate evidence.
 - `af2d712` — hardened positive-utility selection and policy provenance.
-- Documentation/test commits: pending final commit list.
+- `720cc61` — aligned scoring fixtures with policy provenance.
+- `7551625`, `b70cd2d`, `ebda328` — feature contract, status, and initial final verification.
+- `bce107b` — hardened statistical and policy evidence integrity after Review.
+- Final evidence and checkpoint documentation are retained in the PR history.
+
+## Review outcome
+
+Native `codex review --base main` could not start because the installed arm64
+Codex executable was missing (`ENOENT`); it is not reported as successful. An
+equivalent read-only Review found three correctness-related Medium issues:
+single-class Bootstrap resamples were contributing undefined metrics as zero,
+selection/policy cross-field consistency and frozen rows-per-group were not
+fully enforced, and policy-internal symlinks were not explicitly rejected.
+Commit `bce107b` fixed all three with regression coverage. The second equivalent
+Review found zero Blocking, High, or remaining correctness-related Medium
+findings. Known synthetic-evidence and external-validity limitations remain
+documented rather than hidden.
 
 ## Tests
 

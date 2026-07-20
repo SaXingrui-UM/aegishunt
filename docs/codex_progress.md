@@ -9,7 +9,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Current phase | Phase 7 - Dual-Engine Fusion and Unknown-Behavior Evaluation |
 | Status | Implementation complete — awaiting PR review |
 | Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
-| Current activity | Phase 7 implementation and controlled evidence are complete on `phase/07-fusion-evaluation`; logical commits and focused checks pass, documentation is being finalized, and Phase 8 has not started |
+| Current activity | Phase 7 implementation, controlled evidence, final quality gates, and equivalent read-only Review are complete on `phase/07-fusion-evaluation`; the branch is being prepared for push and Phase 8 has not started |
 | Verification status | Final Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,147.27 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; the 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes |
 | Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -31,11 +31,11 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
 | Current branch | `phase/07-fusion-evaluation` |
-| Working tree | Phase 7 documentation changes are in progress; the tree must be clean before push |
+| Working tree | Clean after the final Phase 7 implementation, review-fix, test, and documentation commits |
 | Phase 7 status | Implementation complete — awaiting PR review |
 | Phase 8 status | Not started |
 | Next planned branch | `phase/08-alert-explainability` (do not create before Phase 7 merge/checkpoint and explicit authorization) |
-| Next action | Finish full quality checks and read-only review, push Phase 7, open the Phase 7 PR, then stop for user review |
+| Next action | Push Phase 7, open the Phase 7 PR, report CI truthfully, then stop for user review |
 
 Phase 0 through Phase 6 are checkpointed and their Tags remain unchanged. Phase
 7 fusion is implemented only as an offline research score and comparison policy;
