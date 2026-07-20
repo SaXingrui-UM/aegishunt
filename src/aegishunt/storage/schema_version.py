@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from aegishunt.errors import SchemaVersionError
 from aegishunt.storage.models.schema import SchemaVersionRecord
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 
 def ensure_schema_version(session: Session) -> int:

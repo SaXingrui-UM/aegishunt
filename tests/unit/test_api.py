@@ -25,6 +25,6 @@ def test_health_endpoint_initializes_empty_database(tmp_path: Path) -> None:
         "status": "ok",
         "environment": "test",
         "database_status": "ready",
-        "schema_version": 1,
+        "schema_version": 2,
     }
     assert database_path.is_file()
