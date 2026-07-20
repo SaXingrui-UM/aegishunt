@@ -23,22 +23,24 @@ def main() -> None:
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 7 implementation complete — awaiting PR review. "
-        "Phase 8: Not started."
+        "Current status: Phase 7 complete. PR #21 and PR #22 are merged, and "
+        "phase-07-complete is the annotated checkpoint. Phase 8: Not started."
     )
     st.success(
-        "Configurable dual-engine fusion, validation-only policy selection, known and "
-        "held-out-family comparisons, temporal holdout, bounded parameter shifts, "
-        "group-aware confidence intervals, and integrity-checked policy artifacts are "
-        "implemented. The experiment did not establish a fusion advantage."
+        "Recommendation: Inconclusive. The controlled experiment did not establish a "
+        "fusion advantage; fusion family-macro LOAO Recall was lower than anomaly-only, "
+        "and held-out exfiltration and reconnaissance rows were missed. Negative results "
+        "are retained."
     )
     st.subheader("Planned system modules")
     for module in PLANNED_MODULES:
         st.markdown(f"- {module}")
     st.warning(
-        "Research prototype only. AegisHunt is not a production security product, "
-        "does not confirm attacks, and does not perform automated response actions. "
-        "Fusion score is not probability, risk, severity, or attack confirmation."
+        "Research prototype only. This is controlled synthetic pipeline verification—"
+        "not a public benchmark, production validation, real-world performance result, "
+        "or proof of zero-day detection. AegisHunt does not confirm attacks or perform "
+        "automated response actions. Fusion score is not probability, risk, severity, "
+        "or attack confirmation."
     )
 
 

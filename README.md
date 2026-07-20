@@ -18,24 +18,29 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–6 are closed and their annotated checkpoints remain immutable. Phase 7
-dual-engine fusion implementation is complete on
-`phase/07-fusion-evaluation` and is **awaiting PR review**. It adds bounded score
-contracts, validation-only weight/threshold selection, explicit single-engine
-baselines, known and Leave-One-Attack-Family-Out comparisons, a strict controlled
-timeline, four preregistered parameter shifts, 1,000-draw group-bootstrap
-intervals, and a checksummed JSON-only policy.
+Phases 0–7 are closed and their annotated checkpoints remain immutable. Phase 7
+is complete: implementation PR
+[#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) and post-merge metadata
+PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) are merged, and
+annotated Tag `phase-07-complete` records the merged implementation checkpoint.
+The phase adds bounded score contracts, validation-only weight/threshold
+selection, explicit single-engine baselines, known and
+Leave-One-Attack-Family-Out comparisons, a strict controlled timeline, four
+preregistered parameter shifts, 1,000-draw group-bootstrap intervals, and a
+checksummed JSON-only policy. Phase 8 is **Not started**.
 
 The Phase 7 run uses 144 newly identified controlled synthetic rows in 72 groups
 and does not reuse Phase 5/6 frozen-test evidence. It selected supervised/anomaly
 weights `0.75/0.25` and threshold `0.7`, but the recommendation is
 **inconclusive**: fusion matched supervised-only on known controlled groups and
-had lower family-macro LOAO recall. Negative results are retained. This is
-**pipeline verification only**, not a public benchmark, production result,
-real-world performance claim, or proof of zero-day detection. Fusion score is
-not probability, risk, severity, or attack confirmation. Phase 8 detection
-results, alerts, explanations, correlation, hypotheses, replay orchestration,
-and cases are **not implemented**.
+was not shown to be superior. Its family-macro LOAO Recall was lower than
+anomaly-only, and it missed held-out exfiltration and reconnaissance rows.
+These negative results are retained. This is **pipeline verification only**,
+not a public benchmark, production validation, real-world performance claim,
+or proof of zero-day detection. Fusion score is not probability, risk,
+severity, or attack confirmation. Phase 8 detection results, alerts,
+explanations, correlation, hypotheses, replay orchestration, and cases are
+**not implemented**.
 
 ## Planned architecture
 

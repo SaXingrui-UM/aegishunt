@@ -20,11 +20,22 @@ def test_frontend_renders_phase_seven_without_fake_results(monkeypatch: Any) -> 
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 7 implementation complete — awaiting PR review" in content
+    assert "Phase 7 complete" in content
+    assert "PR #21 and PR #22 are merged" in content
+    assert "phase-07-complete" in content
+    assert "Recommendation: Inconclusive" in content
     assert "Phase 8: Not started" in content
-    assert "dual-engine fusion" in content
     assert "did not establish a fusion advantage" in content
+    assert "LOAO Recall was lower than anomaly-only" in content
+    assert "held-out exfiltration and reconnaissance" in content
+    assert "Negative results are retained" in content
+    assert "controlled synthetic pipeline verification" in content
+    assert "not a public benchmark, production validation" in content
+    assert "proof of zero-day detection" in content
     assert "Fusion score is not probability, risk, severity, or attack confirmation" in content
     assert "Research prototype only" in content
+    assert "awaiting PR review" not in content
+    assert "pending merge" not in content
+    assert "Phase 8 implementation" not in content
     assert "Accuracy" not in content
     assert "SecurityAlert" not in content

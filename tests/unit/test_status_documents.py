@@ -12,15 +12,27 @@ def _section(content: str, start: str, end: str) -> str:
 
 def test_readme_records_phase_seven_without_starting_phase_eight() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
-    normalized = " ".join(content.split())
+    current = _section(content, "## Current status", "## Planned architecture")
+    normalized = " ".join(current.split())
 
-    assert "Phases 0–6 are closed" in content
-    assert "Phase 7 dual-engine fusion implementation is complete" in normalized
-    assert "Phase 8" in content and "not implemented" in content
-    assert "pipeline verification only" in content
+    assert "Phases 0–7 are closed" in current
+    assert "Phase 7 is complete" in normalized
+    assert "PR [#21]" in normalized and "PR [#22]" in normalized
+    assert "are merged" in normalized
+    assert "phase-07-complete" in current
+    assert "Phase 8 is **Not started**" in current
+    assert "Phase 8" in current and "not implemented" in current
+    assert "pipeline verification only" in current
     assert "recommendation is **inconclusive**" in normalized
-    assert "lower family-macro LOAO recall" in content
+    assert "was not shown to be superior" in normalized
+    assert "family-macro LOAO Recall was lower than anomaly-only" in normalized
+    assert "missed held-out exfiltration and reconnaissance" in normalized
+    assert "negative results are retained" in normalized.lower()
     assert "Fusion score is not probability, risk, severity, or attack confirmation" in normalized
+    assert "public benchmark" in current and "production validation" in current
+    assert "proof of zero-day detection" in current
+    assert "awaiting PR review" not in current
+    assert "pending merge" not in current
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
