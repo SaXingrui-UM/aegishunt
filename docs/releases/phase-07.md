@@ -79,8 +79,8 @@ four bounded shifts produced fusion Recall `1.0`/FPR `0.0`, without a real-world
 robustness claim.
 
 One development-host latency run measured total batch p50/p95/p99
-`1.8435/2.3822/2.8181 ms`, fusion arithmetic p50 `0.0386 ms`, and throughput
-`25,142.6 samples/s`. The temporary policy size was `3,621 bytes`. These values
+`1.8157/2.1595/2.3857 ms`, fusion arithmetic p50 `0.0381 ms`, and throughput
+`25,834.5 samples/s`. The temporary policy size was `3,621 bytes`. These values
 are executed development evidence, not an SLA.
 
 ## Commits
@@ -95,14 +95,14 @@ are executed development evidence, not an SLA.
 
 ## Tests
 
-Final Ruff passes. Strict mypy passes for 134 source files. All 313 tests pass in
-1,146.54 seconds with zero failures, skips, or xfails and 87.47% branch-aware
+Final Ruff passes. Strict mypy passes for 134 source files. All 316 tests pass in
+1,147.27 seconds with zero failures, skips, or xfails and 87.37% branch-aware
 coverage. The focused Phase 7/frontend/status unit, integration, and offline E2E
-selection passes all 29 tests in 26.04 seconds.
+selection passes all 32 tests in 26.34 seconds.
 
 ## Generated artifacts
 
-The final manual run generated 19 experiment JSON/CSV/Markdown files and one
+The final manual run generated 18 experiment JSON/CSV/Markdown files and one
 three-file policy directory under a repository-external temporary root. It also
 generated temporary fitted estimators only for measurement. All machine evidence
 is ignored/not committed; reviewed configuration, contracts, protocols, result
@@ -120,7 +120,8 @@ secret, or large dataset is added.
 - The temporal experiment is a controlled timestamp simulation and parameter
   shifts operate on bounded feature-space clones.
 - Confidence intervals reflect only 24 or 12 evaluation groups and can be wide
-  or degenerate.
+  or degenerate; class-conditional metrics exclude resamples lacking the
+  required class and record the actual successful-draw count.
 - DEF-004 remains an existing non-blocking database-outage audit limitation.
 - Detection results, alerts, explanations, correlation, hypotheses, cases, and
   runtime replay remain Phase 8–12 work.

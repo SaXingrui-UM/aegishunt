@@ -67,12 +67,12 @@ robustness.
 
 One development-host run over a 48-row batch and 25 repetitions measured:
 
-- supervised p50 `1.0877 ms`;
-- anomaly p50 `0.6514 ms`;
-- fusion arithmetic p50 `0.0386 ms`;
-- total p50/p95/p99 `1.8435/2.3822/2.8181 ms`;
-- per-sample p50 `0.0384 ms`;
-- throughput `25,142.6 samples/s`;
+- supervised p50 `1.0952 ms`;
+- anomaly p50 `0.6729 ms`;
+- fusion arithmetic p50 `0.0381 ms`;
+- total p50/p95/p99 `1.8157/2.1595/2.3857 ms`;
+- per-sample p50 `0.0378 ms`;
+- throughput `25,834.5 samples/s`;
 - temporary supervised/anomaly component sizes `1,506,433/33,755 bytes`;
 - policy artifact size `3,621 bytes`;
 - deterministic repeated scores: passed.
@@ -82,7 +82,7 @@ These measurements are not a production SLA and can vary by host and load.
 ## Integrity and limitations
 
 The final temporary policy manifest checksum was
-`abb71953e3339916a93c67169c153caeda6327afd0439bb023a4a4796ea07037`;
+`808bd05e2e5a648324fe6052e65a6602f04c15f24e39f2a043a72b73ca3b29c7`;
 its three-file exact inventory loaded independently. Missing, extra, corrupt,
 escaped, and version-colliding artifacts are rejected. The machine artifact is
 temporary/ignored and is not committed.

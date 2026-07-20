@@ -10,7 +10,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
 | Current activity | Phase 7 implementation and controlled evidence are complete on `phase/07-fusion-evaluation`; logical commits and focused checks pass, documentation is being finalized, and Phase 8 has not started |
-| Verification status | Final Ruff pass; strict mypy pass for 134 source files; all 313 tests pass in 1,146.54 seconds with 87.47% branch-aware coverage and zero failures, skips, or xfails; the 29-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes |
+| Verification status | Final Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,147.27 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; the 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes |
 | Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -79,12 +79,12 @@ severity, explanations, correlation, or hunting logic. Phase 8 has not started.
   mode, isolation counts, full metrics, absolute deltas, and fixed-seed 95%
   whole-group/paired-delta intervals with 1,000 requested draws.
 - A 48-row/25-repeat development-host measurement observed supervised/anomaly/
-  fusion p50 `1.0877/0.6514/0.0386 ms`, total p50/p95/p99
-  `1.8435/2.3822/2.8181 ms`, per-sample p50 `0.0384 ms`, and throughput
-  `25,142.6/s`. These measurements are not an SLA.
+  fusion p50 `1.0952/0.6729/0.0381 ms`, total p50/p95/p99
+  `1.8157/2.1595/2.3857 ms`, per-sample p50 `0.0378 ms`, and throughput
+  `25,834.5/s`. These measurements are not an SLA.
 - The three-file JSON/Markdown policy has an exact inventory, evidence hashes,
   selected contract, environment, and SHA-256 checks. Manifest checksum
-  `abb71953e3339916a93c67169c153caeda6327afd0439bb023a4a4796ea07037`
+  `808bd05e2e5a648324fe6052e65a6602f04c15f24e39f2a043a72b73ca3b29c7`
   verified independently. Missing/extra/corrupt/outside/colliding artifacts fail
   closed; no pickle or model binary is used.
 - The first focused integration run exposed a protocol timestamp later than the
@@ -92,13 +92,16 @@ severity, explanations, correlation, or hunting logic. Phase 8 has not started.
   before the final evidence run. A separate selection review exposed that
   Macro F1 alone could admit an all-negative candidate; positive attack Recall
   and F1 are now mandatory, with regression coverage.
+- Final equivalent Review also made class-conditional Bootstrap metrics
+  unavailable for one-class resamples, enforced selection/policy cross-field
+  consistency and frozen rows-per-group, and rejected policy-internal symlinks.
 - Generated machine evidence is repository-external/ignored and is not
   committed. Reviewed config, contracts, protocol, card, ADR, release notes,
   CLI, and tests are committed.
 - Final quality gate: Ruff passed; strict mypy passed for 134 source files; all
-  313 tests passed in 1,146.54 seconds with 87.47% branch-aware coverage and no
+  316 tests passed in 1,147.27 seconds with 87.37% branch-aware coverage and no
   failures, skips, or xfails. The focused Phase 7/frontend/status selection
-  passed all 29 tests in 26.04 seconds.
+  passed all 32 tests in 26.34 seconds.
 - The fusion score is experimental suspiciousness, not probability, final risk,
   severity, or confirmation. `DetectionResult`, `SecurityAlert`, reason codes,
   explanations, correlation, hypotheses, cases, and automated response are not
