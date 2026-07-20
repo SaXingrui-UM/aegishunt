@@ -7,8 +7,9 @@ anomaly-only, and true dual-engine fusion across known behavior, held-out attack
 families, a strict controlled timeline, and preregistered parameter shifts.
 
 Status: **Implementation complete — awaiting PR review**. Development branch:
-`phase/07-fusion-evaluation`. Pull request, merge commit, and completion Tag are
-pending. Phase 8 has not started.
+`phase/07-fusion-evaluation`. PR
+[#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is open and ready for
+review; its merge commit and completion Tag are pending. Phase 8 has not started.
 
 All reported evidence is controlled synthetic pipeline verification only, not a
 public benchmark, deployment result, or real-world performance claim.

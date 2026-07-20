@@ -70,8 +70,9 @@ def test_progress_and_release_record_phase_seven_without_phase_eight_scope() -> 
     assert "phase/07-fusion-evaluation" in progress_current
 
     assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert "Pull request, merge commit, and completion Tag are" in normalized_release_current
-    assert "pending" in release_current
+    assert "PR [#21]" in normalized_release_current
+    assert "open and ready for review" in normalized_release_current
+    assert "merge commit and completion Tag are pending" in normalized_release_current
     assert "Phase 8 has not started" in normalized_release_current
 
     assert "supervised-75-anomaly-25-t0.700" in release

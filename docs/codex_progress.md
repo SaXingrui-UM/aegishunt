@@ -9,7 +9,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Current phase | Phase 7 - Dual-Engine Fusion and Unknown-Behavior Evaluation |
 | Status | Implementation complete — awaiting PR review |
 | Phase 7 implementation | Configured bounded fusion, explicit single-engine baselines, validation-only policy selection, independent controlled dataset, known/LOAO/temporal/parameter-shift comparisons, group-bootstrap intervals, integrity-checked JSON policy, CLI, offline E2E, and truthful status shell |
-| Current activity | Phase 7 implementation, controlled evidence, final quality gates, and equivalent read-only Review are complete on `phase/07-fusion-evaluation`; the branch is being prepared for push and Phase 8 has not started |
+| Current activity | Phase 7 implementation, controlled evidence, final quality gates, and equivalent read-only Review are complete; PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is open for review and Phase 8 has not started |
 | Verification status | Final Ruff pass; strict mypy pass for 134 source files; all 316 tests pass in 1,147.27 seconds with 87.37% branch-aware coverage and zero failures, skips, or xfails; the 32-test Phase 7/frontend/status unit, integration, and offline E2E selection also passes |
 | Stable branch checkpoint | PR #18 was squash-merged to `main` as `40692d0f576b70fd57719ca2f74d869e27891e13`; annotated Tag `phase-06-complete` points to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -19,10 +19,10 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17 and Phase 6 PRs #18–#20 are merged; Phase 7 pull request is pending creation |
+| Pull requests | Phase 5 PRs #13–#17 and Phase 6 PRs #18–#20 are merged; Phase 7 PR [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) is open, ready for review, with base `main` and head `phase/07-fusion-evaluation` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 6 closure CI passed; Phase 7 CI is not available until the Phase 7 branch is pushed and its PR is created |
+| CI status | Phase 6 closure CI passed; both Phase 7 PR #21 quality runs were in progress at the post-creation check and no success is claimed yet |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -35,7 +35,7 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 7 status | Implementation complete — awaiting PR review |
 | Phase 8 status | Not started |
 | Next planned branch | `phase/08-alert-explainability` (do not create before Phase 7 merge/checkpoint and explicit authorization) |
-| Next action | Push Phase 7, open the Phase 7 PR, report CI truthfully, then stop for user review |
+| Next action | Wait for PR #21 CI, review the phase diff, then user Squash and merge; do not start Phase 8 |
 
 Phase 0 through Phase 6 are checkpointed and their Tags remain unchanged. Phase
 7 fusion is implemented only as an offline research score and comparison policy;
