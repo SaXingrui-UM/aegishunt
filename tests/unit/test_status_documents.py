@@ -1,4 +1,4 @@
-"""Regression tests for current Phase 7 status truthfulness."""
+"""Regression tests for current Phase 8 review status truthfulness."""
 
 from pathlib import Path
 
@@ -10,28 +10,27 @@ def _section(content: str, start: str, end: str) -> str:
     return content.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
 
 
-def test_readme_records_phase_seven_without_starting_phase_eight() -> None:
+def test_readme_records_phase_eight_without_starting_phase_nine() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
     assert "Phases 0–7 are closed" in current
-    assert "Phase 7 is complete" in normalized
-    assert "PR [#21]" in normalized and "PR [#22]" in normalized
-    assert "are merged" in normalized
-    assert "phase-07-complete" in current
-    assert "Phase 8 is **Not started**" in current
-    assert "Phase 8" in current and "not implemented" in current
+    assert "Phase 8 implementation is complete" in normalized
+    assert "phase/08-alert-explainability" in current
+    assert "awaiting pull-request review" in normalized
+    assert "Phase 9 is **Not started**" in normalized
     assert "pipeline verification only" in current
     assert "recommendation is **inconclusive**" in normalized
     assert "was not shown to be superior" in normalized
     assert "family-macro LOAO Recall was lower than anomaly-only" in normalized
     assert "missed held-out exfiltration and reconnaissance" in normalized
     assert "negative results are retained" in normalized.lower()
-    assert "Fusion score is not probability, risk, severity, or attack confirmation" in normalized
+    assert "operational suspiciousness risk" in normalized
+    assert "not attack probability" in normalized
+    assert "alert is a prompt for analyst review" in normalized
     assert "public benchmark" in current and "production validation" in current
     assert "proof of zero-day detection" in current
-    assert "awaiting PR review" not in current
     assert "pending merge" not in current
 
 
@@ -50,14 +49,14 @@ def test_pm_def_001_is_resolved_without_erasing_history() -> None:
     assert "not public\n  benchmark or real-world performance evidence" in pm_def_001
 
 
-def test_progress_and_release_record_phase_seven_without_phase_eight_scope() -> None:
+def test_progress_and_release_record_phase_eight_without_phase_nine_scope() -> None:
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
-    release = (PROJECT_ROOT / "docs/releases/phase-07.md").read_text(encoding="utf-8")
+    release = (PROJECT_ROOT / "docs/releases/phase-08.md").read_text(encoding="utf-8")
 
     progress_current = _section(
         progress,
         "## Current state",
-        "## Phase 7 implementation checkpoint",
+        "## Phase 8 implementation checkpoint",
     )
     release_current = _section(
         release,
@@ -68,32 +67,26 @@ def test_progress_and_release_record_phase_seven_without_phase_eight_scope() -> 
     normalized_release_current = " ".join(release_current.split())
 
     for content in (progress, release):
-        assert "phase/07-fusion-evaluation" in content
-        assert "Phase 8" in content and "not started" in content.lower()
+        assert "phase/08-alert-explainability" in content
+        assert "Phase 9" in content and "not started" in content.lower()
         assert "pipeline verification only" in content.lower()
         assert "inconclusive" in content
         assert "validation-qualified" in content.lower()
         assert "not a public benchmark" in " ".join(content.lower().split())
 
-    assert "Current phase | Phase 7" in normalized_progress_current
-    assert "Status | Phase complete" in normalized_progress_current
-    assert "Phase 8 status | Not started" in normalized_progress_current
-    assert "phase/07-fusion-evaluation" in progress_current
-    assert "phase-07-complete" in progress_current
-    assert "PR [#21]" in normalized_progress_current
-    assert "are merged" in normalized_progress_current
+    assert "Current phase | Phase 8" in normalized_progress_current
+    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
+    assert "Phase 9 status | Not started" in normalized_progress_current
+    assert "phase/08-alert-explainability" in progress_current
 
-    assert "Status: **Phase complete**" in release_current
-    assert "PR [#21]" in normalized_release_current
-    assert "was squash-merged" in normalized_release_current
-    assert "2465f8de67be7638670f9d30c1198ff76a60d17c" in normalized_release_current
-    assert "phase-07-complete" in normalized_release_current
-    assert "Phase 8 has not started" in normalized_release_current
-    assert "Implementation complete — awaiting PR review" not in release_current
+    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Ready PR [#25]" in normalized_release_current
+    assert "targets `main`" in normalized_release_current
+    assert "merge commit and completion Tag are pending" in normalized_release_current
+    assert "Phase 9 has not started" in normalized_release_current
 
-    assert "supervised-75-anomaly-25-t0.700" in release
-    assert "fusion missed all held-out" in release.lower()
-    assert "Historical Phase 5/6 frozen test reused: no" in " ".join(release.split())
-    assert "ADR 0016" in release
-    assert "Detection results, alerts, explanations" in release
+    assert "ADR 0017" in release
+    assert "configured operational risk/severity" in release
+    assert "non-causal" in release
+    assert "correlation" in release
     assert "not a public benchmark" in " ".join(release.split())

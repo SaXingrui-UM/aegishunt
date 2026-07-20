@@ -9,6 +9,12 @@ sort names or infer order from unrelated mappings. `behavioral_features` contain
 only finite integers/floats. NaN, Infinity, booleans, strings, and nested values
 are rejected.
 
+Phase 8 does not change this schema or order. Its benign reference profile,
+native/permutation importance reports, and local reference-replacement
+contributions bind the same schema version and exact ordered names. Reference
+ranges describe observed benign training values; importance and contributions
+are non-causal and are not attack confirmation.
+
 Packet size means IPv4 total length or IPv6 base-header plus payload length. It
 excludes link-layer bytes. Forward is the first decoded packet's direction. Timing
 statistics sort captured timestamps, while TCP handshake evidence retains capture

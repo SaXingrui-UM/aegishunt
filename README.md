@@ -18,16 +18,14 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–7 are closed and their annotated checkpoints remain immutable. Phase 7
-is complete: implementation PR
-[#21](https://github.com/SaXingrui-UM/aegishunt/pull/21) and post-merge metadata
-PR [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22) are merged, and
-annotated Tag `phase-07-complete` records the merged implementation checkpoint.
-The phase adds bounded score contracts, validation-only weight/threshold
-selection, explicit single-engine baselines, known and
-Leave-One-Attack-Family-Out comparisons, a strict controlled timeline, four
-preregistered parameter shifts, 1,000-draw group-bootstrap intervals, and a
-checksummed JSON-only policy. Phase 8 is **Not started**.
+Phases 0–7 are closed and their annotated checkpoints remain immutable. Phase 8
+implementation is complete on `phase/08-alert-explainability` and is awaiting
+pull-request review; it is not yet a completed or tagged phase. The work extends
+the existing `DetectionResult` and `SecurityAlert` entities with verified score
+identities, a configuration-controlled risk mapping, deterministic severity,
+threshold-gated alerts, versioned reason evidence, non-causal global/local
+explanations, immutable evidence, and an audited alert-level verdict. Phase 9 is
+**Not started**.
 
 The Phase 7 run uses 144 newly identified controlled synthetic rows in 72 groups
 and does not reuse Phase 5/6 frozen-test evidence. It selected supervised/anomaly
@@ -35,12 +33,13 @@ weights `0.75/0.25` and threshold `0.7`, but the recommendation is
 **inconclusive**: fusion matched supervised-only on known controlled groups and
 was not shown to be superior. Its family-macro LOAO Recall was lower than
 anomaly-only, and it missed held-out exfiltration and reconnaissance rows.
-These negative results are retained. This is **pipeline verification only**,
+These Phase 7 negative results are retained. This is **pipeline verification only**,
 not a public benchmark, production validation, real-world performance claim,
-or proof of zero-day detection. Fusion score is not probability, risk,
-severity, or attack confirmation. Phase 8 detection results, alerts,
-explanations, correlation, hypotheses, replay orchestration, and cases are
-**not implemented**.
+or proof of zero-day detection. Phase 8 maps the recorded fusion score to an
+operational suspiciousness risk by explicit identity policy; this does not imply
+fusion superiority and is not attack probability. An alert is a prompt for
+analyst review, not attack confirmation. Alert correlation, hypotheses, replay
+orchestration, and cases remain unimplemented later-phase work.
 
 ## Planned architecture
 
@@ -94,6 +93,15 @@ aegishunt fusion evaluate --fusion-config <fusion-yaml> --supervised-config <sup
 aegishunt fusion verify 1.0.0 --policy-root <policy-root>
 aegishunt fusion describe 1.0.0 --policy-root <policy-root>
 aegishunt fusion score 1.0.0 --input <score-input.json> --policy-root <policy-root>
+aegishunt detection --help
+aegishunt detection evaluate --help
+aegishunt detection list
+aegishunt detection describe <detection-id>
+aegishunt alerts list
+aegishunt alerts describe <alert-id>
+aegishunt alerts verdict <alert-id> false_positive --actor <analyst-id>
+aegishunt explainability verify <artifact-directory>
+aegishunt explainability describe <artifact-directory>
 aegishunt api
 aegishunt frontend
 ```
@@ -166,6 +174,24 @@ corrupt, escaped, mismatched, or colliding artifacts fail closed. See
 [`docs/fusion_policy_card.md`](docs/fusion_policy_card.md), and
 [`docs/adr/0016-validation-selected-dual-engine-fusion.md`](docs/adr/0016-validation-selected-dual-engine-fusion.md).
 
+## Detection, alert, and explanation workflow
+
+The Phase 8 risk policy uses an explicit identity mapping from the verified
+Phase 7 `fusion_score` by default. It records all required model and policy
+versions/checksums, keeps the Phase 7 recommendation `inconclusive`, and has no
+hidden weights or score fallback. Risk is operational suspiciousness for triage,
+not attack probability; severity is configured priority, not certainty.
+
+Every completed score creates a `DetectionResult`. Only a result at or above the
+configured threshold creates a `SecurityAlert`. Alert evidence contains stable
+reason codes, observed flow facts, configured/reference boundaries, model
+inferences, and top single-feature reference-replacement sensitivities. Global
+native/permutation importance and local contributions are non-causal. Verdicts
+change only the alert verdict/timestamp and append an audit event; they do not
+train models, create cases, or create hypotheses. See
+[`docs/detection_alerts.md`](docs/detection_alerts.md) and
+[`docs/explainability.md`](docs/explainability.md).
+
 ## Telemetry ingestion
 
 The ingestion API exposes `/ingestion/pcap`, `/ingestion/flow-csv`,
@@ -189,7 +215,9 @@ aegishunt init-db --config configs/application.yaml
 ```
 
 The default SQLite database uses WAL, foreign-key enforcement, a bounded busy
-timeout, and schema version `1`. Database files and WAL sidecars are ignored by Git.
+timeout, and schema version `2`. The additive v1→v2 migration preserves existing
+rows and records a new schema-version event. Database files and WAL sidecars are
+ignored by Git.
 
 Flow segmentation is configuration-controlled. Defaults are 60-second idle and
 300-second active timeouts, with explicit per-flow packet, active-flow, and
@@ -216,9 +244,9 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 7 page reports the implemented experiment boundary and planned modules
-only. It does not display invented metrics, flows, alerts, explanations,
-hypotheses, or model results.
+The Phase 8 page reports the implemented alert/explanation boundary and the
+unchanged controlled-evidence caveats. It does not display invented detections,
+alerts, hypotheses, or metrics.
 
 ## Quality checks
 

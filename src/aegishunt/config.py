@@ -130,6 +130,17 @@ class AnomalySettings(BaseModel):
     reports_root: Path = Path("reports/models/anomaly")
 
 
+class DetectionSettings(BaseModel):
+    """Configured Phase 8 risk policy and data-only explanation storage."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    risk_policy_path: Path = Path("configs/models/detection.yaml")
+    explanation_artifact_root: Path = Path("artifacts/explainability")
+    local_explanation_top_k: int = Field(default=5, ge=1, le=20)
+    local_explanation_max_features: int = Field(default=43, ge=1, le=256)
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -142,6 +153,7 @@ class ApplicationSettings(BaseModel):
     datasets: DatasetSettings = Field(default_factory=DatasetSettings)
     supervised: SupervisedSettings = Field(default_factory=SupervisedSettings)
     anomaly: AnomalySettings = Field(default_factory=AnomalySettings)
+    detection: DetectionSettings = Field(default_factory=DetectionSettings)
 
     @property
     def environment(self) -> str:

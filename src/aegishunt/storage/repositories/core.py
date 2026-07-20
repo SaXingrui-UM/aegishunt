@@ -17,6 +17,8 @@ from aegishunt.schemas import (
     TelemetrySource,
     ThreatHypothesis,
 )
+from aegishunt.schemas.base import utc_now
+from aegishunt.schemas.enums import AnalystVerdict
 from aegishunt.storage.models import (
     AlertGroupRecord,
     AnalystFeedbackRecord,
@@ -125,6 +127,37 @@ class SecurityAlertRepository(SqlAlchemyRepository[SecurityAlert, SecurityAlertR
             id_attribute="alert_id",
             audit_log=audit_log,
         )
+
+    def update_verdict(
+        self,
+        alert_id: UUID,
+        verdict: AnalystVerdict,
+        *,
+        actor: str,
+    ) -> SecurityAlert:
+        """Update only an analyst verdict and preserve immutable alert evidence."""
+
+        row = self._session.get(SecurityAlertRecord, alert_id)
+        if row is None:
+            raise RepositoryRecordNotFoundError("security alert does not exist")
+        if row.analyst_verdict == verdict:
+            return SecurityAlert.model_validate(row)
+        previous = row.analyst_verdict
+        row.analyst_verdict = verdict
+        row.updated_at = max(utc_now(), row.created_at, row.updated_at)
+        self._session.flush()
+        if self._audit_log is not None:
+            self._audit_log.record(
+                actor=actor,
+                action="update_verdict",
+                object_type=SecurityAlertRecord.__tablename__,
+                object_id=str(alert_id),
+                details={
+                    "previous_verdict": None if previous is None else previous.value,
+                    "analyst_verdict": verdict.value,
+                },
+            )
+        return SecurityAlert.model_validate(row)
 
 
 class AlertGroupRepository(SqlAlchemyRepository[AlertGroup, AlertGroupRecord]):
