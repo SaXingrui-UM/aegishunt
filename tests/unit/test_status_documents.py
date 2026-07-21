@@ -1,4 +1,4 @@
-"""Regression tests for current Phase 8 review status truthfulness."""
+"""Regression tests for current completed Phase 8 status truthfulness."""
 
 from pathlib import Path
 
@@ -15,10 +15,11 @@ def test_readme_records_phase_eight_without_starting_phase_nine() -> None:
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
-    assert "Phases 0–7 are closed" in current
-    assert "Phase 8 implementation is complete" in normalized
+    assert "Phases 0–8 are complete" in current
     assert "phase/08-alert-explainability" in current
-    assert "awaiting pull-request review" in normalized
+    assert "PR [#25]" in current
+    assert "f622faec6513a9fadcba11b73d2fbe1239779217" in current
+    assert "phase-08-complete" in current
     assert "Phase 9 is **Not started**" in normalized
     assert "pipeline verification only" in current
     assert "recommendation is **inconclusive**" in normalized
@@ -32,6 +33,7 @@ def test_readme_records_phase_eight_without_starting_phase_nine() -> None:
     assert "public benchmark" in current and "production validation" in current
     assert "proof of zero-day detection" in current
     assert "pending merge" not in current
+    assert "awaiting pull-request review" not in normalized
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -75,15 +77,20 @@ def test_progress_and_release_record_phase_eight_without_phase_nine_scope() -> N
         assert "not a public benchmark" in " ".join(content.lower().split())
 
     assert "Current phase | Phase 8" in normalized_progress_current
-    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
+    assert "Status | Phase complete" in normalized_progress_current
     assert "Phase 9 status | Not started" in normalized_progress_current
     assert "phase/08-alert-explainability" in progress_current
+    assert "phase-08-complete" in progress_current
+    assert "PR [#25]" in progress_current and "merged" in progress_current.lower()
 
-    assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert "Ready PR [#25]" in normalized_release_current
-    assert "targets `main`" in normalized_release_current
-    assert "merge commit and completion Tag are pending" in normalized_release_current
+    assert "Status: **Phase complete**" in release_current
+    assert "PR [#25]" in normalized_release_current
+    assert "was squash-merged" in normalized_release_current
+    assert "phase-08-complete" in normalized_release_current
+    assert "f622faec6513a9fadcba11b73d2fbe1239779217" in normalized_release_current
     assert "Phase 9 has not started" in normalized_release_current
+    assert "awaiting PR review" not in normalized_progress_current
+    assert "pending" not in normalized_release_current.lower()
 
     assert "ADR 0017" in release
     assert "configured operational risk/severity" in release
