@@ -20,7 +20,8 @@ def test_frontend_renders_phase_eight_without_fake_results(monkeypatch: Any) -> 
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 8 implementation complete — awaiting PR review" in content
+    assert "Phase 8 complete at phase-08-complete" in content
+    assert "PR #25 is merged" in content
     assert "Phase 7 remains complete" in content
     assert "phase-07-complete" in content
     assert "Recommendation: Inconclusive" in content
@@ -38,6 +39,7 @@ def test_frontend_renders_phase_eight_without_fake_results(monkeypatch: Any) -> 
     assert "non-causal global/local explanations" in content
     assert "Research prototype only" in content
     assert "pending merge" not in content
+    assert "awaiting PR review" not in content
     assert "Phase 9 implementation" not in content
     assert "Accuracy" not in content
     assert "SecurityAlert" in content

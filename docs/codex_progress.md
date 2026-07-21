@@ -1,17 +1,17 @@
 # Codex Progress
 
-Last updated: 2026-07-20 (Asia/Shanghai)
+Last updated: 2026-07-21 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 8 - Alerts, Risk Scoring and Explainability |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
-| Current activity | Phase 8 implementation and local verification are complete on `phase/08-alert-explainability`; ready PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) is open for CI and user review. Phase 9 has not started |
-| Verification status | Final local checks passed Ruff, strict mypy for 152 source files, and all 334 tests in 1,088.56 seconds with 86.63% branch-aware coverage; there were zero failures, skips, or xfails. The focused Phase 8 risk/explanation, persistence/restart/verdict, migration, CLI, and E2E selection passed all 21 tests |
-| Stable branch checkpoint | PR #21 was squash-merged to `main` as `2465f8de67be7638670f9d30c1198ff76a60d17c`; annotated Tag `phase-07-complete` points to that merged commit |
+| Current activity | Phase 8 PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) is merged, the annotated completion Tag is remotely verified, and one unified post-merge closure branch records metadata and visible status. Phase 9 has not started |
+| Verification status | On merged `main`, Ruff passed, strict mypy passed for 152 source files, and all 334 tests passed in 1,095.95 seconds with 86.63% branch-aware coverage; there were zero failures, skips, or xfails. The focused Phase 8 risk/explanation, persistence/restart/verdict, migration, CLI, E2E, frontend, and status selection passed all 25 tests |
+| Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -19,10 +19,10 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, and Phase 7 PRs [#21](https://github.com/SaXingrui-UM/aegishunt/pull/21), [#22](https://github.com/SaXingrui-UM/aegishunt/pull/22), and [#23](https://github.com/SaXingrui-UM/aegishunt/pull/23) are merged; Phase 8 ready PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) targets `main` from `phase/08-alert-explainability` and is awaiting CI/user review |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) are merged; PR #25 targeted `main` from `phase/08-alert-explainability` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 8 PR #25 GitHub Actions checks were pending at this checkpoint; locally Ruff passed, strict mypy passed for 152 source files, and all 334 tests passed above the unchanged coverage gate |
+| CI status | Both Phase 8 PR #25 GitHub Actions `quality` checks passed; merged-main Ruff, strict mypy, and all 334 tests also passed above the unchanged coverage gate |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -31,19 +31,21 @@ Last updated: 2026-07-20 (Asia/Shanghai)
 | Phase 5 tags | Historical annotated `phase-05-complete` remains unchanged at `2510c295`; corrective annotated `phase-05-pm-def-001-complete` is remotely verified at `76f79972` |
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
-| Current branch | `phase/08-alert-explainability` based on synchronized `main` `bfb34931263c2809e3e2b085b9f8f55ad0fd9418` |
-| Working tree | Clean after the Phase 8 logical commits; no generated model, database, upload, PCAP, dataset, secret, or Phase 9 artifact is tracked |
+| Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
+| Current branch | `docs/phase-08-post-merge-closure`, created from synchronized merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
+| Working tree | Closure changes are limited to metadata, README, Streamlit current status, and the two corresponding truthfulness tests; no generated model, database, upload, PCAP, dataset, secret, or Phase 9 artifact is tracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
-| Phase 8 status | Implementation complete — awaiting PR review |
+| Phase 8 status | Phase complete |
 | Phase 9 status | Not started |
 | Next planned branch | `phase/09-hypothesis-engine` (do not create before Phase 8 merge/checkpoint and explicit authorization) |
-| Next action | Wait for PR #25 CI and user review, then allow the user to squash-merge it; do not create a Phase 8 Tag or start Phase 9 |
+| Next action | Review and merge the unified Phase 8 post-merge closure PR; do not start Phase 9 until that PR is merged and the user explicitly authorizes the next phase |
 
-Phase 0 through Phase 7 are checkpointed and their Tags remain unchanged. Phase
+Phase 0 through Phase 8 are checkpointed and their Tags remain unchanged. Phase
 8 consumes verified Phase 5–7 score identities without changing their evidence
 or claiming fusion superiority. Operational risk is not attack probability;
-alerts are not confirmed attacks; explanations are non-causal. No correlation,
-hypothesis, case, or other Phase 9 functionality is implemented.
+severity is not attack certainty; alerts are not confirmed attacks;
+explanations are non-causal. No correlation, hypothesis, case, or other Phase 9
+functionality is implemented.
 
 ## Phase 8 implementation checkpoint
 
@@ -77,11 +79,14 @@ hypothesis, case, or other Phase 9 functionality is implemented.
 
 - Ruff passed for the complete repository.
 - Strict mypy passed for all 152 source files.
-- The complete pytest suite passed all 334 collected tests in 1,088.56 seconds;
+- The complete pytest suite on merged `main` passed all 334 collected tests in
+  1,095.95 seconds;
   failures, skips, and xfails were all zero.
 - Branch-aware coverage was 86.63%, above the unchanged 85% project gate.
 - The focused Phase 8 unit, migration, CLI, integration, persistence/restart,
-  verdict, artifact-integrity, and offline E2E selection passed all 21 tests.
+  verdict, artifact-integrity, offline E2E, frontend, and status selection
+  passed all 25 tests.
+- Both GitHub Actions `quality` checks for PR #25 passed before merge.
 - Tests generated only isolated temporary SQLite databases and explanation
   artifacts; none are tracked. No Phase 5–7 experiment evidence or bundle was
   regenerated or overwritten.
@@ -89,7 +94,8 @@ hypothesis, case, or other Phase 9 functionality is implemented.
   executable is missing (`ENOENT`). Equivalent review found and closed an
   explanation-artifact identity binding gap, a root-symlink acceptance gap, and
   incomplete self-contained alert evidence. Final review found zero Blocking,
-  zero High, and zero unhandled Medium findings.
+  zero High, and zero unhandled correctness-related Medium findings. The merged
+  diff received the same equivalent read-only conclusion before Tag creation.
 
 ## Phase 7 implementation checkpoint
 

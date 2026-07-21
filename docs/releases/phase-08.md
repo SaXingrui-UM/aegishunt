@@ -6,10 +6,12 @@ Convert verified supervised, anomaly, and fusion outputs into persisted,
 analyst-reviewable detection evidence, configured operational risk/severity,
 threshold-gated alerts, non-causal explanations, and an audited alert verdict.
 
-Status: **Implementation complete — awaiting PR review**. Development branch:
-`phase/08-alert-explainability`. Ready PR
-[#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) targets `main`; its merge
-commit and completion Tag are pending. Phase 9 has not started.
+Status: **Phase complete**. Development branch:
+`phase/08-alert-explainability`. PR
+[#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) was squash-merged into
+`main` on 2026-07-20 as
+`f622faec6513a9fadcba11b73d2fbe1239779217`. Annotated Tag
+`phase-08-complete` records that merged checkpoint. Phase 9 has not started.
 
 ## Completed scope
 
@@ -50,12 +52,12 @@ and verdict-only mutation boundary.
 
 The synchronized Phase 7 baseline passed Ruff, strict mypy for 134 source files,
 and 316 tests with zero failures/skips/xfails and 87.37% branch-aware coverage.
-After Phase 8 implementation, Ruff passed, strict mypy passed for 152 source
-files, and all 334 tests passed in 1,088.56 seconds with zero failures, skips, or
-xfails and 86.63% branch-aware coverage. The focused Phase 8 risk/explanation,
-migration, CLI, persistence/restart/verdict, artifact-integrity, and offline E2E
-selection passed all 21 tests. Review and GitHub Actions status remain pending;
-no unexecuted check is claimed as passed here.
+On merged `main`, Ruff passed, strict mypy passed for 152 source files, and all
+334 tests passed in 1,095.95 seconds with zero failures, skips, or xfails and
+86.63% branch-aware coverage. The focused Phase 8 risk/explanation, migration,
+CLI, persistence/restart/verdict, artifact-integrity, offline E2E, frontend, and
+status selection passed all 25 tests. Both PR #25 GitHub Actions `quality`
+checks passed.
 
 Native `codex review --base main` could not start because the installed arm64
 executable is missing (`ENOENT`). Equivalent review found an explanation-
@@ -65,7 +67,8 @@ identity mismatch, rejects a symlinked artifact root, and records the required
 flow, scoring, severity, identity, reason, contribution, fact/inference, and
 generation-time evidence in each alert. Regressions and the complete suite pass;
 the final equivalent review found zero Blocking, zero High, and zero unhandled
-Medium findings. GitHub Actions remains pending.
+correctness-related Medium findings. The same conclusion was confirmed against
+the merged Phase 8 diff before the completion Tag was created.
 
 ## Generated artifacts
 
@@ -93,5 +96,5 @@ runtime database, upload, PCAP, secret, or full experiment evidence is added.
 ## Next phase
 
 Phase 9 — Hypothesis Engine. Status: **Not started**. Planned branch:
-`phase/09-hypothesis-engine`. Do not create it before Phase 8 is merged,
-checkpointed under explicit instruction, and the user authorizes Phase 9.
+`phase/09-hypothesis-engine`. Do not create it before this post-merge closure is
+merged and the user explicitly authorizes Phase 9.

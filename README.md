@@ -18,9 +18,11 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–7 are closed and their annotated checkpoints remain immutable. Phase 8
-implementation is complete on `phase/08-alert-explainability` and is awaiting
-pull-request review; it is not yet a completed or tagged phase. The work extends
+Phases 0–8 are complete and their annotated checkpoints remain immutable. Phase 8
+PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) was merged from
+`phase/08-alert-explainability` into `main` as
+`f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag
+`phase-08-complete` records that merged checkpoint. The implementation extends
 the existing `DetectionResult` and `SecurityAlert` entities with verified score
 identities, a configuration-controlled risk mapping, deterministic severity,
 threshold-gated alerts, versioned reason evidence, non-causal global/local

@@ -1,4 +1,4 @@
-"""Minimal truthful Streamlit shell for the Phase 8 review checkpoint."""
+"""Minimal truthful Streamlit shell for the completed Phase 8 checkpoint."""
 
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ PLANNED_MODULES = (
 
 
 def main() -> None:
-    """Render truthful Phase 8 status without inventing runtime alert output."""
+    """Render the completed Phase 8 status without inventing runtime alert output."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 8 implementation complete — awaiting PR review. "
+        "Current status: Phase 8 complete at phase-08-complete; PR #25 is merged. "
         "Phase 7 remains complete at phase-07-complete. Phase 9: Not started."
     )
     st.success(
