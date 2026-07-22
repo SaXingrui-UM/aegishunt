@@ -15,10 +15,12 @@ import uvicorn
 from sqlalchemy import make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from aegishunt.cases.cli import cases_app
 from aegishunt.config import DatabaseSettings, load_settings
 from aegishunt.datasets.cli import dataset_app
 from aegishunt.detection.cli import alerts_app, detection_app, explainability_app
 from aegishunt.errors import AegisHuntError
+from aegishunt.feedback.cli import feedback_app
 from aegishunt.hunting.cli import hunt_app
 from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
@@ -41,6 +43,8 @@ app.add_typer(detection_app)
 app.add_typer(alerts_app)
 app.add_typer(explainability_app)
 app.add_typer(hunt_app)
+app.add_typer(cases_app)
+app.add_typer(feedback_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 
