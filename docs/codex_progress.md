@@ -7,12 +7,12 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 9 - Alert Correlation and Threat Hypothesis Engine |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
-| Current activity | Phase 9 implementation and the lifecycle-time correction are published in open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28); refreshed CI passed and user review remains required. Phase 10 has not started |
-| Verification status | Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests; the complete suite passes all 365 tests with 86.74% branch-aware coverage |
-| Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
+| Current activity | Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is merged; its lifecycle-time correction is verified on `main`, and annotated Tag `phase-09-complete` is pushed. This branch closes post-merge status surfaces only. Phase 10 has not started |
+| Verification status | Post-merge Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests in 7.58 seconds; the final closure suite passes all 365 tests in 1,062.84 seconds with 86.74% branch-aware coverage |
+| Stable branch checkpoint | PR #28 was squash-merged to `main` as `ffdd7639b60d944b19d70096e1ff38de0d8761f8`; annotated Tag `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -20,10 +20,10 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs #25–#27 are merged. Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is open from `phase/09-hypothesis-engine` to `main` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, and Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28), `[Phase 09] Alert correlation and threat hypothesis engine`, are merged. PR #28 merged `phase/09-hypothesis-engine` into `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 9 PR #28 `quality` checks passed for lifecycle-correction head `5299ce0`; local required checks also pass |
+| CI status | Both Phase 9 PR #28 `quality` checks passed before merge; post-merge Ruff, strict mypy, focused tests, and the complete pytest suite also pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -33,16 +33,17 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
 | Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
-| Current branch | `phase/09-hypothesis-engine`, based on synchronized `main` `5b7c9496d77404fadcd757d75e482ce78476e55f` |
-| Working tree | Phase 9 reviewed source changes only; no generated model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
+| Phase 9 tag | Annotated `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) is pushed and locally/remotely verified at merged `main` `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
+| Stable branch | `main` at `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
+| Working tree | Post-merge closure changes are limited to metadata, visible status, and their truthfulness tests; no model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
-| Phase 9 status | Implementation complete — awaiting PR review |
+| Phase 9 status | Phase complete |
 | Phase 10 status | Not started |
 | Next planned branch | `phase/10-case-feedback` (do not create before Phase 9 merge/checkpoint and explicit authorization) |
-| Next action | Wait for PR #28 CI, user review, and Squash and merge. Do not create a completion Tag or start Phase 10 before the post-merge checkpoint |
+| Next action | Review and merge the single Phase 9 post-merge closure PR, synchronize `main`, then wait for explicit user authorization. Do not start Phase 10 automatically |
 
-Phase 0 through Phase 8 are checkpointed and their Tags remain unchanged. Phase
+Phase 0 through Phase 9 are checkpointed and their Tags remain unchanged. Phase
 9 consumes immutable Phase 8 alerts without changing their evidence or claiming
 attack confirmation. Operational risk and correlation/confidence are not attack
 probabilities; severity is not certainty; alerts and hypotheses are not confirmed
@@ -77,16 +78,16 @@ No Phase 10 case or feedback workflow is implemented.
 
 - Ruff passed for the complete repository.
 - Strict mypy passed for all 168 source files.
-- The complete post-review pytest suite passed all 365 collected tests in 1,086.89 seconds;
+- The complete final closure pytest suite passed all 365 collected tests in 1,062.84 seconds;
   failures, skips, and xfails were all zero.
 - Branch-aware coverage was 86.74%, above the unchanged 85% project gate.
 - The focused Phase 9 unit, migration, CLI, integration/restart, lifecycle, offline
-  E2E, frontend, and status selection passed all 39 tests in 7.01 seconds.
+  E2E, frontend, and status selection passed all 39 tests in 7.58 seconds.
 - Manual CLI verification used `PYTHONPATH=src` because the desktop environment's
   editable-install `.pth` was not visible. The workaround exposed and helped fix an
   actual circular schema import; it is not represented as a standard-install success.
-- Native `codex review --base main` could not start because the installed arm64
-  executable is missing (`ENOENT`). The equivalent first read-only review found one
+- Native post-merge `codex review` against the pre-merge base could not start because
+  the installed arm64 executable is missing (`ENOENT`). The equivalent first read-only review found one
   Medium issue: normal hypothesis-gate rejection used a silently caught exception.
   Commit `8c80e8e` replaced it with an explicit, tested eligibility result. The
   post-fix equivalent review found no remaining issue in that path.

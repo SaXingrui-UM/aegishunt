@@ -1,4 +1,4 @@
-"""Tests for truthful Phase 9 content in the Streamlit shell."""
+"""Tests for truthful merged Phase 9 content in the Streamlit shell."""
 
 from typing import Any
 
@@ -20,11 +20,11 @@ def test_frontend_renders_phase_nine_without_fake_results(monkeypatch: Any) -> N
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 9 implementation complete" in content
-    assert "awaiting PR review" in content
+    assert "Phase 9 complete" in content
+    assert "PR #28 was Squash and merged" in content
     assert "phase/09-hypothesis-engine" in content
-    assert "Phase 8 remains complete" in content
-    assert "phase-08-complete" in content
+    assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in content
+    assert "phase-09-complete" in content
     assert "Phase 10: Not started" in content
     assert "Recommendation: Inconclusive" in content
     assert "deterministic proposed" in content
@@ -43,6 +43,7 @@ def test_frontend_renders_phase_nine_without_fake_results(monkeypatch: Any) -> N
     assert "non-causal global/local explanations" in content
     assert "Research prototype only" in content
     assert "pending merge" not in content
+    assert "awaiting PR review" not in content
     assert "Phase 10 implementation" not in content
     assert "Accuracy" not in content
     assert "SecurityAlert" in content

@@ -1,4 +1,4 @@
-"""Regression tests for current Phase 9 pull-request status truthfulness."""
+"""Regression tests for current merged Phase 9 status truthfulness."""
 
 from pathlib import Path
 
@@ -15,14 +15,12 @@ def test_readme_records_phase_nine_without_starting_phase_ten() -> None:
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
-    assert "Phases 0–8 are complete" in current
+    assert "Phases 0–9 are complete" in current
     assert "phase/09-hypothesis-engine" in current
-    assert "PR [#25]" in current
-    assert "PR [#26]" in normalized
-    assert "f622faec6513a9fadcba11b73d2fbe1239779217" in current
-    assert "d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc" in current
-    assert "phase-08-complete" in current
-    assert "complete and awaiting pull-request review" in normalized
+    assert "PR [#28]" in current
+    assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in current
+    assert "phase-09-complete" in current
+    assert "observed event time separate" in normalized
     assert "Phase 10 is **Not started**" in normalized
     assert "pipeline verification only" in current
     assert "recommendation is **inconclusive**" in normalized
@@ -39,6 +37,7 @@ def test_readme_records_phase_nine_without_starting_phase_ten() -> None:
     assert "public benchmark" in current and "production validation" in current
     assert "proof of zero-day detection" in current
     assert "pending merge" not in current
+    assert "awaiting pull-request review" not in current
     assert "Phase 10 implementation" not in normalized
 
 
@@ -81,24 +80,30 @@ def test_progress_and_release_record_phase_nine_without_phase_ten_scope() -> Non
         assert "confirmed" in content.lower()
 
     assert "Current phase | Phase 9" in normalized_progress_current
-    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
-    assert (
-        "Phase 9 status | Implementation complete — awaiting PR review"
-        in normalized_progress_current
-    )
+    assert "Status | Phase complete" in normalized_progress_current
+    assert "Phase 9 status | Phase complete" in normalized_progress_current
     assert "Phase 10 status | Not started" in normalized_progress_current
     assert "phase/09-hypothesis-engine" in progress_current
-    assert "Current branch | `phase/09-hypothesis-engine`" in normalized_progress_current
+    assert (
+        "Stable branch | `main` at `ffdd7639b60d944b19d70096e1ff38de0d8761f8`"
+        in normalized_progress_current
+    )
 
-    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Status: **Phase complete**" in release_current
     assert "Pull request: [#28]" in normalized_release_current
-    assert "open and ready for review" in normalized_release_current
-    assert "CI pending" in normalized_release_current
-    assert "Completion tag: pending" in normalized_release_current
+    assert "merged from" in normalized_release_current
+    assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in normalized_release_current
+    assert "Completion tag: annotated `phase-09-complete`" in normalized_release_current
     assert "Phase 10: Not started" in normalized_release_current
+    assert "awaiting PR review" not in progress_current
+    assert "open and ready for review" not in release_current
+    assert "Completion tag: pending" not in release_current
 
     assert "ADR 0018" in release
     assert "event-time" in release
+    assert "injectable-clock lifecycle timestamps" in release
+    assert "stable identities/idempotent creation time" in release
     assert "ATT&CK" in release
+    assert "not technique proof or attribution" in release
     assert "not_executed" in release
     assert "automatic confirmation" in release
