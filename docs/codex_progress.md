@@ -10,7 +10,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
-| Current activity | Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is merged; its lifecycle-time correction is verified on `main`, and annotated Tag `phase-09-complete` is pushed. This branch closes post-merge status surfaces only. Phase 10 has not started |
+| Current activity | Phase 9 implementation PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and post-merge closure PR [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29) are merged. The lifecycle-time correction and annotated Tag `phase-09-complete` are verified. Phase 9 is fully closed; Phase 10 has not started |
 | Verification status | Post-merge Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests in 7.58 seconds; the final closure suite passes all 365 tests in 1,062.84 seconds with 86.74% branch-aware coverage |
 | Stable branch checkpoint | PR #28 was squash-merged to `main` as `ffdd7639b60d944b19d70096e1ff38de0d8761f8`; annotated Tag `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -20,10 +20,11 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, and Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28), `[Phase 09] Alert correlation and threat hypothesis engine`, are merged. PR #28 merged `phase/09-hypothesis-engine` into `main` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, and Phase 9 PRs [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29) are merged. PR #28 merged `phase/09-hypothesis-engine`; PR #29 merged the post-merge closure into `main` |
+| Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 9 PR #28 `quality` checks passed before merge; post-merge Ruff, strict mypy, focused tests, and the complete pytest suite also pass |
+| CI status | Both Phase 9 PR #28 `quality` checks and the Phase 9 closure PR #29 `quality` check passed; post-merge Ruff, strict mypy, focused tests, and the complete pytest suite also pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -34,14 +35,14 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
 | Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
 | Phase 9 tag | Annotated `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) is pushed and locally/remotely verified at merged `main` `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
-| Stable branch | `main` at `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
-| Working tree | Post-merge closure changes are limited to metadata, visible status, and their truthfulness tests; no model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
+| Stable branch | `main`; Phase 9 implementation baseline `ffdd7639b60d944b19d70096e1ff38de0d8761f8` and closure baseline `8e18ae97d9710813a782182eebcfc55d0edcfed8` are recorded without predicting the final-status PR merge SHA |
+| Working tree | Phase 9 implementation and post-merge closure are merged on synchronized `main`; no model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
 | Phase 10 status | Not started |
 | Next planned branch | `phase/10-case-feedback` (do not create before Phase 9 merge/checkpoint and explicit authorization) |
-| Next action | Review and merge the single Phase 9 post-merge closure PR, synchronize `main`, then wait for explicit user authorization. Do not start Phase 10 automatically |
+| Next action | Phase 9 is fully closed. Wait for an explicit Phase 10 task and rerun the Phase 10 startup gate before creating `phase/10-case-feedback` |
 
 Phase 0 through Phase 9 are checkpointed and their Tags remain unchanged. Phase
 9 consumes immutable Phase 8 alerts without changing their evidence or claiming
