@@ -10,7 +10,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
-| Current activity | Phase 9 implementation is complete on `phase/09-hypothesis-engine`; quality/review and pull-request publication are the remaining checkpoint steps. Phase 10 has not started |
+| Current activity | Phase 9 implementation is published in open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and awaits CI completion and user review. Phase 10 has not started |
 | Verification status | Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests; the complete suite passes all 365 tests with 86.75% branch-aware coverage |
 | Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -20,10 +20,10 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) and [#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) are merged; PR #25 targeted `main` from `phase/08-alert-explainability`, and PR #26 targeted `main` from `docs/phase-08-post-merge-closure` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs #25–#27 are merged. Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is open from `phase/09-hypothesis-engine` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 8 closure checks remain passed; Phase 9 CI is pending branch push and PR creation |
+| CI status | Both Phase 9 PR #28 `quality` checks are currently pending; local required checks pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -40,7 +40,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 9 status | Implementation complete — awaiting PR review |
 | Phase 10 status | Not started |
 | Next planned branch | `phase/10-case-feedback` (do not create before Phase 9 merge/checkpoint and explicit authorization) |
-| Next action | Complete final quality/review, push `phase/09-hypothesis-engine`, create the Phase 9 PR, and wait for user review. Do not start Phase 10 |
+| Next action | Wait for PR #28 CI, user review, and Squash and merge. Do not create a completion Tag or start Phase 10 before the post-merge checkpoint |
 
 Phase 0 through Phase 8 are checkpointed and their Tags remain unchanged. Phase
 9 consumes immutable Phase 8 alerts without changing their evidence or claiming

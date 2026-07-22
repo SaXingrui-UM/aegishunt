@@ -12,7 +12,8 @@ Status: **Implementation complete — awaiting PR review**.
 
 - Branch: `phase/09-hypothesis-engine`
 - Base main: `5b7c9496d77404fadcd757d75e482ce78476e55f`
-- Pull request: pending
+- Pull request: [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28), open and
+  ready for review; CI pending at publication
 - Merge commit: pending
 - Completion tag: pending; do not create before merge
 - Phase 10: Not started

@@ -91,7 +91,9 @@ def test_progress_and_release_record_phase_nine_without_phase_ten_scope() -> Non
     assert "Current branch | `phase/09-hypothesis-engine`" in normalized_progress_current
 
     assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert "Pull request: pending" in normalized_release_current
+    assert "Pull request: [#28]" in normalized_release_current
+    assert "open and ready for review" in normalized_release_current
+    assert "CI pending" in normalized_release_current
     assert "Completion tag: pending" in normalized_release_current
     assert "Phase 10: Not started" in normalized_release_current
 
