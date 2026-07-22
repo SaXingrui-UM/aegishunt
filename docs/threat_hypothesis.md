@@ -52,3 +52,11 @@ score, not likelihood. Safe analyst-controlled transitions include under review,
 more information, dismissed, rejected, or closed unresolved. Transitions are audited
 in the same transaction. Phase 10 case creation and feedback workflows are explicitly
 out of scope.
+
+Observed event time and record lifecycle time are separate. Initial `created_at` and
+`updated_at` come from the injectable UTC generation clock rather than the source
+group's `last_seen`. The immutable source-group snapshot retains both
+`group_generated_at` and `hypothesis_generated_at`. These lifecycle timestamps are not
+part of the stable hypothesis identity. Idempotent regeneration preserves the first
+persisted creation time. A later analyst transition requires a strictly later
+`updated_at`, while the hypothesis evidence and `created_at` remain unchanged.

@@ -9,9 +9,9 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Current phase | Phase 9 - Alert Correlation and Threat Hypothesis Engine |
 | Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
-| Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
-| Current activity | Phase 9 implementation is published in open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and awaits CI completion and user review. Phase 10 has not started |
-| Verification status | Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests; the complete suite passes all 365 tests with 86.75% branch-aware coverage |
+| Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
+| Current activity | Phase 9 implementation and the lifecycle-time correction are prepared for open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28); refreshed CI and user review remain required. Phase 10 has not started |
+| Verification status | Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests; the complete suite passes all 365 tests with 86.74% branch-aware coverage |
 | Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -23,7 +23,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs #25–#27 are merged. Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is open from `phase/09-hypothesis-engine` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 9 PR #28 `quality` checks are currently pending; local required checks pass |
+| CI status | The previously published Phase 9 PR #28 checks passed; refreshed checks for the lifecycle-time correction are required after push. Local required checks pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -71,17 +71,17 @@ No Phase 10 case or feedback workflow is implemented.
 - Added the `aegishunt hunt` CLI tree. Full hunting APIs/frontend pages remain Phase 12,
   and Phase 10 case/feedback workflows remain unimplemented.
 - Added unit, migration, integration/restart, CLI, status, and offline E2E coverage. The
-  focused Phase 9 selection passed all 39 tests in 6.56 seconds.
+  focused Phase 9 selection passed all 39 tests in 7.01 seconds.
 
 ## Phase 9 verification checkpoint
 
 - Ruff passed for the complete repository.
 - Strict mypy passed for all 168 source files.
-- The complete post-review pytest suite passed all 365 collected tests in 1,094.46 seconds;
+- The complete post-review pytest suite passed all 365 collected tests in 1,086.89 seconds;
   failures, skips, and xfails were all zero.
-- Branch-aware coverage was 86.75%, above the unchanged 85% project gate.
+- Branch-aware coverage was 86.74%, above the unchanged 85% project gate.
 - The focused Phase 9 unit, migration, CLI, integration/restart, lifecycle, offline
-  E2E, frontend, and status selection passed all 39 tests in 6.56 seconds.
+  E2E, frontend, and status selection passed all 39 tests in 7.01 seconds.
 - Manual CLI verification used `PYTHONPATH=src` because the desktop environment's
   editable-install `.pth` was not visible. The workaround exposed and helped fix an
   actual circular schema import; it is not represented as a standard-install success.
@@ -89,8 +89,14 @@ No Phase 10 case or feedback workflow is implemented.
   executable is missing (`ENOENT`). The equivalent first read-only review found one
   Medium issue: normal hypothesis-gate rejection used a silently caught exception.
   Commit `8c80e8e` replaced it with an explicit, tested eligibility result. The
-  post-fix equivalent review found zero Blocking, zero High, and zero unresolved
-  correctness-related Medium findings.
+  post-fix equivalent review found no remaining issue in that path.
+- A subsequent user review found a second correctness-related Medium: group and
+  hypothesis `created_at`/`updated_at` values were copied from historical event
+  `last_seen` rather than actual record generation time. Commit `864ef66` added
+  injectable clocks, separate lifecycle evidence, idempotent timestamp preservation,
+  strictly later status-update time, and unit/integration/restart/E2E regression
+  coverage. The final equivalent review found zero Blocking, zero High, and zero
+  unresolved correctness-related Medium findings.
 - Tests generated only isolated temporary SQLite databases and fixtures. No model,
   formal experiment evidence, external enrichment, network access, or Phase 10 case
   artifact was created.

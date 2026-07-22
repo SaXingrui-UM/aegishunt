@@ -48,7 +48,12 @@ idempotently; an identity collision with different evidence fails closed.
 
 An `AlertGroup` retains members, canonical entities, matched rules, components, event
 window, count, severity, summary, evidence snapshots, policy checksum, schema version,
-and deterministic creation time. Phase 8 source alerts are never mutated.
+and an explicit lifecycle creation time. `first_seen` and `last_seen` remain the
+observed event window. `created_at` is the time the group record is generated, comes
+from an injectable UTC clock, and is also retained as `evidence.generated_at`.
+Lifecycle time is excluded from the stable UUID identity. An idempotent rerun returns
+the existing group and preserves its original `created_at`; a conflicting evidence
+payload fails closed. Phase 8 source alerts are never mutated.
 
 One alert may belong to multiple groups only when it participates in distinct canonical
 relationships (for example, one source-centered and one destination-centered pattern).

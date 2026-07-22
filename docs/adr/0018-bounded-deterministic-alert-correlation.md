@@ -19,6 +19,13 @@ group to policy identity and sorted source alert IDs. A transparent weighted sco
 retains risk, count, evidence-diversity, and temporal-density components and is defined
 only as triage evidence strength.
 
+Keep observed event time and record lifecycle time as separate contracts. Group and
+hypothesis services receive injectable UTC clocks. `first_seen`/`last_seen` describe
+the source event window, while `created_at`/`updated_at` describe actual generation and
+workflow time. Structured evidence retains those generation timestamps, but stable
+identities exclude wall-clock values. Idempotent reruns return existing records and
+preserve their initial lifecycle timestamps.
+
 Generate at most one deterministic primary hypothesis template per eligible group
 while retaining all candidate template IDs. The record separates observed facts,
 derived inferences, assumptions, benign alternatives, possible ATT&CK mappings,

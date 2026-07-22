@@ -36,6 +36,9 @@ Status: **Implementation complete — awaiting PR review**.
   or automatic confirmation.
 - Existing schema/ORM/repository extension, additive schema v2→v3 migration, restart
   persistence, and idempotent rerun behavior.
+- Separate observed event windows from injectable-clock lifecycle timestamps; stable
+  identities remain independent of wall-clock time and idempotent reruns preserve the
+  first persisted creation time.
 - Typed `aegishunt hunt` configuration, correlation, group, generation, hypothesis, and
   status commands.
 - Truthful Streamlit/README/architecture/data-model status and detailed contracts.
@@ -52,10 +55,10 @@ remains Phase 10; full runtime hunting API/frontend remains Phase 12.
 - Ruff: passed for the complete repository.
 - Strict mypy: passed for all 168 source files.
 - Final post-review pytest: 365 passed, 0 failed, 0 skipped, 0 xfailed in
-  1,094.46 seconds.
-- Branch-aware coverage: 86.75%, above the unchanged 85% project gate.
+  1,086.89 seconds.
+- Branch-aware coverage: 86.74%, above the unchanged 85% project gate.
 - Focused Phase 9 unit/integration/restart/lifecycle/CLI/E2E/status selection:
-  39 passed in 6.56 seconds.
+  39 passed in 7.01 seconds.
 - Manual `aegishunt hunt --help` and correlation-policy verification passed with
   `PYTHONPATH=src`; the desktop editable-install `.pth` visibility issue is recorded
   as an environment limitation, not as a standard-install success.
@@ -69,9 +72,14 @@ Native `codex review --base main` could not start because the installed arm64
 executable is missing (`ENOENT`), so an equivalent read-only diff review was used.
 The first pass found one Medium issue: normal generation-gate rejection was handled
 through a silently caught exception. Commit `8c80e8e` made gate eligibility explicit
-and added regression coverage. Post-fix Ruff, strict mypy, focused tests, the full
-suite, scope scans, and equivalent review passed with zero Blocking, zero High, and
-zero unresolved correctness-related Medium findings.
+and added regression coverage. A subsequent user review found one correctness-related
+Medium lifecycle issue: group and hypothesis record creation times were incorrectly
+copied from the observed event window. Commit `864ef66` introduced injectable clocks,
+separated event and lifecycle timestamps, retained generation time in structured
+evidence, preserved stable identities/idempotent creation time, and required later
+status-update timestamps. Post-fix Ruff, strict mypy, focused tests, the full suite,
+scope scans, and equivalent review passed with zero Blocking, zero High, and zero
+unresolved correctness-related Medium findings.
 
 ## Known limitations
 

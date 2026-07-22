@@ -32,8 +32,8 @@ return naive values, so the storage type restores UTC awareness on reads.
 | `NetworkFlow` | `flow_id` UUID | Foreign key to source; first-observed direction; aware ordered timestamps; valid IPs/ports; non-negative counts; flat finite numeric features |
 | `DetectionResult` | `detection_id` UUID | Foreign key to flow; engine/fusion scores and thresholds; risk source/score/severity; model/policy versions and checksums; feature schema; reasons; explanation; detection time |
 | `SecurityAlert` | `alert_id` UUID | Foreign key to detection; configured risk/severity; immutable entities/evidence/reasons/explanation/identities; status; nullable verdict; created/updated times |
-| `AlertGroup` | `group_id` UUID | Stable policy/member identity; ordered alert IDs; canonical entities; rule versions/evidence; bounded score components; event window; triage severity; policy checksum |
-| `ThreatHypothesis` | `hypothesis_id` UUID | Foreign key to group; deterministic template/candidates; facts/inferences/assumptions/alternatives; possible mappings; non-executed queries; bounded confidence components; default `proposed` |
+| `AlertGroup` | `group_id` UUID | Stable policy/member identity; ordered alert IDs; canonical entities; rule versions/evidence; bounded score components; observed event window; independent lifecycle creation time; triage severity; policy checksum |
+| `ThreatHypothesis` | `hypothesis_id` UUID | Foreign key to group; deterministic template/candidates; facts/inferences/assumptions/alternatives; possible mappings; non-executed queries; bounded confidence components; independent created/updated lifecycle times; default `proposed` |
 | `InvestigationCase` | `case_id` UUID | Optional foreign key to hypothesis; priority/status, assignment, evidence, notes, related objects, verdict, ordered timestamps |
 | `AnalystFeedback` | `feedback_id` UUID | Object reference, controlled verdict, bounded confidence, notes, audit time |
 | `ModelVersion` | `model_id` UUID | Type/version uniqueness, algorithm, feature/data/config/metric metadata, controlled artifact path, status; no model binary is loaded |
@@ -72,6 +72,10 @@ and reports remain controlled filesystem artifacts referenced by metadata.
   every group/hypothesis, source alert evidence is snapshotted rather than mutated,
   structured investigation queries remain marked `not_executed`, and direct
   hypothesis confirmation is prohibited.
+- Phase 9 separates observed event time from record lifecycle time. Group and
+  hypothesis generation use injectable UTC clocks, structured evidence retains the
+  generation timestamps, stable identities exclude wall-clock values, and
+  idempotent reruns preserve the original persisted creation time.
 
 ## Phase 3 flow integrity
 
