@@ -84,10 +84,19 @@ def test_progress_and_release_record_phase_nine_without_phase_ten_scope() -> Non
     assert "Phase 9 status | Phase complete" in normalized_progress_current
     assert "Phase 10 status | Not started" in normalized_progress_current
     assert "phase/09-hypothesis-engine" in progress_current
+    assert "PR [#29]" in normalized_progress_current
+    assert "Phase 9 is fully closed" in normalized_progress_current
+    assert "8e18ae97d9710813a782182eebcfc55d0edcfed8" in normalized_progress_current
     assert (
-        "Stable branch | `main` at `ffdd7639b60d944b19d70096e1ff38de0d8761f8`"
+        "Phase 9 implementation baseline `ffdd7639b60d944b19d70096e1ff38de0d8761f8`"
         in normalized_progress_current
     )
+    assert (
+        "closure baseline `8e18ae97d9710813a782182eebcfc55d0edcfed8`"
+        in normalized_progress_current
+    )
+    assert "This branch closes post-merge status surfaces" not in progress_current
+    assert "Review and merge the single Phase 9 post-merge closure PR" not in progress_current
 
     assert "Status: **Phase complete**" in release_current
     assert "Pull request: [#28]" in normalized_release_current
