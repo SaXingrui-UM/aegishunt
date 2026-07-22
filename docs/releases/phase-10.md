@@ -45,12 +45,24 @@ explicitly absent.
 - Ruff passed for the complete repository.
 - Strict mypy passed for all 185 source files.
 - Focused Phase 10 unit, integration, artifact, frontend/status, and offline E2E
-  selection passed all 27 tests in 5.39 seconds.
-- The complete pytest suite passed all 388 tests in 1,102.63 seconds; failures,
+  selection passed all 27 tests in 4.93 seconds.
+- The final complete pytest suite passed all 388 tests in 1,092.33 seconds; failures,
   skips, and xfails were all zero.
 - Branch-aware coverage was 86.01%, above the unchanged 85% project gate.
 - Tests use only temporary SQLite databases and controlled local fixtures; no network,
   root, real PCAP, formal experiment evidence, model training, or activation.
+
+## Review outcome
+
+- The implementation review corrected an empty-candidate CLI transaction that could
+  leave a valid artifact without its audit commit; empty and below-minimum outcomes
+  now return explicit persisted states.
+- Native `codex review --base main` was attempted but could not start because the local
+  arm64 executable is missing (`ENOENT`). The equivalent read-only branch review found
+  one correctness-related Medium audit-contract gap. Commit `c6a10ee` added uniform
+  before/after, reason, and source summaries plus regression assertions.
+- The post-fix equivalent review found zero Blocking, zero High, and zero unresolved
+  correctness-related Medium findings. No Phase 11 scope creep was found.
 
 ## Known limitations
 

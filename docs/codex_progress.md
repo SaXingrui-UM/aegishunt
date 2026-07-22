@@ -12,7 +12,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Current activity | Phase 10 is implemented on `phase/10-case-feedback` and is undergoing final verification before its pull request. Phase 9 remains fully closed and checkpointed; Phase 11 has not started |
-| Verification status | Phase 10 focused unit/integration/artifact/status/offline E2E selection passes all 27 tests in 5.39 seconds; the complete suite passes all 388 tests in 1,102.63 seconds with 86.01% branch-aware coverage and no failures, skips, or xfails |
+| Verification status | Phase 10 focused unit/integration/artifact/status/offline E2E selection passes all 27 tests in 4.93 seconds; the final complete suite passes all 388 tests in 1,092.33 seconds with 86.01% branch-aware coverage and no failures, skips, or xfails |
 | Stable branch checkpoint | PR #28 was squash-merged to `main` as `ffdd7639b60d944b19d70096e1ff38de0d8761f8`; annotated Tag `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -80,8 +80,8 @@ not implemented.
 ## Phase 10 verification checkpoint
 
 - Ruff passed for the complete repository; strict mypy passed for all 185 source files.
-- The focused Phase 10 selection passed all 27 tests in 5.39 seconds.
-- The complete pytest suite passed all 388 tests in 1,102.63 seconds with zero
+- The focused Phase 10 selection passed all 27 tests in 4.93 seconds.
+- The final complete pytest suite passed all 388 tests in 1,092.33 seconds with zero
   failures, skips, or xfails and 86.01% branch-aware coverage, above the unchanged
   85% gate.
 - The first implementation review found that an empty candidate artifact caused a
@@ -89,6 +89,13 @@ not implemented.
   valid data-only artifact. The command now returns an explicit `empty` state and
   commits the audit; a separate `insufficient_records` state applies below the
   configured minimum. Offline E2E regression coverage verifies the empty audit.
+- Native `codex review --base main` could not start because the installed arm64
+  executable is missing (`ENOENT`). The equivalent read-only branch review found one
+  correctness-related Medium gap: several Phase 10 audit events did not uniformly
+  include the required before/after, reason, and source summaries. Commit `c6a10ee`
+  completed those structured summaries and added regression assertions. The post-fix
+  equivalent review found zero Blocking, zero High, and zero unresolved
+  correctness-related Medium findings.
 - Tests created only isolated temporary databases and ignored data-only artifacts.
   They did not regenerate formal model evidence, load arbitrary pickle/joblib, train
   or activate a model, access a network, require root, or implement Phase 11.
