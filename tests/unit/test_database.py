@@ -18,8 +18,8 @@ def database_for(tmp_path: Path) -> Database:
 def test_database_initialization_is_repeatable_and_enables_wal(tmp_path: Path) -> None:
     database = database_for(tmp_path)
     try:
-        assert database.initialize() == 2
-        assert database.initialize() == 2
+        assert database.initialize() == 3
+        assert database.initialize() == 3
         assert database.journal_mode() == "wal"
         tables = set(inspect(database.engine).get_table_names())
         assert {
@@ -44,7 +44,7 @@ def test_incompatible_schema_version_is_rejected(tmp_path: Path) -> None:
     try:
         database.initialize()
         with database.session() as session, session.begin():
-            session.add(SchemaVersionRecord(version=3))
+            session.add(SchemaVersionRecord(version=4))
 
         with pytest.raises(SchemaVersionError, match="incompatible"):
             database.initialize()
@@ -80,6 +80,29 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
                 text(
                     "CREATE TABLE schema_versions ("
                     "version INTEGER PRIMARY KEY, applied_at DATETIME NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE alert_groups ("
+                    "group_id CHAR(32) PRIMARY KEY, alert_ids JSON NOT NULL, "
+                    "entity_keys JSON NOT NULL, correlation_score FLOAT NOT NULL, "
+                    "first_seen DATETIME NOT NULL, last_seen DATETIME NOT NULL, "
+                    "summary TEXT NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE threat_hypotheses ("
+                    "hypothesis_id CHAR(32) PRIMARY KEY, title VARCHAR(255) NOT NULL, "
+                    "description TEXT NOT NULL, confidence FLOAT NOT NULL, "
+                    "severity VARCHAR(32) NOT NULL, involved_entities JSON NOT NULL, "
+                    "supporting_alert_ids JSON NOT NULL, supporting_features JSON NOT NULL, "
+                    "first_seen DATETIME NOT NULL, last_seen DATETIME NOT NULL, "
+                    "possible_attack_category VARCHAR(255), possible_mitre_mappings JSON NOT NULL, "
+                    "assumptions JSON NOT NULL, alternative_explanations JSON NOT NULL, "
+                    "recommended_queries JSON NOT NULL, recommended_steps JSON NOT NULL, "
+                    "status VARCHAR(32) NOT NULL, created_at DATETIME NOT NULL)"
                 )
             )
             connection.execute(
@@ -123,18 +146,39 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
 
     database = Database(DatabaseSettings(url=f"sqlite:///{path}"))
     try:
-        assert database.initialize() == 2
-        assert database.initialize() == 2
+        assert database.initialize() == 3
+        assert database.initialize() == 3
         columns = {
             column["name"]
             for column in inspect(database.engine).get_columns("detection_results")
         }
         assert {"fusion_score", "risk_source", "policy_versions", "reason_codes"} <= columns
+        group_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("alert_groups")
+        }
+        assert {
+            "matched_rule_ids",
+            "score_components",
+            "policy_checksum",
+            "group_schema_version",
+        } <= group_columns
+        hypothesis_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("threat_hypotheses")
+        }
+        assert {
+            "group_id",
+            "confidence_components",
+            "source_group_snapshot",
+            "template_catalog_version",
+            "hypothesis_schema_version",
+        } <= hypothesis_columns
         with database.engine.connect() as connection:
             assert connection.scalar(text("SELECT COUNT(*) FROM detection_results")) == 1
             versions = connection.execute(
                 text("SELECT version FROM schema_versions ORDER BY version")
             ).scalars()
-            assert tuple(versions) == (1, 2)
+            assert tuple(versions) == (1, 2, 3)
     finally:
         database.dispose()

@@ -233,7 +233,7 @@ def test_init_db_is_repeatable_and_does_not_expose_database_url(tmp_path: Path) 
     assert payload == {
         "dialect": "sqlite",
         "journal_mode": "wal",
-        "schema_version": 2,
+        "schema_version": 3,
         "status": "initialized",
     }
     assert str(database_path) not in first.stdout
