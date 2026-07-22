@@ -50,7 +50,8 @@ remains Phase 10; full runtime hunting API/frontend remains Phase 12.
 
 - Ruff: passed for the complete repository.
 - Strict mypy: passed for all 168 source files.
-- Full pytest: 365 passed, 0 failed, 0 skipped, 0 xfailed in 1,084.30 seconds.
+- Final post-review pytest: 365 passed, 0 failed, 0 skipped, 0 xfailed in
+  1,094.46 seconds.
 - Branch-aware coverage: 86.75%, above the unchanged 85% project gate.
 - Focused Phase 9 unit/integration/restart/lifecycle/CLI/E2E/status selection:
   39 passed in 6.56 seconds.
@@ -60,6 +61,16 @@ remains Phase 10; full runtime hunting API/frontend remains Phase 12.
 - Tests use controlled local fixtures and temporary SQLite databases only; no network,
   root privilege, live capture, external target, generated model, or formal experiment
   evidence is used.
+
+## Review outcome
+
+Native `codex review --base main` could not start because the installed arm64
+executable is missing (`ENOENT`), so an equivalent read-only diff review was used.
+The first pass found one Medium issue: normal generation-gate rejection was handled
+through a silently caught exception. Commit `8c80e8e` made gate eligibility explicit
+and added regression coverage. Post-fix Ruff, strict mypy, focused tests, the full
+suite, scope scans, and equivalent review passed with zero Blocking, zero High, and
+zero unresolved correctness-related Medium findings.
 
 ## Known limitations
 

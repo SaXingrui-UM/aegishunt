@@ -77,7 +77,7 @@ No Phase 10 case or feedback workflow is implemented.
 
 - Ruff passed for the complete repository.
 - Strict mypy passed for all 168 source files.
-- The complete pytest suite passed all 365 collected tests in 1,084.30 seconds;
+- The complete post-review pytest suite passed all 365 collected tests in 1,094.46 seconds;
   failures, skips, and xfails were all zero.
 - Branch-aware coverage was 86.75%, above the unchanged 85% project gate.
 - The focused Phase 9 unit, migration, CLI, integration/restart, lifecycle, offline
@@ -85,6 +85,12 @@ No Phase 10 case or feedback workflow is implemented.
 - Manual CLI verification used `PYTHONPATH=src` because the desktop environment's
   editable-install `.pth` was not visible. The workaround exposed and helped fix an
   actual circular schema import; it is not represented as a standard-install success.
+- Native `codex review --base main` could not start because the installed arm64
+  executable is missing (`ENOENT`). The equivalent first read-only review found one
+  Medium issue: normal hypothesis-gate rejection used a silently caught exception.
+  Commit `8c80e8e` replaced it with an explicit, tested eligibility result. The
+  post-fix equivalent review found zero Blocking, zero High, and zero unresolved
+  correctness-related Medium findings.
 - Tests generated only isolated temporary SQLite databases and fixtures. No model,
   formal experiment evidence, external enrichment, network access, or Phase 10 case
   artifact was created.
