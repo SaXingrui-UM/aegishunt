@@ -8,7 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from aegishunt.hunting.errors import HypothesisGateError
-from aegishunt.hunting.generator import generate_hypothesis
+from aegishunt.hunting.generator import generate_hypothesis, hypothesis_gate_failure
 from aegishunt.schemas import AlertGroup, InvestigationQuery, PossibleMitreMapping, ThreatHypothesis
 from aegishunt.schemas.enums import HypothesisStatus
 from tests.fixtures.hunting import correlation_policy, group
@@ -73,8 +73,12 @@ def test_template_selection_is_rule_based_with_stable_priority(
 
 def test_generation_gate_rejects_low_score_and_legacy_group() -> None:
     loaded = correlation_policy()
+    low_score = group(score=0.49)
+    assert hypothesis_gate_failure(low_score, loaded) == (
+        "alert group is below the hypothesis generation threshold"
+    )
     with pytest.raises(HypothesisGateError, match="below"):
-        generate_hypothesis(group(score=0.49), loaded)
+        generate_hypothesis(low_score, loaded)
     with pytest.raises(HypothesisGateError, match="Phase 9"):
         generate_hypothesis(
             group().model_copy(update={"group_schema_version": None}),

@@ -7,8 +7,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from aegishunt.correlation.config import LoadedCorrelationPolicy
-from aegishunt.hunting.errors import HypothesisGateError
-from aegishunt.hunting.generator import generate_hypothesis
+from aegishunt.hunting.generator import generate_hypothesis, hypothesis_gate_failure
 from aegishunt.schemas import ThreatHypothesis
 from aegishunt.schemas.enums import HypothesisStatus
 from aegishunt.storage.repositories import (
@@ -34,10 +33,9 @@ class ThreatHypothesisService:
             if existing is not None:
                 output.append(existing)
                 continue
-            try:
-                hypothesis = generate_hypothesis(group, self._policy)
-            except HypothesisGateError:
+            if hypothesis_gate_failure(group, self._policy) is not None:
                 continue
+            hypothesis = generate_hypothesis(group, self._policy)
             output.append(self._hypotheses.add(hypothesis, actor=actor))
         return tuple(output)
 

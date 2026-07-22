@@ -73,6 +73,26 @@ def _facts(group: AlertGroup) -> list[str]:
     ]
 
 
+def hypothesis_gate_failure(
+    group: AlertGroup,
+    loaded: LoadedCorrelationPolicy,
+) -> str | None:
+    """Return an explicit eligibility failure without using exceptions for control flow."""
+
+    policy = loaded.policy
+    if group.group_schema_version != "1.0.0":
+        return "hypothesis generation requires a Phase 9 alert group"
+    if group.alert_count is None or group.alert_count < policy.minimum_alerts:
+        return "alert group does not meet the minimum member count"
+    if group.severity is None:
+        return "alert group lacks a triage severity"
+    if group.correlation_score < policy.hypothesis_generation_threshold:
+        return "alert group is below the hypothesis generation threshold"
+    if not group.matched_rule_ids or not group.evidence:
+        return "alert group lacks rule or evidence provenance"
+    return None
+
+
 def generate_hypothesis(
     group: AlertGroup,
     loaded: LoadedCorrelationPolicy,
@@ -80,16 +100,12 @@ def generate_hypothesis(
     """Generate one proposed hypothesis or fail closed at the configured gate."""
 
     policy = loaded.policy
-    if group.group_schema_version != "1.0.0":
-        raise HypothesisGateError("hypothesis generation requires a Phase 9 alert group")
-    if group.alert_count is None or group.alert_count < policy.minimum_alerts:
-        raise HypothesisGateError("alert group does not meet the minimum member count")
-    if group.severity is None:
+    gate_failure = hypothesis_gate_failure(group, loaded)
+    if gate_failure is not None:
+        raise HypothesisGateError(gate_failure)
+    severity = group.severity
+    if severity is None:
         raise HypothesisGateError("alert group lacks a triage severity")
-    if group.correlation_score < policy.hypothesis_generation_threshold:
-        raise HypothesisGateError("alert group is below the hypothesis generation threshold")
-    if not group.matched_rule_ids or not group.evidence:
-        raise HypothesisGateError("alert group lacks rule or evidence provenance")
     candidates = _candidate_templates(group)
     primary = candidates[0]
     template = TEMPLATES[primary]
@@ -134,7 +150,7 @@ def generate_hypothesis(
         ),
         confidence=confidence,
         confidence_components=confidence_components,
-        severity=group.severity,
+        severity=severity,
         involved_entities=list(group.entity_keys),
         supporting_alert_ids=list(group.alert_ids),
         supporting_features=list(group.matched_rule_ids),
