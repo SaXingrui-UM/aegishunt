@@ -6,12 +6,13 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 9 - Alert Correlation and Threat Hypothesis Engine |
-| Status | Phase complete |
+| Current phase | Phase 10 - Investigation Case and Analyst Feedback |
+| Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
-| Current activity | Phase 9 implementation PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and post-merge closure PR [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29) are merged. The lifecycle-time correction and annotated Tag `phase-09-complete` are verified. Phase 9 is fully closed; Phase 10 has not started |
-| Verification status | Post-merge Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests in 7.58 seconds; the final closure suite passes all 365 tests in 1,062.84 seconds with 86.74% branch-aware coverage |
+| Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
+| Current activity | Phase 10 is implemented on `phase/10-case-feedback` and is undergoing final verification before its pull request. Phase 9 remains fully closed and checkpointed; Phase 11 has not started |
+| Verification status | Phase 10 focused unit/integration/artifact/status/offline E2E selection passes all 27 tests in 5.39 seconds; the complete suite passes all 388 tests in 1,102.63 seconds with 86.01% branch-aware coverage and no failures, skips, or xfails |
 | Stable branch checkpoint | PR #28 was squash-merged to `main` as `ffdd7639b60d944b19d70096e1ff38de0d8761f8`; annotated Tag `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -24,7 +25,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 9 PR #28 `quality` checks and the Phase 9 closure PR #29 `quality` check passed; post-merge Ruff, strict mypy, focused tests, and the complete pytest suite also pass |
+| CI status | Phase 9 CI is closed and passing; Phase 10 CI is pending pull-request creation |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -35,21 +36,62 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
 | Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
 | Phase 9 tag | Annotated `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) is pushed and locally/remotely verified at merged `main` `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
-| Stable branch | `main`; Phase 9 implementation baseline `ffdd7639b60d944b19d70096e1ff38de0d8761f8` and closure baseline `8e18ae97d9710813a782182eebcfc55d0edcfed8` are recorded without predicting the final-status PR merge SHA |
-| Working tree | Phase 9 implementation and post-merge closure are merged on synchronized `main`; no model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
+| Stable branch | `main` at Phase 10 branch baseline `92bd2f5833778d82e5b815b8c3764478f5e3b1ab`; Phase 10 remains unmerged |
+| Working tree | Phase 10 implementation changes are confined to `phase/10-case-feedback`; no model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
-| Phase 10 status | Not started |
-| Next planned branch | `phase/10-case-feedback` (do not create before Phase 9 merge/checkpoint and explicit authorization) |
-| Next action | Phase 9 is fully closed. Wait for an explicit Phase 10 task and rerun the Phase 10 startup gate before creating `phase/10-case-feedback` |
+| Phase 10 status | Implementation complete — awaiting PR review |
+| Phase 11 status | Not started |
+| Current branch | `phase/10-case-feedback` |
+| Next planned branch | `phase/11-runtime-replay` (do not create before Phase 10 merge/checkpoint and explicit authorization) |
+| Next action | Finish Phase 10 quality/review gates, push this branch, create the Phase 10 pull request, and stop for user review |
 
 Phase 0 through Phase 9 are checkpointed and their Tags remain unchanged. Phase
-9 consumes immutable Phase 8 alerts without changing their evidence or claiming
-attack confirmation. Operational risk and correlation/confidence are not attack
-probabilities; severity is not certainty; alerts and hypotheses are not confirmed
-attacks; explanations and possible ATT&CK mappings are non-causal/non-attributive.
-No Phase 10 case or feedback workflow is implemented.
+10 consumes immutable hypotheses and underlying evidence without claiming attack
+confirmation. Case verdicts and feedback are revisable analyst judgments, not
+ground truth. Candidate exports never train, activate, or replace a model and
+exclude frozen-test/evaluation provenance. Phase 11 runtime and replay work is
+not implemented.
+
+## Phase 10 implementation checkpoint
+
+- Added deterministic, idempotent creation of one primary case from an eligible
+  Phase 9 hypothesis while retaining facts, inference, assumptions, benign
+  alternatives, possible mappings, and underlying typed evidence snapshots.
+- Added configured status transitions and priority mapping, assignment, append-only
+  notes/references, case verdicts, closure requirements, explicit correction
+  semantics, injectable lifecycle clocks, and same-transaction audit records.
+- Added human-supplied alert/case feedback with actor, confidence, provenance,
+  query filters, exact duplicate idempotency, and explicit conflict handling.
+  Feedback remains noisy/revisable analyst evidence and never rewrites source data.
+- Added exact-inventory, checksummed feedback export and deterministic JSON/Markdown
+  case reports. Artifact roots are configured, contained, non-overwriting, and
+  separate from database evidence.
+- Added an explicit retraining-candidate builder limited to unambiguous
+  alert-to-detection-to-flow mappings. It rejects unknown or frozen/evaluation
+  provenance, reports conflicts/exclusions, preserves Phase 3 feature order, and
+  never invokes training or activation.
+- Added additive schema v3→v4 migration, typed repositories/services, CLI groups,
+  unit/integration/restart/offline E2E tests, ADR 0019, and Phase 10 contracts.
+- Full Phase 10 APIs/frontend pages remain Phase 12 scope; Phase 11 runtime replay,
+  workers, progress/recovery, and resource monitoring remain unimplemented.
+
+## Phase 10 verification checkpoint
+
+- Ruff passed for the complete repository; strict mypy passed for all 185 source files.
+- The focused Phase 10 selection passed all 27 tests in 5.39 seconds.
+- The complete pytest suite passed all 388 tests in 1,102.63 seconds with zero
+  failures, skips, or xfails and 86.01% branch-aware coverage, above the unchanged
+  85% gate.
+- The first implementation review found that an empty candidate artifact caused a
+  CLI exit inside the database transaction, rolling back its audit while leaving the
+  valid data-only artifact. The command now returns an explicit `empty` state and
+  commits the audit; a separate `insufficient_records` state applies below the
+  configured minimum. Offline E2E regression coverage verifies the empty audit.
+- Tests created only isolated temporary databases and ignored data-only artifacts.
+  They did not regenerate formal model evidence, load arbitrary pickle/joblib, train
+  or activate a model, access a network, require root, or implement Phase 11.
 
 ## Phase 9 implementation checkpoint
 

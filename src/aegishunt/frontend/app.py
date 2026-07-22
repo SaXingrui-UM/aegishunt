@@ -1,4 +1,4 @@
-"""Truthful Streamlit shell for the Phase 9 merged checkpoint."""
+"""Truthful Streamlit shell for Phase 10 implementation review."""
 
 from __future__ import annotations
 
@@ -9,22 +9,21 @@ from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 PLANNED_MODULES = (
     "PCAP replay and runtime orchestration",
     "Public benchmark acquisition and validated label joining",
-    "Investigation cases and analyst feedback",
+    "Complete Cases API and Streamlit investigation workspace",
     "Model activation and controlled retraining",
 )
 
 
 def main() -> None:
-    """Render Phase 9 merged status without inventing groups or hypotheses."""
+    """Render Phase 10 status without inventing cases, feedback, or metrics."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 9 complete. PR #28 was Squash and merged from "
-        "phase/09-hypothesis-engine into main as "
-        "ffdd7639b60d944b19d70096e1ff38de0d8761f8; annotated checkpoint "
-        "phase-09-complete is remotely verified. Phase 10: Not started."
+        "Current status: Phase 10 implementation complete — awaiting PR review on "
+        "phase/10-case-feedback. Phase 9 and annotated checkpoint phase-09-complete "
+        "remain closed and immutable. Phase 11: Not started."
     )
     st.success(
         "Recommendation: Inconclusive. The controlled experiment did not establish a "
@@ -44,6 +43,14 @@ def main() -> None:
         "hunting hypotheses. Correlation and confidence are non-probabilistic triage "
         "scores; a hypothesis is a reviewable lead, not a fact or confirmed attack. "
         "Suggested queries are structured data only and are never executed by the core."
+    )
+    st.info(
+        "Phase 10 adds deterministic InvestigationCase creation, audited lifecycle and "
+        "append-only notes, typed evidence snapshots, analyst verdict/feedback, and "
+        "checksummed data-only exports. A Case is not a confirmed attack; priority is "
+        "triage, feedback may be noisy, and a Case verdict is not propagated to all "
+        "related flows. Retraining candidates require manual review and never train, "
+        "activate, or replace a model. No case counts or feedback metrics are fabricated."
     )
     st.subheader("Planned system modules")
     for module in PLANNED_MODULES:
