@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,14 @@ from aegishunt.storage.repositories import (
     SecurityAlertRepository,
     ThreatHypothesisRepository,
 )
-from tests.fixtures.hunting import alert, correlation_policy, seed_alerts
+from tests.fixtures.hunting import (
+    GROUP_GENERATED_AT,
+    HYPOTHESIS_GENERATED_AT,
+    STATUS_UPDATED_AT,
+    alert,
+    correlation_policy,
+    seed_alerts,
+)
 
 
 def _database(path: Path) -> Database:
@@ -40,18 +48,40 @@ def test_correlation_hypothesis_restart_and_audited_status(tmp_path: Path) -> No
     loaded = correlation_policy()
     try:
         with database.session() as session, session.begin():
-            correlation = AlertCorrelationService(session, loaded)
+            correlation = AlertCorrelationService(
+                session,
+                loaded,
+                clock=lambda: GROUP_GENERATED_AT,
+            )
             first_groups = correlation.correlate(actor="integration-correlation")
-            second_groups = correlation.correlate(actor="integration-correlation")
+            second_groups = AlertCorrelationService(
+                session,
+                loaded,
+                clock=lambda: GROUP_GENERATED_AT + timedelta(days=10),
+            ).correlate(actor="integration-correlation")
             assert first_groups == second_groups
             assert len(first_groups) == 1
+            assert first_groups[0].first_seen < first_groups[0].last_seen
+            assert first_groups[0].created_at == GROUP_GENERATED_AT
+            assert first_groups[0].created_at != first_groups[0].last_seen
 
-            hypotheses = ThreatHypothesisService(session, loaded)
+            hypotheses = ThreatHypothesisService(
+                session,
+                loaded,
+                clock=lambda: HYPOTHESIS_GENERATED_AT,
+            )
             first_hypotheses = hypotheses.generate(actor="integration-hunting")
-            second_hypotheses = hypotheses.generate(actor="integration-hunting")
+            second_hypotheses = ThreatHypothesisService(
+                session,
+                loaded,
+                clock=lambda: HYPOTHESIS_GENERATED_AT + timedelta(days=10),
+            ).generate(actor="integration-hunting")
             assert first_hypotheses == second_hypotheses
             assert len(first_hypotheses) == 1
             assert first_hypotheses[0].status is HypothesisStatus.PROPOSED
+            assert first_hypotheses[0].created_at == HYPOTHESIS_GENERATED_AT
+            assert first_hypotheses[0].updated_at == HYPOTHESIS_GENERATED_AT
+            assert first_hypotheses[0].created_at != first_groups[0].last_seen
 
         database.dispose()
         database = _database(path)
@@ -59,6 +89,7 @@ def test_correlation_hypothesis_restart_and_audited_status(tmp_path: Path) -> No
             groups = AlertGroupRepository(session).list()
             hypotheses = ThreatHypothesisRepository(session).list()
             assert groups == list(first_groups)
+            assert groups[0].created_at == GROUP_GENERATED_AT
             member_ids = [
                 str(item.alert_id)
                 for item in AlertGroupRepository(session).list_members(groups[0].group_id)
@@ -70,7 +101,11 @@ def test_correlation_hypothesis_restart_and_audited_status(tmp_path: Path) -> No
                 for item in SecurityAlertRepository(session).list()
             } == original_evidence
 
-            service = ThreatHypothesisService(session, loaded)
+            service = ThreatHypothesisService(
+                session,
+                loaded,
+                clock=lambda: STATUS_UPDATED_AT,
+            )
             immutable_hypothesis = hypotheses[0].model_dump(
                 exclude={"status", "updated_at"}
             )
@@ -80,6 +115,9 @@ def test_correlation_hypothesis_restart_and_audited_status(tmp_path: Path) -> No
                 actor="integration-analyst",
             )
             assert reviewed.status is HypothesisStatus.UNDER_REVIEW
+            assert reviewed.created_at == HYPOTHESIS_GENERATED_AT
+            assert reviewed.updated_at == STATUS_UPDATED_AT
+            assert reviewed.updated_at > reviewed.created_at
             assert reviewed.model_dump(exclude={"status", "updated_at"}) == immutable_hypothesis
             with pytest.raises(HypothesisTransitionError, match="confirmed"):
                 service.update_status(

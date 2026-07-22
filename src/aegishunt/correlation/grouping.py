@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+from datetime import datetime
 from typing import cast
 from uuid import NAMESPACE_URL, uuid5
 
@@ -13,16 +14,19 @@ from aegishunt.correlation.index import EntityIndex
 from aegishunt.correlation.rules import evaluate_rules
 from aegishunt.correlation.scoring import score_correlation, severity_for
 from aegishunt.schemas import AlertGroup, SecurityAlert
-from aegishunt.schemas.base import JsonObject
+from aegishunt.schemas.base import JsonObject, require_aware_utc
 
 
 def correlate_alerts(
     alerts: list[SecurityAlert] | tuple[SecurityAlert, ...],
     loaded: LoadedCorrelationPolicy,
+    *,
+    generated_at: datetime,
 ) -> tuple[AlertGroup, ...]:
     """Correlate eligible alerts in bounded event-time windows deterministically."""
 
     policy = loaded.policy
+    lifecycle_time = require_aware_utc(generated_at)
     index = EntityIndex.build(alerts, policy)
     members: dict[tuple[str, ...], tuple[IndexedAlert, ...]] = {}
     entities: dict[tuple[str, ...], set[str]] = defaultdict(set)
@@ -68,6 +72,7 @@ def correlate_alerts(
                 {limitation for item in matches for limitation in item.limitations}
             ),
             "event_time_source": "security_alert.evidence.observed_facts",
+            "generated_at": lifecycle_time.isoformat(),
         })
         groups.append(
             AlertGroup(
@@ -91,7 +96,7 @@ def correlate_alerts(
                 policy_checksum=loaded.configuration_checksum,
                 status="open",
                 group_schema_version="1.0.0",
-                created_at=last_seen,
+                created_at=lifecycle_time,
             )
         )
     return tuple(sorted(groups, key=lambda item: (item.first_seen, str(item.group_id))))

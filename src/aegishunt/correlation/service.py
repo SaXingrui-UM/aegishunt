@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
 from aegishunt.correlation.config import LoadedCorrelationPolicy
 from aegishunt.correlation.errors import CorrelationPersistenceError
 from aegishunt.correlation.grouping import correlate_alerts
 from aegishunt.schemas import AlertGroup
+from aegishunt.schemas.base import utc_now
 from aegishunt.storage.repositories import (
     AlertGroupRepository,
     AuditLogRepository,
@@ -18,19 +22,40 @@ from aegishunt.storage.repositories import (
 class AlertCorrelationService:
     """Read immutable alerts and append deterministic groups idempotently."""
 
-    def __init__(self, session: Session, loaded_policy: LoadedCorrelationPolicy) -> None:
+    def __init__(
+        self,
+        session: Session,
+        loaded_policy: LoadedCorrelationPolicy,
+        *,
+        clock: Callable[[], datetime] = utc_now,
+    ) -> None:
         audit = AuditLogRepository(session)
         self._alerts = SecurityAlertRepository(session, audit)
         self._groups = AlertGroupRepository(session, audit)
         self._policy = loaded_policy
+        self._clock = clock
+
+    @staticmethod
+    def _stable_evidence(group: AlertGroup) -> dict[str, object]:
+        """Exclude lifecycle timestamps while comparing immutable correlation evidence."""
+
+        payload = group.model_dump(exclude={"created_at"})
+        evidence = dict(group.evidence)
+        evidence.pop("generated_at", None)
+        payload["evidence"] = evidence
+        return payload
 
     def correlate(self, *, actor: str = "correlation-service") -> tuple[AlertGroup, ...]:
-        groups = correlate_alerts(self._alerts.list(), self._policy)
+        groups = correlate_alerts(
+            self._alerts.list(),
+            self._policy,
+            generated_at=self._clock(),
+        )
         stored: list[AlertGroup] = []
         for group in groups:
             existing = self._groups.get(group.group_id)
             if existing is not None:
-                if existing != group:
+                if self._stable_evidence(existing) != self._stable_evidence(group):
                     raise CorrelationPersistenceError(
                         "stable group identity exists with different evidence"
                     )

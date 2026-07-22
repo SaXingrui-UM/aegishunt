@@ -7,11 +7,33 @@ import math
 import pytest
 from pydantic import ValidationError
 
+from aegishunt.correlation.config import LoadedCorrelationPolicy
 from aegishunt.hunting.errors import HypothesisGateError
-from aegishunt.hunting.generator import generate_hypothesis, hypothesis_gate_failure
-from aegishunt.schemas import AlertGroup, InvestigationQuery, PossibleMitreMapping, ThreatHypothesis
+from aegishunt.hunting.generator import (
+    generate_hypothesis as generate_with_time,
+)
+from aegishunt.hunting.generator import (
+    hypothesis_gate_failure,
+)
+from aegishunt.schemas import (
+    AlertGroup,
+    InvestigationQuery,
+    PossibleMitreMapping,
+    ThreatHypothesis,
+)
 from aegishunt.schemas.enums import HypothesisStatus
-from tests.fixtures.hunting import correlation_policy, group
+from tests.fixtures.hunting import HYPOTHESIS_GENERATED_AT, correlation_policy, group
+
+
+def generate_hypothesis(
+    alert_group: AlertGroup,
+    loaded: LoadedCorrelationPolicy,
+) -> ThreatHypothesis:
+    return generate_with_time(
+        alert_group,
+        loaded,
+        generated_at=HYPOTHESIS_GENERATED_AT,
+    )
 
 
 def test_recon_hypothesis_is_deterministic_cautious_and_structured() -> None:
@@ -33,6 +55,12 @@ def test_recon_hypothesis_is_deterministic_cautious_and_structured() -> None:
     assert first.observed_facts and first.derived_inferences
     assert first.assumptions and first.alternative_explanations
     assert first.source_group_snapshot["group_id"] == str(alert_group.group_id)
+    assert first.created_at == HYPOTHESIS_GENERATED_AT
+    assert first.updated_at == HYPOTHESIS_GENERATED_AT
+    assert first.created_at != alert_group.last_seen
+    assert first.source_group_snapshot["hypothesis_generated_at"] == (
+        HYPOTHESIS_GENERATED_AT.isoformat()
+    )
 
 
 @pytest.mark.parametrize(

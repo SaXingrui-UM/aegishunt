@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -9,6 +11,7 @@ from sqlalchemy.orm import Session
 from aegishunt.correlation.config import LoadedCorrelationPolicy
 from aegishunt.hunting.generator import generate_hypothesis, hypothesis_gate_failure
 from aegishunt.schemas import ThreatHypothesis
+from aegishunt.schemas.base import utc_now
 from aegishunt.schemas.enums import HypothesisStatus
 from aegishunt.storage.repositories import (
     AlertGroupRepository,
@@ -20,11 +23,18 @@ from aegishunt.storage.repositories import (
 class ThreatHypothesisService:
     """Generate append-only hypotheses and audit explicit analyst transitions."""
 
-    def __init__(self, session: Session, loaded_policy: LoadedCorrelationPolicy) -> None:
+    def __init__(
+        self,
+        session: Session,
+        loaded_policy: LoadedCorrelationPolicy,
+        *,
+        clock: Callable[[], datetime] = utc_now,
+    ) -> None:
         audit = AuditLogRepository(session)
         self._groups = AlertGroupRepository(session, audit)
         self._hypotheses = ThreatHypothesisRepository(session, audit)
         self._policy = loaded_policy
+        self._clock = clock
 
     def generate(self, *, actor: str = "hypothesis-service") -> tuple[ThreatHypothesis, ...]:
         output: list[ThreatHypothesis] = []
@@ -35,7 +45,11 @@ class ThreatHypothesisService:
                 continue
             if hypothesis_gate_failure(group, self._policy) is not None:
                 continue
-            hypothesis = generate_hypothesis(group, self._policy)
+            hypothesis = generate_hypothesis(
+                group,
+                self._policy,
+                generated_at=self._clock(),
+            )
             output.append(self._hypotheses.add(hypothesis, actor=actor))
         return tuple(output)
 
@@ -46,4 +60,9 @@ class ThreatHypothesisService:
         *,
         actor: str,
     ) -> ThreatHypothesis:
-        return self._hypotheses.update_status(hypothesis_id, status, actor=actor)
+        return self._hypotheses.update_status(
+            hypothesis_id,
+            status,
+            actor=actor,
+            changed_at=self._clock(),
+        )

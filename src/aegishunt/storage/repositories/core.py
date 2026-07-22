@@ -1,5 +1,6 @@
 """Small typed repository adapters for core entities."""
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -18,7 +19,7 @@ from aegishunt.schemas import (
     TelemetrySource,
     ThreatHypothesis,
 )
-from aegishunt.schemas.base import utc_now
+from aegishunt.schemas.base import require_aware_utc, utc_now
 from aegishunt.schemas.enums import AnalystVerdict, HypothesisStatus
 from aegishunt.storage.models import (
     AlertGroupRecord,
@@ -250,6 +251,7 @@ class ThreatHypothesisRepository(SqlAlchemyRepository[ThreatHypothesis, ThreatHy
         status: HypothesisStatus,
         *,
         actor: str,
+        changed_at: datetime,
     ) -> ThreatHypothesis:
         """Apply an analyst-controlled safe transition and audit it."""
 
@@ -286,8 +288,14 @@ class ThreatHypothesisRepository(SqlAlchemyRepository[ThreatHypothesis, ThreatHy
         if status not in allowed.get(row.status, set()):
             raise HypothesisTransitionError("hypothesis status transition is not allowed")
         previous = row.status
+        lifecycle_time = require_aware_utc(changed_at)
+        previous_time = row.updated_at or row.created_at
+        if lifecycle_time <= row.created_at or lifecycle_time <= previous_time:
+            raise HypothesisTransitionError(
+                "hypothesis status time must follow its previous lifecycle time"
+            )
         row.status = status
-        row.updated_at = max(utc_now(), row.created_at, row.updated_at or row.created_at)
+        row.updated_at = lifecycle_time
         self._session.flush()
         if self._audit_log is not None:
             self._audit_log.record(

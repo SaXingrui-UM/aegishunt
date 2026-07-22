@@ -7,10 +7,19 @@ from datetime import timedelta
 
 import pytest
 
+from aegishunt.correlation.config import LoadedCorrelationPolicy
 from aegishunt.correlation.errors import CorrelationInputError
-from aegishunt.correlation.grouping import correlate_alerts
+from aegishunt.correlation.grouping import correlate_alerts as correlate_with_time
+from aegishunt.schemas import AlertGroup, SecurityAlert
 from aegishunt.schemas.enums import AnalystVerdict
-from tests.fixtures.hunting import alert, correlation_policy
+from tests.fixtures.hunting import GROUP_GENERATED_AT, alert, correlation_policy
+
+
+def correlate_alerts(
+    alerts: list[SecurityAlert],
+    loaded: LoadedCorrelationPolicy,
+) -> tuple[AlertGroup, ...]:
+    return correlate_with_time(alerts, loaded, generated_at=GROUP_GENERATED_AT)
 
 
 def test_source_fan_out_group_is_deterministic_and_evidence_backed() -> None:
@@ -36,7 +45,9 @@ def test_source_fan_out_group_is_deterministic_and_evidence_backed() -> None:
         "correlation evidence strength for analyst triage; not attack probability"
     )
     assert "ground_truth" not in str(group.evidence)
-    assert group.created_at == group.last_seen
+    assert group.created_at == GROUP_GENERATED_AT
+    assert group.created_at != group.last_seen
+    assert group.evidence["generated_at"] == GROUP_GENERATED_AT.isoformat()
     assert [item.model_dump() for item in alerts] == snapshots
 
     exact = loaded.model_copy(

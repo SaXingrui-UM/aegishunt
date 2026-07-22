@@ -179,4 +179,11 @@ class AlertGroup(CoreSchema):
             )
             if not all(identity):
                 raise ValueError("Phase 9 alert groups require complete policy identity")
+            lifecycle_time = self.created_at
+            if lifecycle_time is None or self.evidence.get(
+                "generated_at"
+            ) != lifecycle_time.isoformat():
+                raise ValueError(
+                    "Phase 9 group evidence must retain its lifecycle generation time"
+                )
         return self

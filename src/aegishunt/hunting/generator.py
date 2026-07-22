@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import cast
 from uuid import NAMESPACE_URL, uuid5
 
@@ -16,7 +17,7 @@ from aegishunt.hunting.templates import (
     query_for,
 )
 from aegishunt.schemas import AlertGroup, ThreatHypothesis
-from aegishunt.schemas.base import JsonObject
+from aegishunt.schemas.base import JsonObject, require_aware_utc
 from aegishunt.schemas.enums import HypothesisStatus
 
 
@@ -96,6 +97,8 @@ def hypothesis_gate_failure(
 def generate_hypothesis(
     group: AlertGroup,
     loaded: LoadedCorrelationPolicy,
+    *,
+    generated_at: datetime,
 ) -> ThreatHypothesis:
     """Generate one proposed hypothesis or fail closed at the configured gate."""
 
@@ -106,6 +109,7 @@ def generate_hypothesis(
     severity = group.severity
     if severity is None:
         raise HypothesisGateError("alert group lacks a triage severity")
+    lifecycle_time = require_aware_utc(generated_at)
     candidates = _candidate_templates(group)
     primary = candidates[0]
     template = TEMPLATES[primary]
@@ -139,6 +143,10 @@ def generate_hypothesis(
         "policy_id": group.policy_id,
         "policy_version": group.policy_version,
         "policy_checksum": group.policy_checksum,
+        "group_generated_at": (
+            None if group.created_at is None else group.created_at.isoformat()
+        ),
+        "hypothesis_generated_at": lifecycle_time.isoformat(),
     }
     return ThreatHypothesis(
         hypothesis_id=hypothesis_id,
@@ -183,6 +191,6 @@ def generate_hypothesis(
         policy_checksum=loaded.configuration_checksum,
         hypothesis_schema_version="1.0.0",
         status=HypothesisStatus.PROPOSED,
-        created_at=group.last_seen,
-        updated_at=group.last_seen,
+        created_at=lifecycle_time,
+        updated_at=lifecycle_time,
     )

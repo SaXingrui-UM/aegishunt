@@ -25,6 +25,9 @@ from aegishunt.storage.repositories import (
 from tests.fixtures.detection import canonical_flow
 
 BASE_TIME = datetime(2026, 7, 22, 0, 0, tzinfo=UTC)
+GROUP_GENERATED_AT = BASE_TIME + timedelta(days=1)
+HYPOTHESIS_GENERATED_AT = BASE_TIME + timedelta(days=2)
+STATUS_UPDATED_AT = BASE_TIME + timedelta(days=3)
 
 
 def correlation_policy() -> LoadedCorrelationPolicy:
@@ -108,13 +111,14 @@ def group(
             ],
             "rule_matches": [],
             "score_semantics": "not attack probability",
+            "generated_at": GROUP_GENERATED_AT.isoformat(),
         },
         policy_id=loaded.policy.policy_id,
         policy_version=loaded.policy.policy_version,
         policy_checksum=loaded.configuration_checksum,
         status="open",
         group_schema_version="1.0.0",
-        created_at=BASE_TIME + timedelta(seconds=20),
+        created_at=GROUP_GENERATED_AT,
     )
 
 

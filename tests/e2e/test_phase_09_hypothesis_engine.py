@@ -147,10 +147,19 @@ def test_phase_nine_cli_end_to_end_is_offline_and_restart_safe(tmp_path: Path) -
     assert database.initialize() == 3
     try:
         with database.session() as session:
-            assert len(AlertGroupRepository(session).list()) == 1
+            groups = AlertGroupRepository(session).list()
+            assert len(groups) == 1
+            assert groups[0].created_at != groups[0].last_seen
+            assert groups[0].evidence["generated_at"] == groups[0].created_at.isoformat()
             hypotheses = ThreatHypothesisRepository(session).list()
             assert len(hypotheses) == 1
             assert hypotheses[0].status.value == "under_review"
+            assert hypotheses[0].created_at != hypotheses[0].last_seen
+            assert hypotheses[0].updated_at is not None
+            assert hypotheses[0].updated_at > hypotheses[0].created_at
+            assert hypotheses[0].source_group_snapshot[
+                "hypothesis_generated_at"
+            ] == hypotheses[0].created_at.isoformat()
             assert InvestigationCaseRepository(session).list() == []
             assert AnalystFeedbackRepository(session).list() == []
             assert any(

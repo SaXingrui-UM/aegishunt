@@ -157,6 +157,14 @@ class ThreatHypothesis(CoreSchema):
                 or not self.source_group_snapshot
             ):
                 raise ValueError("Phase 9 hypothesis identity and provenance are required")
+            if self.source_group_snapshot.get(
+                "hypothesis_generated_at"
+            ) != self.created_at.isoformat() or not isinstance(
+                self.source_group_snapshot.get("group_generated_at"), str
+            ):
+                raise ValueError(
+                    "Phase 9 hypothesis evidence must retain lifecycle generation times"
+                )
         return self
 
 
