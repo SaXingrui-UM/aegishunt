@@ -29,8 +29,9 @@ The implementation extends
 the existing `DetectionResult` and `SecurityAlert` entities with verified score
 identities, a configuration-controlled risk mapping, deterministic severity,
 threshold-gated alerts, versioned reason evidence, non-causal global/local
-explanations, immutable evidence, and an audited alert-level verdict. Phase 9 is
-**Not started**.
+explanations, immutable evidence, and an audited alert-level verdict. Phase 9
+implementation on `phase/09-hypothesis-engine` is complete and awaiting pull-request
+review; it has not been merged or checkpointed.
 
 The Phase 7 run uses 144 newly identified controlled synthetic rows in 72 groups
 and does not reuse Phase 5/6 frozen-test evidence. It selected supervised/anomaly
@@ -43,8 +44,13 @@ not a public benchmark, production validation, real-world performance claim,
 or proof of zero-day detection. Phase 8 maps the recorded fusion score to an
 operational suspiciousness risk by explicit identity policy; this does not imply
 fusion superiority and is not attack probability. An alert is a prompt for
-analyst review, not attack confirmation. Alert correlation, hypotheses, replay
-orchestration, and cases remain unimplemented later-phase work.
+analyst review, not attack confirmation. Phase 9 adds bounded event-time correlation,
+stable alert groups, and deterministic proposed hunting hypotheses with explicit
+facts, inferences, assumptions, benign alternatives, possible ATT&CK mappings, and
+investigation-query suggestions that are never executed by the core. Correlation/confidence scores are not
+attack probabilities, hypotheses are not facts, and no hypothesis is automatically
+confirmed. Replay orchestration and case/feedback workflows remain later-phase work;
+Phase 10 is **Not started**.
 
 ## Planned architecture
 
@@ -107,6 +113,14 @@ aegishunt alerts describe <alert-id>
 aegishunt alerts verdict <alert-id> false_positive --actor <analyst-id>
 aegishunt explainability verify <artifact-directory>
 aegishunt explainability describe <artifact-directory>
+aegishunt hunt config verify
+aegishunt hunt correlate
+aegishunt hunt alert-groups list
+aegishunt hunt alert-groups describe <group-id>
+aegishunt hunt generate-hypotheses
+aegishunt hunt hypotheses list
+aegishunt hunt hypotheses describe <hypothesis-id>
+aegishunt hunt hypotheses update-status <hypothesis-id> under_review --actor <analyst-id>
 aegishunt api
 aegishunt frontend
 ```
