@@ -10,7 +10,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
-| Current activity | Phase 9 implementation and the lifecycle-time correction are prepared for open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28); refreshed CI and user review remain required. Phase 10 has not started |
+| Current activity | Phase 9 implementation and the lifecycle-time correction are published in open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28); refreshed CI passed and user review remains required. Phase 10 has not started |
 | Verification status | Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests; the complete suite passes all 365 tests with 86.74% branch-aware coverage |
 | Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -23,7 +23,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs #25–#27 are merged. Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is open from `phase/09-hypothesis-engine` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | The previously published Phase 9 PR #28 checks passed; refreshed checks for the lifecycle-time correction are required after push. Local required checks pass |
+| CI status | Both Phase 9 PR #28 `quality` checks passed for lifecycle-correction head `5299ce0`; local required checks also pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
