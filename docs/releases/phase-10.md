@@ -10,7 +10,7 @@ Status: **Implementation complete — awaiting PR review**.
 
 - Branch: `phase/10-case-feedback`
 - Base main: `92bd2f5833778d82e5b815b8c3764478f5e3b1ab`
-- Pull request: pending
+- Pull request: [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31), open and ready for review
 - Merge commit: pending
 - Completion tag: pending; no `phase-10-complete` Tag exists before merge
 - Phase 11: Not started

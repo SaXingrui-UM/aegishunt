@@ -11,7 +11,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
-| Current activity | Phase 10 is implemented on `phase/10-case-feedback` and is undergoing final verification before its pull request. Phase 9 remains fully closed and checkpointed; Phase 11 has not started |
+| Current activity | Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) is open and ready for review from `phase/10-case-feedback` to `main`. Phase 9 remains fully closed and checkpointed; Phase 11 has not started |
 | Verification status | Phase 10 focused unit/integration/artifact/status/offline E2E selection passes all 27 tests in 4.93 seconds; the final complete suite passes all 388 tests in 1,092.33 seconds with 86.01% branch-aware coverage and no failures, skips, or xfails |
 | Stable branch checkpoint | PR #28 was squash-merged to `main` as `ffdd7639b60d944b19d70096e1ff38de0d8761f8`; annotated Tag `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -21,11 +21,11 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, and Phase 9 PRs [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29) are merged. PR #28 merged `phase/09-hypothesis-engine`; PR #29 merged the post-merge closure into `main` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, and Phase 9 PRs [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29) are merged. Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) is open and ready for review |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 9 CI is closed and passing; Phase 10 CI is pending pull-request creation |
+| CI status | Phase 9 CI is closed and passing; both Phase 10 PR #31 `quality` checks were in progress when this checkpoint was recorded |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -45,7 +45,7 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 11 status | Not started |
 | Current branch | `phase/10-case-feedback` |
 | Next planned branch | `phase/11-runtime-replay` (do not create before Phase 10 merge/checkpoint and explicit authorization) |
-| Next action | Finish Phase 10 quality/review gates, push this branch, create the Phase 10 pull request, and stop for user review |
+| Next action | Wait for PR #31 CI, user review, and Squash and merge; do not create a completion Tag or begin Phase 11 before the merged-main checkpoint and explicit authorization |
 
 Phase 0 through Phase 9 are checkpointed and their Tags remain unchanged. Phase
 10 consumes immutable hypotheses and underlying evidence without claiming attack

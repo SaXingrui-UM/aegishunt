@@ -97,7 +97,8 @@ def test_progress_and_release_record_phase_ten_without_phase_eleven_scope() -> N
     assert "phase/11-runtime-replay" in progress_current
 
     assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert "Pull request: pending" in normalized_release_current
+    assert "Pull request: [#31]" in normalized_release_current
+    assert "open and ready for review" in normalized_release_current
     assert "Completion tag: pending" in normalized_release_current
     assert "Phase 11: Not started" in normalized_release_current
 
