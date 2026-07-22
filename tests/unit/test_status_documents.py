@@ -18,7 +18,9 @@ def test_readme_records_phase_eight_without_starting_phase_nine() -> None:
     assert "Phases 0–8 are complete" in current
     assert "phase/08-alert-explainability" in current
     assert "PR [#25]" in current
+    assert "PR [#26]" in normalized
     assert "f622faec6513a9fadcba11b73d2fbe1239779217" in current
+    assert "d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc" in current
     assert "phase-08-complete" in current
     assert "Phase 9 is **Not started**" in normalized
     assert "pipeline verification only" in current
@@ -82,12 +84,18 @@ def test_progress_and_release_record_phase_eight_without_phase_nine_scope() -> N
     assert "phase/08-alert-explainability" in progress_current
     assert "phase-08-complete" in progress_current
     assert "PR [#25]" in progress_current and "merged" in progress_current.lower()
+    assert "[#26]" in progress_current
+    assert "d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc" in progress_current
+    assert "Current branch | `main`" in normalized_progress_current
+    assert "Review and merge the unified Phase 8 post-merge closure PR" not in progress_current
 
     assert "Status: **Phase complete**" in release_current
     assert "PR [#25]" in normalized_release_current
+    assert "[#26]" in normalized_release_current
     assert "was squash-merged" in normalized_release_current
     assert "phase-08-complete" in normalized_release_current
     assert "f622faec6513a9fadcba11b73d2fbe1239779217" in normalized_release_current
+    assert "d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc" in normalized_release_current
     assert "Phase 9 has not started" in normalized_release_current
     assert "awaiting PR review" not in normalized_progress_current
     assert "pending" not in normalized_release_current.lower()

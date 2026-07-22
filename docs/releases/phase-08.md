@@ -11,7 +11,10 @@ Status: **Phase complete**. Development branch:
 [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) was squash-merged into
 `main` on 2026-07-20 as
 `f622faec6513a9fadcba11b73d2fbe1239779217`. Annotated Tag
-`phase-08-complete` records that merged checkpoint. Phase 9 has not started.
+`phase-08-complete` records that merged checkpoint. Post-merge closure PR
+[#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) was merged into `main`
+on 2026-07-21 as `d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc`.
+Phase 9 has not started.
 
 ## Completed scope
 
@@ -57,7 +60,7 @@ On merged `main`, Ruff passed, strict mypy passed for 152 source files, and all
 86.63% branch-aware coverage. The focused Phase 8 risk/explanation, migration,
 CLI, persistence/restart/verdict, artifact-integrity, offline E2E, frontend, and
 status selection passed all 25 tests. Both PR #25 GitHub Actions `quality`
-checks passed.
+checks and the PR #26 `quality` check passed.
 
 Native `codex review --base main` could not start because the installed arm64
 executable is missing (`ENOENT`). Equivalent review found an explanation-
@@ -96,5 +99,5 @@ runtime database, upload, PCAP, secret, or full experiment evidence is added.
 ## Next phase
 
 Phase 9 — Hypothesis Engine. Status: **Not started**. Planned branch:
-`phase/09-hypothesis-engine`. Do not create it before this post-merge closure is
-merged and the user explicitly authorizes Phase 9.
+`phase/09-hypothesis-engine`. PR #26 is merged; create the Phase 9 branch only
+in a separate Phase 9 task after its clean-main startup gate passes.
