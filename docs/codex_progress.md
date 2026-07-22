@@ -1,6 +1,6 @@
 # Codex Progress
 
-Last updated: 2026-07-21 (Asia/Shanghai)
+Last updated: 2026-07-22 (Asia/Shanghai)
 
 ## Current state
 
@@ -9,7 +9,7 @@ Last updated: 2026-07-21 (Asia/Shanghai)
 | Current phase | Phase 8 - Alerts, Risk Scoring and Explainability |
 | Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
-| Current activity | Phase 8 PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) is merged, the annotated completion Tag is remotely verified, and one unified post-merge closure branch records metadata and visible status. Phase 9 has not started |
+| Current activity | Phase 8 implementation PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) and post-merge closure PR [#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) are merged; PR #26 closed into `main` as `d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc`, and the annotated completion Tag is remotely verified. Phase 9 has not started |
 | Verification status | On merged `main`, Ruff passed, strict mypy passed for 152 source files, and all 334 tests passed in 1,095.95 seconds with 86.63% branch-aware coverage; there were zero failures, skips, or xfails. The focused Phase 8 risk/explanation, persistence/restart/verdict, migration, CLI, E2E, frontend, and status selection passed all 25 tests |
 | Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -19,10 +19,10 @@ Last updated: 2026-07-21 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) are merged; PR #25 targeted `main` from `phase/08-alert-explainability` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) and [#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) are merged; PR #25 targeted `main` from `phase/08-alert-explainability`, and PR #26 targeted `main` from `docs/phase-08-post-merge-closure` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 8 PR #25 GitHub Actions `quality` checks passed; merged-main Ruff, strict mypy, and all 334 tests also passed above the unchanged coverage gate |
+| CI status | Both Phase 8 PR #25 GitHub Actions `quality` checks and the PR #26 `quality` check passed; merged-main Ruff, strict mypy, and all 334 tests also passed above the unchanged coverage gate |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -32,13 +32,13 @@ Last updated: 2026-07-21 (Asia/Shanghai)
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
 | Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
-| Current branch | `docs/phase-08-post-merge-closure`, created from synchronized merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
-| Working tree | Closure changes are limited to metadata, README, Streamlit current status, and the two corresponding truthfulness tests; no generated model, database, upload, PCAP, dataset, secret, or Phase 9 artifact is tracked |
+| Current branch | `main`, synchronized with `origin/main` after the Phase 8 final status closure |
+| Working tree | Clean on synchronized `main`; no generated model, database, upload, PCAP, dataset, secret, or Phase 9 artifact is tracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Not started |
 | Next planned branch | `phase/09-hypothesis-engine` (do not create before Phase 8 merge/checkpoint and explicit authorization) |
-| Next action | Review and merge the unified Phase 8 post-merge closure PR; do not start Phase 9 until that PR is merged and the user explicitly authorizes the next phase |
+| Next action | Phase 8 is fully closed; rerun the Phase 9 startup gate in the separately authorized Phase 9 task. Phase 9 remains not started |
 
 Phase 0 through Phase 8 are checkpointed and their Tags remain unchanged. Phase
 8 consumes verified Phase 5–7 score identities without changing their evidence
