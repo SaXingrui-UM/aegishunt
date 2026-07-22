@@ -62,6 +62,30 @@ _V2_TO_V3_COLUMNS: dict[str, tuple[str, ...]] = {
     ),
 }
 
+_V3_TO_V4_COLUMNS: dict[str, tuple[str, ...]] = {
+    "investigation_cases": (
+        "related_hypothesis_ids JSON DEFAULT '[]'",
+        "related_alert_ids JSON DEFAULT '[]'",
+        "evidence_snapshot JSON DEFAULT '{}'",
+        "verdict_confidence FLOAT",
+        "verdict_reason TEXT",
+        "created_by VARCHAR(255)",
+        "case_schema_version VARCHAR(64)",
+        "policy_id VARCHAR(255)",
+        "policy_version VARCHAR(64)",
+        "policy_checksum VARCHAR(64)",
+    ),
+    "analyst_feedback": (
+        "actor VARCHAR(255)",
+        "source VARCHAR(255)",
+        "updated_at DATETIME",
+        "feedback_schema_version VARCHAR(64)",
+        "related_case_id CHAR(32)",
+        "provenance JSON DEFAULT '{}'",
+        "correction_reason TEXT",
+    ),
+}
+
 
 def _add_columns(engine: Engine, columns: dict[str, tuple[str, ...]]) -> None:
     table_names = set(inspect(engine).get_table_names())
@@ -88,14 +112,18 @@ def migrate_existing_schema(engine: Engine, *, current_version: int) -> None:
     if existing is None or int(existing) == current_version:
         return
     version = int(existing)
-    if current_version != 3 or version not in {1, 2}:
+    if current_version != 4 or version not in {1, 2, 3}:
         raise SchemaVersionError(
             f"database schema version {existing} is incompatible with required "
             f"version {current_version}"
         )
     if engine.dialect.name != "sqlite":
         raise SchemaVersionError("additive schema migration is supported only for SQLite")
-    migrations = ((1, 2, _V1_TO_V2_COLUMNS), (2, 3, _V2_TO_V3_COLUMNS))
+    migrations = (
+        (1, 2, _V1_TO_V2_COLUMNS),
+        (2, 3, _V2_TO_V3_COLUMNS),
+        (3, 4, _V3_TO_V4_COLUMNS),
+    )
     for source, target, columns in migrations:
         if version != source:
             continue

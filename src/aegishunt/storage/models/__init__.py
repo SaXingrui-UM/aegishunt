@@ -8,6 +8,8 @@ from aegishunt.storage.models.detection import (
 )
 from aegishunt.storage.models.hunting import (
     AnalystFeedbackRecord,
+    CaseEvidenceReferenceRecord,
+    CaseNoteRecord,
     InvestigationCaseRecord,
     ThreatHypothesisRecord,
 )
@@ -19,6 +21,8 @@ __all__ = [
     "AlertGroupRecord",
     "AnalystFeedbackRecord",
     "AuditEventRecord",
+    "CaseEvidenceReferenceRecord",
+    "CaseNoteRecord",
     "DetectionResultRecord",
     "InvestigationCaseRecord",
     "ModelVersionRecord",

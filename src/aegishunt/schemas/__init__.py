@@ -4,6 +4,8 @@ from aegishunt.schemas.audit import AuditEvent
 from aegishunt.schemas.detection import AlertGroup, DetectionResult, SecurityAlert
 from aegishunt.schemas.hunting import (
     AnalystFeedback,
+    CaseEvidenceReference,
+    CaseNote,
     InvestigationCase,
     InvestigationQuery,
     PossibleMitreMapping,
@@ -16,6 +18,8 @@ __all__ = [
     "AlertGroup",
     "AnalystFeedback",
     "AuditEvent",
+    "CaseEvidenceReference",
+    "CaseNote",
     "DetectionResult",
     "InvestigationCase",
     "InvestigationQuery",

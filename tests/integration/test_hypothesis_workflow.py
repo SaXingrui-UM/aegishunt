@@ -31,7 +31,7 @@ from tests.fixtures.hunting import (
 
 def _database(path: Path) -> Database:
     database = Database(DatabaseSettings(url=f"sqlite:///{path}"))
-    assert database.initialize() == 3
+    assert database.initialize() == 4
     return database
 
 

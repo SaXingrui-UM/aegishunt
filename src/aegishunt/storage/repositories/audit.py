@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,14 +26,18 @@ class AuditLogRepository:
         object_type: str,
         object_id: str | None,
         details: JsonObject | None = None,
+        created_at: datetime | None = None,
     ) -> AuditEvent:
-        event = AuditEvent(
-            actor=actor,
-            action=action,
-            object_type=object_type,
-            object_id=object_id,
-            details=details or {},
-        )
+        values: dict[str, object] = {
+            "actor": actor,
+            "action": action,
+            "object_type": object_type,
+            "object_id": object_id,
+            "details": details or {},
+        }
+        if created_at is not None:
+            values["created_at"] = created_at
+        event = AuditEvent.model_validate(values)
         row = AuditEventRecord(**event.model_dump(mode="python"))
         self._session.add(row)
         self._session.flush()

@@ -25,6 +25,8 @@ SAMPLE_ROOT = Path(__file__).parents[2] / "data" / "sample"
 EXPECTED_TABLES = {
     "alert_groups",
     "analyst_feedback",
+    "case_evidence_references",
+    "case_notes",
     "audit_events",
     "detection_results",
     "investigation_cases",
@@ -128,16 +130,16 @@ def test_repeatable_init_db_and_connection_pragmas(tmp_path: Path) -> None:
     second = runner.invoke(cli.app, ["init-db", "--config", str(config_path)])
 
     assert first.exit_code == second.exit_code == 0
-    assert json.loads(first.stdout)["schema_version"] == 3
+    assert json.loads(first.stdout)["schema_version"] == 4
     database = Database(DatabaseSettings(url=f"sqlite:///{database_path}", busy_timeout_ms=7000))
     try:
-        assert database.initialize() == 3
+        assert database.initialize() == 4
         assert database.journal_mode() == "wal"
         assert set(inspect(database.engine).get_table_names()) == EXPECTED_TABLES
         with database.engine.connect() as connection:
             assert connection.scalar(text("PRAGMA foreign_keys")) == 1
             assert connection.scalar(text("PRAGMA busy_timeout")) == 7000
-            assert connection.scalar(text("SELECT MAX(version) FROM schema_versions")) == 3
+            assert connection.scalar(text("SELECT MAX(version) FROM schema_versions")) == 4
     finally:
         database.dispose()
 
