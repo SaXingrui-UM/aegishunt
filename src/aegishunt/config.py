@@ -141,6 +141,14 @@ class DetectionSettings(BaseModel):
     local_explanation_max_features: int = Field(default=43, ge=1, le=256)
 
 
+class CorrelationSettings(BaseModel):
+    """Configured Phase 9 correlation policy location."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_path: Path = Path("configs/correlation.yaml")
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -154,6 +162,7 @@ class ApplicationSettings(BaseModel):
     supervised: SupervisedSettings = Field(default_factory=SupervisedSettings)
     anomaly: AnomalySettings = Field(default_factory=AnomalySettings)
     detection: DetectionSettings = Field(default_factory=DetectionSettings)
+    correlation: CorrelationSettings = Field(default_factory=CorrelationSettings)
 
     @property
     def environment(self) -> str:

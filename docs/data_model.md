@@ -1,4 +1,4 @@
-# AegisHunt Data and Artifact Model Through Phase 8
+# AegisHunt Data and Artifact Model Through Phase 9
 
 ## Scope
 
@@ -7,9 +7,10 @@ Phase 3 creates canonical `NetworkFlow` rows, Phase 4 adds file-based canonical
 dataset/manifests, Phases 5–6 add controlled model/evidence bundles, and Phase 7
 adds a JSON-only fusion-policy/evaluation artifact. Phase 8 extends the existing
 `DetectionResult` and `SecurityAlert` foundations, persists complete score/risk
-identity, creates threshold-gated alerts, explains results, and audits alert
-verdicts. It does not correlate evidence, create hypotheses, or open
-investigations.
+identity, creates threshold-gated alerts, explains results, and audits verdicts.
+Phase 9 extends the existing `AlertGroup` and `ThreatHypothesis` foundations with
+versioned correlation, evidence, provenance, templates, and audited safe status.
+It does not open investigation cases or implement feedback workflows.
 
 ## Contract layers
 
@@ -31,8 +32,8 @@ return naive values, so the storage type restores UTC awareness on reads.
 | `NetworkFlow` | `flow_id` UUID | Foreign key to source; first-observed direction; aware ordered timestamps; valid IPs/ports; non-negative counts; flat finite numeric features |
 | `DetectionResult` | `detection_id` UUID | Foreign key to flow; engine/fusion scores and thresholds; risk source/score/severity; model/policy versions and checksums; feature schema; reasons; explanation; detection time |
 | `SecurityAlert` | `alert_id` UUID | Foreign key to detection; configured risk/severity; immutable entities/evidence/reasons/explanation/identities; status; nullable verdict; created/updated times |
-| `AlertGroup` | `group_id` UUID | Referenced alert IDs, entity keys, bounded correlation score, ordered time window, summary |
-| `ThreatHypothesis` | `hypothesis_id` UUID | Structured evidence and uncertainty; category/mappings are possible, not confirmed; default status is `proposed` |
+| `AlertGroup` | `group_id` UUID | Stable policy/member identity; ordered alert IDs; canonical entities; rule versions/evidence; bounded score components; observed event window; independent lifecycle creation time; triage severity; policy checksum |
+| `ThreatHypothesis` | `hypothesis_id` UUID | Foreign key to group; deterministic template/candidates; facts/inferences/assumptions/alternatives; possible mappings; non-executed queries; bounded confidence components; independent created/updated lifecycle times; default `proposed` |
 | `InvestigationCase` | `case_id` UUID | Optional foreign key to hypothesis; priority/status, assignment, evidence, notes, related objects, verdict, ordered timestamps |
 | `AnalystFeedback` | `feedback_id` UUID | Object reference, controlled verdict, bounded confidence, notes, audit time |
 | `ModelVersion` | `model_id` UUID | Type/version uniqueness, algorithm, feature/data/config/metric metadata, controlled artifact path, status; no model binary is loaded |
@@ -44,7 +45,7 @@ Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
 
-## Phase 4–8 artifact integrity
+## Phase 4–9 artifact integrity
 
 - Canonical datasets keep the fixed Phase 3 feature order separate from source,
   group, session, scenario, timestamp, provenance, and label metadata.
@@ -67,6 +68,14 @@ and reports remain controlled filesystem artifacts referenced by metadata.
   manifest/checksum inventory. It binds benign training references, supported
   native importance, fixed-validation permutation importance, reason catalog,
   model/policy identities, feature schema, and non-causal protocol.
+- Phase 9 stores no model artifact. Its exact policy bytes are checksummed into
+  every group/hypothesis, source alert evidence is snapshotted rather than mutated,
+  structured investigation queries remain marked `not_executed`, and direct
+  hypothesis confirmation is prohibited.
+- Phase 9 separates observed event time from record lifecycle time. Group and
+  hypothesis generation use injectable UTC clocks, structured evidence retains the
+  generation timestamps, stable identities exclude wall-clock values, and
+  idempotent reruns preserve the original persisted creation time.
 
 ## Phase 3 flow integrity
 
@@ -90,20 +99,23 @@ erDiagram
     TELEMETRY_SOURCE ||--o{ NETWORK_FLOW : contains
     NETWORK_FLOW ||--o{ DETECTION_RESULT : evaluated_by
     DETECTION_RESULT ||--o{ SECURITY_ALERT : produces
+    SECURITY_ALERT }o--o{ ALERT_GROUP : correlated_into
+    ALERT_GROUP ||--o| THREAT_HYPOTHESIS : proposes
     THREAT_HYPOTHESIS ||--o{ INVESTIGATION_CASE : may_create
 ```
 
-Alert-group membership, hypothesis evidence, case evidence, and analyst feedback
-references intentionally remain explicit ID lists or typed object references in
-Phase 1. Later services own validation that referenced objects satisfy their
-workflow-specific rules.
+Alert-group membership remains an ordered explicit alert-ID list because SQLite
+is the local prototype store. Phase 9 services validate referenced alert evidence
+before one transactional group write. Hypotheses add a nullable group foreign key
+for backward-compatible migration and retain a complete immutable group snapshot.
+Cases and feedback remain Phase 10 placeholders without workflow logic.
 
 ## Schema version
 
 `schema_versions` records ordered integer versions and UTC application times.
-Fresh initialization records version `2`. An existing supported version-1 SQLite
-database is upgraded additively to version 2 and retains both version records and
-all existing rows. Repeated initialization is idempotent. Unknown versions,
+Fresh initialization records version `3`. Existing supported version-1 or version-2
+SQLite databases are upgraded additively through ordered migrations and retain all
+version records and existing rows. Repeated initialization is idempotent. Unknown versions,
 unversioned non-empty databases, and unsupported migration dialects fail closed.
 No destructive or rollback-by-deletion migration is attempted.
 

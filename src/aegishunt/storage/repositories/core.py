@@ -1,11 +1,13 @@
 """Small typed repository adapters for core entities."""
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from aegishunt.errors import RepositoryRecordNotFoundError
+from aegishunt.hunting.errors import HypothesisTransitionError
 from aegishunt.schemas import (
     AlertGroup,
     AnalystFeedback,
@@ -17,8 +19,8 @@ from aegishunt.schemas import (
     TelemetrySource,
     ThreatHypothesis,
 )
-from aegishunt.schemas.base import utc_now
-from aegishunt.schemas.enums import AnalystVerdict
+from aegishunt.schemas.base import require_aware_utc, utc_now
+from aegishunt.schemas.enums import AnalystVerdict, HypothesisStatus
 from aegishunt.storage.models import (
     AlertGroupRecord,
     AnalystFeedbackRecord,
@@ -170,6 +172,43 @@ class AlertGroupRepository(SqlAlchemyRepository[AlertGroup, AlertGroupRecord]):
             audit_log=audit_log,
         )
 
+    def list_open(self) -> list[AlertGroup]:
+        """Return Phase 9 open groups in stable event-time order."""
+
+        rows = self._session.scalars(
+            select(AlertGroupRecord)
+            .where(AlertGroupRecord.status == "open")
+            .order_by(AlertGroupRecord.first_seen, AlertGroupRecord.group_id)
+        ).all()
+        return [AlertGroup.model_validate(row) for row in rows]
+
+    def list_page(self, *, limit: int, offset: int) -> tuple[list[AlertGroup], int]:
+        """Return a stable bounded group page and total count."""
+
+        rows = self._session.scalars(
+            select(AlertGroupRecord)
+            .order_by(AlertGroupRecord.first_seen, AlertGroupRecord.group_id)
+            .limit(limit)
+            .offset(offset)
+        ).all()
+        total = self._session.scalar(select(func.count(AlertGroupRecord.group_id))) or 0
+        return [AlertGroup.model_validate(row) for row in rows], total
+
+    def list_members(self, group_id: UUID) -> list[SecurityAlert]:
+        """Resolve all referenced alerts in the group's deterministic member order."""
+
+        group = self.get(group_id)
+        if group is None:
+            raise RepositoryRecordNotFoundError("alert group does not exist")
+        identifiers = [UUID(value) for value in group.alert_ids]
+        rows = self._session.scalars(
+            select(SecurityAlertRecord).where(SecurityAlertRecord.alert_id.in_(identifiers))
+        ).all()
+        by_id = {row.alert_id: SecurityAlert.model_validate(row) for row in rows}
+        if set(by_id) != set(identifiers):
+            raise RepositoryRecordNotFoundError("alert group references a missing member")
+        return [by_id[identifier] for identifier in identifiers]
+
 
 class ThreatHypothesisRepository(SqlAlchemyRepository[ThreatHypothesis, ThreatHypothesisRecord]):
     def __init__(self, session: Session, audit_log: AuditLogRepository | None = None) -> None:
@@ -180,6 +219,93 @@ class ThreatHypothesisRepository(SqlAlchemyRepository[ThreatHypothesis, ThreatHy
             id_attribute="hypothesis_id",
             audit_log=audit_log,
         )
+
+    def get_by_group(self, group_id: UUID) -> ThreatHypothesis | None:
+        """Return the unique deterministic hypothesis for one group, if present."""
+
+        row = self._session.scalar(
+            select(ThreatHypothesisRecord).where(
+                ThreatHypothesisRecord.group_id == group_id
+            )
+        )
+        return None if row is None else ThreatHypothesis.model_validate(row)
+
+    def list_page(self, *, limit: int, offset: int) -> tuple[list[ThreatHypothesis], int]:
+        """Return a stable bounded hypothesis page and total count."""
+
+        rows = self._session.scalars(
+            select(ThreatHypothesisRecord)
+            .order_by(ThreatHypothesisRecord.first_seen, ThreatHypothesisRecord.hypothesis_id)
+            .limit(limit)
+            .offset(offset)
+        ).all()
+        total = (
+            self._session.scalar(select(func.count(ThreatHypothesisRecord.hypothesis_id)))
+            or 0
+        )
+        return [ThreatHypothesis.model_validate(row) for row in rows], total
+
+    def update_status(
+        self,
+        hypothesis_id: UUID,
+        status: HypothesisStatus,
+        *,
+        actor: str,
+        changed_at: datetime,
+    ) -> ThreatHypothesis:
+        """Apply an analyst-controlled safe transition and audit it."""
+
+        row = self._session.get(ThreatHypothesisRecord, hypothesis_id)
+        if row is None:
+            raise RepositoryRecordNotFoundError("threat hypothesis does not exist")
+        if status is HypothesisStatus.CONFIRMED:
+            raise HypothesisTransitionError(
+                "hypotheses cannot be automatically or directly confirmed"
+            )
+        allowed = {
+            HypothesisStatus.PROPOSED: {
+                HypothesisStatus.UNDER_REVIEW,
+                HypothesisStatus.NEEDS_MORE_INFORMATION,
+                HypothesisStatus.DISMISSED,
+                HypothesisStatus.CLOSED_UNRESOLVED,
+                HypothesisStatus.REJECTED,
+            },
+            HypothesisStatus.UNDER_REVIEW: {
+                HypothesisStatus.NEEDS_MORE_INFORMATION,
+                HypothesisStatus.DISMISSED,
+                HypothesisStatus.CLOSED_UNRESOLVED,
+                HypothesisStatus.REJECTED,
+            },
+            HypothesisStatus.NEEDS_MORE_INFORMATION: {
+                HypothesisStatus.UNDER_REVIEW,
+                HypothesisStatus.DISMISSED,
+                HypothesisStatus.CLOSED_UNRESOLVED,
+                HypothesisStatus.REJECTED,
+            },
+        }
+        if row.status == status:
+            return ThreatHypothesis.model_validate(row)
+        if status not in allowed.get(row.status, set()):
+            raise HypothesisTransitionError("hypothesis status transition is not allowed")
+        previous = row.status
+        lifecycle_time = require_aware_utc(changed_at)
+        previous_time = row.updated_at or row.created_at
+        if lifecycle_time <= row.created_at or lifecycle_time <= previous_time:
+            raise HypothesisTransitionError(
+                "hypothesis status time must follow its previous lifecycle time"
+            )
+        row.status = status
+        row.updated_at = lifecycle_time
+        self._session.flush()
+        if self._audit_log is not None:
+            self._audit_log.record(
+                actor=actor,
+                action="update_status",
+                object_type=ThreatHypothesisRecord.__tablename__,
+                object_id=str(hypothesis_id),
+                details={"previous_status": previous.value, "status": status.value},
+            )
+        return ThreatHypothesis.model_validate(row)
 
 
 class InvestigationCaseRepository(SqlAlchemyRepository[InvestigationCase, InvestigationCaseRecord]):

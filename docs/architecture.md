@@ -14,8 +14,9 @@ one-time anomaly test, and safe anomaly bundles. Phase 7 adds configured
 dual-engine score fusion, validation-frozen policy selection, isolated robustness
 experiments, group-bootstrap evidence, and a JSON-only policy artifact. Detection
 results, configured risk/severity, threshold-gated alerts, non-causal
-explanations, and audited verdicts are implemented in Phase 8. Correlation,
-hunting workflows, cases, PCAP replay orchestration, and runtime workers remain
+explanations, and audited verdicts are implemented in Phase 8. Phase 9 adds
+bounded deterministic alert correlation and proposed threat-hunting hypotheses.
+Cases, feedback workflows, PCAP replay orchestration, and runtime workers remain
 planned.
 
 ## System context
@@ -191,9 +192,9 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 8, Streamlit remains a
-truthful static status shell rather than a runtime alert dashboard; full alert
-API/frontend workflows remain Phase 12 scope.
+application services for batch workflows. In Phase 9, Streamlit remains a
+truthful static status shell rather than a runtime alert/hypothesis dashboard;
+full alert and hunting API/frontend workflows remain Phase 12 scope.
 FastAPI exposes
 `/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
 initializes and verifies the empty or existing configured database. PCAP upload
@@ -204,8 +205,8 @@ uses the same service as the CLI and produces persistent flows synchronously.
 SQLite with SQLAlchemy and WAL mode is the implemented default local store.
 Foreign keys and a bounded busy timeout are enabled for SQLite connections.
 Typed repositories prevent SQL from leaking into business logic and preserve a
-future PostgreSQL migration path. Schema version `2` is registered explicitly;
-an ordered additive SQLite migration upgrades version 1 without deleting rows,
+future PostgreSQL migration path. Schema version `3` is registered explicitly;
+ordered additive SQLite migrations upgrade versions 1 and 2 without deleting rows,
 while unknown versions are rejected. Core entity
 tables exist now. Phase 2 persists ingestion lifecycle state in
 `telemetry_sources` and writes an audit event in the same transaction as every
@@ -253,7 +254,16 @@ risk without fallback. Detection and optional alert persistence share a
 transaction; a stable duplicate identity is rejected instead of overwritten.
 Explanation artifacts contain exactly seven checksummed JSON/Markdown files and
 no model binary. Verdict updates mutate only the nullable verdict and timestamp
-and append an audit event. No alert grouping or cross-flow state is introduced.
+and append an audit event.
+
+Phase 9 loads a checksummed correlation policy and reads immutable Phase 8 alerts
+through repositories. Canonical typed entity keys feed bounded event-time indexes;
+versioned rules, stable IDs, and retained score components produce `AlertGroup`
+records. Eligible groups feed deterministic templates that preserve facts,
+inferences, assumptions, benign alternatives, possible ATT&CK mappings, and
+non-executed query suggestions in `ThreatHypothesis` records. Correlation and
+confidence are not attack probabilities, no hypothesis is automatically confirmed,
+and Phase 10 cases/feedback are not invoked.
 
 ## Deployment and trust boundaries
 

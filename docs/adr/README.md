@@ -21,3 +21,4 @@ decision. Phase 0 establishes:
 15. [LOF validation-qualified production candidate](0015-lof-validation-qualified-production-candidate.md)
 16. [Validation-selected dual-engine fusion](0016-validation-selected-dual-engine-fusion.md)
 17. [Configured risk and non-causal alert explanations](0017-configured-risk-and-noncausal-explanations.md)
+18. [Bounded deterministic alert correlation and hypotheses](0018-bounded-deterministic-alert-correlation.md)

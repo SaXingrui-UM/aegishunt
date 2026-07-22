@@ -1,0 +1,66 @@
+policy_schema_version: 1.0.0
+policy_id: aegishunt-correlation-controlled
+policy_version: 1.0.0
+correlation_window_seconds: 300.0
+minimum_alerts: 2
+maximum_alerts_per_group: 100
+maximum_alerts_per_run: 10000
+maximum_entities_per_alert: 32
+maximum_entity_value_length: 255
+enabled_entity_keys:
+  - source_ip
+  - destination_ip
+  - source_host
+  - destination_host
+  - user
+  - protocol
+  - service
+  - flow_id
+  - capture_session_id
+  - source_destination_pair
+score_weights:
+  risk: 0.35
+  alert_count: 0.20
+  evidence_diversity: 0.25
+  temporal_density: 0.20
+risk_aggregation: mean
+alert_count_reference: 5
+evidence_diversity_reference: 6
+temporal_decay_factor: 1.0
+group_score_threshold: 0.35
+hypothesis_generation_threshold: 0.50
+minimum_distinct_reason_codes: 1
+minimum_distinct_destinations: 2
+minimum_distinct_sources: 2
+included_verdicts:
+  - unreviewed
+  - true_positive
+  - needs_more_information
+excluded_verdicts:
+  - false_positive
+  - benign_expected
+rule_versions:
+  source_centered_reconnaissance: 1.0.0
+  repeated_source_destination_failures: 1.0.0
+  source_fan_out: 1.0.0
+  destination_fan_in: 1.0.0
+  periodic_beacon_like_activity: 1.0.0
+  multi_engine_evidence: 1.0.0
+  multi_alert_accumulation: 1.0.0
+severity_bands:
+  - minimum_score: 0.0
+    severity: informational
+  - minimum_score: 0.35
+    severity: low
+  - minimum_score: 0.50
+    severity: medium
+  - minimum_score: 0.70
+    severity: high
+  - minimum_score: 0.90
+    severity: critical
+hypothesis_confidence_weights:
+  correlation: 0.40
+  rule_specificity: 0.25
+  evidence_diversity: 0.20
+  entity_coherence: 0.15
+score_semantics: correlation evidence strength for analyst triage; not attack probability

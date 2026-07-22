@@ -6,11 +6,12 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 8 - Alerts, Risk Scoring and Explainability |
-| Status | Phase complete |
+| Current phase | Phase 9 - Alert Correlation and Threat Hypothesis Engine |
+| Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
-| Current activity | Phase 8 implementation PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) and post-merge closure PR [#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) are merged; PR #26 closed into `main` as `d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc`, and the annotated completion Tag is remotely verified. Phase 9 has not started |
-| Verification status | On merged `main`, Ruff passed, strict mypy passed for 152 source files, and all 334 tests passed in 1,095.95 seconds with 86.63% branch-aware coverage; there were zero failures, skips, or xfails. The focused Phase 8 risk/explanation, persistence/restart/verdict, migration, CLI, E2E, frontend, and status selection passed all 25 tests |
+| Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
+| Current activity | Phase 9 implementation and the lifecycle-time correction are published in open PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28); refreshed CI passed and user review remains required. Phase 10 has not started |
+| Verification status | Phase 9 focused unit, integration, restart-persistence, lifecycle, status, and offline CLI E2E selection passes all 39 tests; the complete suite passes all 365 tests with 86.74% branch-aware coverage |
 | Stable branch checkpoint | PR #25 was squash-merged to `main` as `f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) points to that merged commit and is remotely verified |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -19,10 +20,10 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) and [#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) are merged; PR #25 targeted `main` from `phase/08-alert-explainability`, and PR #26 targeted `main` from `docs/phase-08-post-merge-closure` |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, and Phase 8 PRs #25–#27 are merged. Phase 9 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) is open from `phase/09-hypothesis-engine` to `main` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 8 PR #25 GitHub Actions `quality` checks and the PR #26 `quality` check passed; merged-main Ruff, strict mypy, and all 334 tests also passed above the unchanged coverage gate |
+| CI status | Both Phase 9 PR #28 `quality` checks passed for lifecycle-correction head `5299ce0`; local required checks also pass |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -32,20 +33,73 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 6 tag | Annotated `phase-06-complete` (`908095a1e62d02f55eecb28034f5a26a2cd303e2`) is pushed and remotely verified at merged `main` `40692d0f576b70fd57719ca2f74d869e27891e13` |
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
 | Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
-| Current branch | `main`, synchronized with `origin/main` after the Phase 8 final status closure |
-| Working tree | Clean on synchronized `main`; no generated model, database, upload, PCAP, dataset, secret, or Phase 9 artifact is tracked |
+| Current branch | `phase/09-hypothesis-engine`, based on synchronized `main` `5b7c9496d77404fadcd757d75e482ce78476e55f` |
+| Working tree | Phase 9 reviewed source changes only; no generated model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
-| Phase 9 status | Not started |
-| Next planned branch | `phase/09-hypothesis-engine` (do not create before Phase 8 merge/checkpoint and explicit authorization) |
-| Next action | Phase 8 is fully closed; rerun the Phase 9 startup gate in the separately authorized Phase 9 task. Phase 9 remains not started |
+| Phase 9 status | Implementation complete — awaiting PR review |
+| Phase 10 status | Not started |
+| Next planned branch | `phase/10-case-feedback` (do not create before Phase 9 merge/checkpoint and explicit authorization) |
+| Next action | Wait for PR #28 CI, user review, and Squash and merge. Do not create a completion Tag or start Phase 10 before the post-merge checkpoint |
 
 Phase 0 through Phase 8 are checkpointed and their Tags remain unchanged. Phase
-8 consumes verified Phase 5–7 score identities without changing their evidence
-or claiming fusion superiority. Operational risk is not attack probability;
-severity is not attack certainty; alerts are not confirmed attacks;
-explanations are non-causal. No correlation, hypothesis, case, or other Phase 9
-functionality is implemented.
+9 consumes immutable Phase 8 alerts without changing their evidence or claiming
+attack confirmation. Operational risk and correlation/confidence are not attack
+probabilities; severity is not certainty; alerts and hypotheses are not confirmed
+attacks; explanations and possible ATT&CK mappings are non-causal/non-attributive.
+No Phase 10 case or feedback workflow is implemented.
+
+## Phase 9 implementation checkpoint
+
+- Added a strict checksummed YAML policy with all thresholds, limits, verdict
+  eligibility, rule versions, weights, severity mapping, and score semantics.
+- Added canonical typed local entities and observed event-time indexing. Earliest-event
+  anchored inclusive windows and configured bounds avoid processing-time drift and
+  unbounded pairwise work.
+- Added seven explainable rules, retained rule limitations, transparent bounded score
+  components, stable alert-group IDs, deterministic ordering, deduplication, and
+  immutable member evidence snapshots.
+- Added eight deterministic hypothesis templates with one primary choice, retained
+  candidates, separated facts/inferences/assumptions/benign alternatives, cautious
+  possible ATT&CK mappings, and structured query suggestions marked `not_executed`.
+- Added confidence components with explicit non-probability semantics and a fail-closed
+  generation gate. Hypotheses default to `proposed`; direct/automatic confirmation is
+  prohibited and safe analyst transitions are audited.
+- Extended existing schemas/ORM/repositories and added ordered additive schema v2→v3
+  migration while preserving legacy Phase 1 records. Writes are transactional and
+  stable reruns are idempotent; identity/evidence conflicts fail closed.
+- Added the `aegishunt hunt` CLI tree. Full hunting APIs/frontend pages remain Phase 12,
+  and Phase 10 case/feedback workflows remain unimplemented.
+- Added unit, migration, integration/restart, CLI, status, and offline E2E coverage. The
+  focused Phase 9 selection passed all 39 tests in 7.01 seconds.
+
+## Phase 9 verification checkpoint
+
+- Ruff passed for the complete repository.
+- Strict mypy passed for all 168 source files.
+- The complete post-review pytest suite passed all 365 collected tests in 1,086.89 seconds;
+  failures, skips, and xfails were all zero.
+- Branch-aware coverage was 86.74%, above the unchanged 85% project gate.
+- The focused Phase 9 unit, migration, CLI, integration/restart, lifecycle, offline
+  E2E, frontend, and status selection passed all 39 tests in 7.01 seconds.
+- Manual CLI verification used `PYTHONPATH=src` because the desktop environment's
+  editable-install `.pth` was not visible. The workaround exposed and helped fix an
+  actual circular schema import; it is not represented as a standard-install success.
+- Native `codex review --base main` could not start because the installed arm64
+  executable is missing (`ENOENT`). The equivalent first read-only review found one
+  Medium issue: normal hypothesis-gate rejection used a silently caught exception.
+  Commit `8c80e8e` replaced it with an explicit, tested eligibility result. The
+  post-fix equivalent review found no remaining issue in that path.
+- A subsequent user review found a second correctness-related Medium: group and
+  hypothesis `created_at`/`updated_at` values were copied from historical event
+  `last_seen` rather than actual record generation time. Commit `864ef66` added
+  injectable clocks, separate lifecycle evidence, idempotent timestamp preservation,
+  strictly later status-update time, and unit/integration/restart/E2E regression
+  coverage. The final equivalent review found zero Blocking, zero High, and zero
+  unresolved correctness-related Medium findings.
+- Tests generated only isolated temporary SQLite databases and fixtures. No model,
+  formal experiment evidence, external enrichment, network access, or Phase 10 case
+  artifact was created.
 
 ## Phase 8 implementation checkpoint
 

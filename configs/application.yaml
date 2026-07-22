@@ -53,3 +53,6 @@ detection:
   explanation_artifact_root: artifacts/explainability
   local_explanation_top_k: 5
   local_explanation_max_features: 43
+
+correlation:
+  policy_path: configs/correlation.yaml
