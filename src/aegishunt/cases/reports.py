@@ -268,6 +268,10 @@ class CaseReportService:
             object_id=manifest.report_id,
             details={
                 "operation_id": f"case-report:{case_id}:{version}",
+                "before": None,
+                "after": {"report_id": manifest.report_id},
+                "reason": "explicit versioned case report export",
+                "source": "case_report_service",
                 "case_id": str(case_id),
                 "manifest_checksum": sha256_bytes(payloads["manifest.json"]),
                 "query_execution": False,

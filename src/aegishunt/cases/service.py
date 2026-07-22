@@ -208,6 +208,12 @@ class InvestigationCaseService:
             object_id=str(identifier),
             details={
                 "operation_id": f"case-create:{identifier}",
+                "before": None,
+                "after": {
+                    "status": CaseStatus.OPEN.value,
+                    "priority": case.priority.value,
+                },
+                "reason": "explicit case creation from reviewable hypothesis",
                 "hypothesis_id": str(hypothesis_id),
                 "evidence_reference_count": len(references),
                 "source": "explicit_analyst_action",
@@ -242,6 +248,7 @@ class InvestigationCaseService:
                 "before": case.status.value,
                 "after": status.value,
                 "reason": normalized_reason,
+                "source": "case_service",
             },
             changed_at=now,
         )
@@ -269,6 +276,7 @@ class InvestigationCaseService:
                 "before": case.priority.value,
                 "after": priority.value,
                 "reason": normalized_reason,
+                "source": "case_service",
             },
             changed_at=now,
         )
@@ -299,6 +307,7 @@ class InvestigationCaseService:
                 "before": case.assigned_to,
                 "after": assignee,
                 "reason": normalized_reason,
+                "source": "case_service",
             },
             changed_at=now,
         )
@@ -317,7 +326,8 @@ class InvestigationCaseService:
         policy = self._loaded.policy
         if not normalized or len(normalized) > policy.maximum_note_length:
             raise CaseEligibilityError("case note is empty or exceeds policy length")
-        if len(self._notes.list_by_case(case_id)) >= policy.maximum_notes_per_case:
+        note_count = len(self._notes.list_by_case(case_id))
+        if note_count >= policy.maximum_notes_per_case:
             raise CaseEligibilityError("case note count exceeds policy")
         now = require_later(self._clock(), case.updated_at)
         note = CaseNote(
@@ -342,6 +352,10 @@ class InvestigationCaseService:
             action="add_case_note",
             details={
                 "operation_id": f"case-note:{note.note_id}",
+                "before": {"note_count": note_count},
+                "after": {"note_count": note_count + 1},
+                "reason": "append analyst case note",
+                "source": "case_service",
                 "note_id": str(note.note_id),
                 "note_type": note.note_type,
             },
@@ -396,6 +410,10 @@ class InvestigationCaseService:
             action="add_evidence_reference",
             details={
                 "operation_id": f"case-evidence:{reference.reference_id}",
+                "before": {"reference_count": len(case.evidence_references)},
+                "after": {"reference_count": len(updated.evidence_references)},
+                "reason": "append explicit typed evidence reference",
+                "source": "case_service",
                 "reference_id": str(reference.reference_id),
                 "object_type": object_type.value,
                 "object_id": object_id,
@@ -446,9 +464,13 @@ class InvestigationCaseService:
             action="set_case_verdict" if case.verdict is None else "update_case_verdict",
             details={
                 "operation_id": f"case-verdict:{case_id}:{now.isoformat()}",
-                "before": None if case.verdict is None else case.verdict.value,
-                "after": verdict.value,
+                "before": {
+                    "verdict": None if case.verdict is None else case.verdict.value,
+                    "confidence": case.verdict_confidence,
+                },
+                "after": {"verdict": verdict.value, "confidence": confidence},
                 "reason": normalized_reason,
+                "source": "case_service",
                 "semantics": "analyst judgment; not ground truth",
             },
             changed_at=now,
@@ -476,7 +498,8 @@ class InvestigationCaseService:
         note_body = closure_note.strip()
         if not note_body or len(note_body) > self._loaded.policy.maximum_note_length:
             raise CaseTransitionError("case closure requires a bounded closure note")
-        if len(self._notes.list_by_case(case_id)) >= self._loaded.policy.maximum_notes_per_case:
+        note_count = len(self._notes.list_by_case(case_id))
+        if note_count >= self._loaded.policy.maximum_notes_per_case:
             raise CaseTransitionError("case note count exceeds policy")
         normalized_actor = self._actor(actor)
         now = require_later(self._clock(), case.updated_at)
@@ -502,6 +525,10 @@ class InvestigationCaseService:
             object_id=str(case_id),
             details={
                 "operation_id": f"case-note:{note.note_id}",
+                "before": {"note_count": note_count},
+                "after": {"note_count": note_count + 1},
+                "reason": "append required case closure note",
+                "source": "case_service",
                 "note_id": str(note.note_id),
                 "note_type": "closure",
             },
@@ -516,9 +543,12 @@ class InvestigationCaseService:
             action="close_case",
             details={
                 "operation_id": f"case-close:{case_id}:{now.isoformat()}",
+                "before": case.status.value,
+                "after": CaseStatus.CLOSED.value,
                 "note_id": str(note.note_id),
                 "verdict": case.verdict.value,
                 "reason": note_body,
+                "source": "case_service",
             },
             changed_at=now,
         )

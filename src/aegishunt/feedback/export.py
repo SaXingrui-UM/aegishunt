@@ -137,6 +137,12 @@ class FeedbackExportService:
             object_id=manifest.export_id,
             details={
                 "operation_id": f"feedback-export:{version}",
+                "before": None,
+                "after": {
+                    "export_id": manifest.export_id,
+                    "record_count": len(rows),
+                },
+                "reason": "explicit versioned feedback export",
                 "version": version,
                 "record_count": len(rows),
                 "source": "explicit_analyst_action",

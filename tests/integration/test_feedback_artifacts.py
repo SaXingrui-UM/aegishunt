@@ -333,12 +333,22 @@ def test_feedback_export_case_report_and_candidate_artifacts_are_audited_and_saf
                 session, loaded, project_root=tmp_path
             ).verify(case.case_id, "1.0.0")
             assert verified_report == report_manifest
-            actions = {item.action for item in AuditLogRepository(session).list()}
-            assert {
+            events = AuditLogRepository(session).list()
+            artifact_actions = {
                 "export_feedback",
                 "build_retraining_candidates",
                 "export_case_report",
-            } <= actions
+            }
+            actions = {item.action for item in events}
+            assert artifact_actions <= actions
+            for event in events:
+                if event.action not in artifact_actions:
+                    continue
+                assert event.details["operation_id"]
+                assert event.details["before"] is None
+                assert event.details["after"]
+                assert event.details["reason"]
+                assert event.details["source"]
             assert not any("train_model" in action for action in actions)
 
         with (

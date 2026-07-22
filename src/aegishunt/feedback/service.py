@@ -88,7 +88,18 @@ class AnalystFeedbackService:
             },
         )
         if alert.analyst_verdict != verdict:
-            self._alerts.update_verdict(alert_id, verdict, actor=actor, changed_at=now)
+            self._alerts.update_verdict(
+                alert_id,
+                verdict,
+                actor=actor,
+                changed_at=now,
+                reason=(
+                    correction_reason.strip()
+                    if correction_reason is not None and correction_reason.strip()
+                    else "record explicit analyst feedback"
+                ),
+                source=source,
+            )
         return feedback
 
     def record_case(

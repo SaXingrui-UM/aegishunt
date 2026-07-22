@@ -277,6 +277,12 @@ class RetrainingCandidateService:
             object_id=manifest.dataset_id,
             details={
                 "operation_id": f"candidate-build:{version}",
+                "before": None,
+                "after": {
+                    "dataset_id": manifest.dataset_id,
+                    "eligibility_status": manifest.eligibility_status,
+                },
+                "reason": "explicit review-only candidate construction",
                 "candidate_count": len(candidates),
                 "exclusion_count": len(exclusions),
                 "conflict_count": len(conflicts),

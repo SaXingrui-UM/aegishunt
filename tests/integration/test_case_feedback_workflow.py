@@ -272,7 +272,7 @@ def test_case_feedback_lifecycle_is_idempotent_audited_and_restart_safe(
             } == original_alerts
             events = AuditLogRepository(session).list()
             actions = {item.action for item in events}
-            assert {
+            phase_ten_actions = {
                 "create_case_from_hypothesis",
                 "update_case_status",
                 "update_case_priority",
@@ -280,9 +280,22 @@ def test_case_feedback_lifecycle_is_idempotent_audited_and_restart_safe(
                 "add_case_note",
                 "add_evidence_reference",
                 "set_case_verdict",
+                "create_feedback",
                 "update_verdict",
                 "close_case",
-            } <= actions
+            }
+            assert phase_ten_actions <= actions
+            for event in events:
+                if event.action not in phase_ten_actions:
+                    continue
+                assert event.actor
+                assert event.object_type
+                assert event.object_id
+                assert event.details["operation_id"]
+                assert "before" in event.details
+                assert "after" in event.details
+                assert event.details["reason"]
+                assert event.details["source"]
             assert not any(
                 "train" in action or "activate" in action for action in actions
             )
@@ -523,6 +536,23 @@ def test_assignment_unassignment_feedback_filters_and_explicit_correction(
                 limit=10, object_type=FeedbackObjectType.CASE
             )
             assert empty == [] and empty_total == 0
+            update_event = next(
+                item
+                for item in AuditLogRepository(session).list()
+                if item.action == "update_feedback"
+            )
+            assert update_event.details["before"] == {
+                "verdict": "false_positive",
+                "confidence": 0.7,
+            }
+            assert update_event.details["after"] == {
+                "verdict": "benign_expected",
+                "confidence": 0.9,
+            }
+            assert update_event.details["reason"] == (
+                "New authorized-maintenance evidence."
+            )
+            assert update_event.details["source"] == "analyst_cli"
             with pytest.raises(CaseEligibilityError, match="reason"):
                 InvestigationCaseService(session, loaded).assign(
                     case.case_id,

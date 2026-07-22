@@ -141,6 +141,8 @@ class SecurityAlertRepository(SqlAlchemyRepository[SecurityAlert, SecurityAlertR
         *,
         actor: str,
         changed_at: datetime | None = None,
+        reason: str = "explicit analyst verdict update",
+        source: str = "security_alert_repository",
     ) -> SecurityAlert:
         """Update only an analyst verdict and preserve immutable alert evidence."""
 
@@ -164,8 +166,10 @@ class SecurityAlertRepository(SqlAlchemyRepository[SecurityAlert, SecurityAlertR
                 object_id=str(alert_id),
                 details={
                     "operation_id": f"alert-verdict:{alert_id}:{row.updated_at.isoformat()}",
-                    "previous_verdict": None if previous is None else previous.value,
-                    "analyst_verdict": verdict.value,
+                    "before": None if previous is None else previous.value,
+                    "after": verdict.value,
+                    "reason": reason,
+                    "source": source,
                 },
                 created_at=row.updated_at,
             )
@@ -520,9 +524,15 @@ class AnalystFeedbackRepository(SqlAlchemyRepository[AnalystFeedback, AnalystFee
                 object_id=str(entity.feedback_id),
                 details={
                     "operation_id": f"feedback-create:{entity.feedback_id}",
+                    "before": None,
+                    "after": {
+                        "verdict": entity.verdict.value,
+                        "confidence": entity.confidence,
+                    },
                     "object_type": entity.object_type.value,
                     "object_id": entity.object_id,
                     "verdict": entity.verdict.value,
+                    "reason": "explicit analyst feedback creation",
                     "source": entity.source,
                     "semantics": "human supplied; potentially noisy",
                 },
@@ -567,6 +577,7 @@ class AnalystFeedbackRepository(SqlAlchemyRepository[AnalystFeedback, AnalystFee
         ):
             raise RepositoryIntegrityError("analyst feedback identity is immutable")
         previous = row.verdict
+        previous_confidence = row.confidence
         row.verdict = entity.verdict
         row.confidence = entity.confidence
         row.notes = entity.notes
@@ -586,8 +597,14 @@ class AnalystFeedbackRepository(SqlAlchemyRepository[AnalystFeedback, AnalystFee
                         f"feedback-update:{entity.feedback_id}:"
                         f"{changed_at.isoformat()}"
                     ),
-                    "previous_verdict": previous.value,
-                    "verdict": entity.verdict.value,
+                    "before": {
+                        "verdict": previous.value,
+                        "confidence": previous_confidence,
+                    },
+                    "after": {
+                        "verdict": entity.verdict.value,
+                        "confidence": entity.confidence,
+                    },
                     "reason": entity.correction_reason,
                     "source": entity.source,
                 },
