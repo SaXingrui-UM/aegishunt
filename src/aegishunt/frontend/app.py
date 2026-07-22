@@ -1,4 +1,4 @@
-"""Truthful Streamlit shell for the Phase 9 pull-request checkpoint."""
+"""Truthful Streamlit shell for the Phase 9 merged checkpoint."""
 
 from __future__ import annotations
 
@@ -15,15 +15,16 @@ PLANNED_MODULES = (
 
 
 def main() -> None:
-    """Render Phase 9 status without inventing groups, hypotheses, or metrics."""
+    """Render Phase 9 merged status without inventing groups or hypotheses."""
 
     st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 9 implementation complete — awaiting PR review on "
-        "phase/09-hypothesis-engine. Phase 8 remains complete at phase-08-complete. "
-        "Phase 10: Not started."
+        "Current status: Phase 9 complete. PR #28 was Squash and merged from "
+        "phase/09-hypothesis-engine into main as "
+        "ffdd7639b60d944b19d70096e1ff38de0d8761f8; annotated checkpoint "
+        "phase-09-complete is remotely verified. Phase 10: Not started."
     )
     st.success(
         "Recommendation: Inconclusive. The controlled experiment did not establish a "

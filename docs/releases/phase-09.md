@@ -8,14 +8,17 @@ external enrichment, LLM dependency, or automated response.
 Correlation and confidence scores are not attack probability.
 A hypothesis is not a confirmed attack; severity is triage priority only.
 
-Status: **Implementation complete — awaiting PR review**.
+Status: **Phase complete**.
 
 - Branch: `phase/09-hypothesis-engine`
 - Base main: `5b7c9496d77404fadcd757d75e482ce78476e55f`
-- Pull request: [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28), open and
-  ready for review; CI pending at publication
-- Merge commit: pending
-- Completion tag: pending; do not create before merge
+- Pull request: [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28),
+  `[Phase 09] Alert correlation and threat hypothesis engine`, merged from
+  `phase/09-hypothesis-engine` into `main`; both required `quality` checks passed
+- Merge commit: `ffdd7639b60d944b19d70096e1ff38de0d8761f8`
+- Completion tag: annotated `phase-09-complete` (object
+  `e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`), remotely verified at the merge commit
+- Completion date: 2026-07-22 (Asia/Shanghai)
 - Phase 10: Not started
 
 ## Completed scope
@@ -54,11 +57,11 @@ remains Phase 10; full runtime hunting API/frontend remains Phase 12.
 
 - Ruff: passed for the complete repository.
 - Strict mypy: passed for all 168 source files.
-- Final post-review pytest: 365 passed, 0 failed, 0 skipped, 0 xfailed in
-  1,086.89 seconds.
+- Final closure pytest: 365 passed, 0 failed, 0 skipped, 0 xfailed in
+  1,062.84 seconds.
 - Branch-aware coverage: 86.74%, above the unchanged 85% project gate.
 - Focused Phase 9 unit/integration/restart/lifecycle/CLI/E2E/status selection:
-  39 passed in 7.01 seconds.
+  39 passed in 7.58 seconds.
 - Manual `aegishunt hunt --help` and correlation-policy verification passed with
   `PYTHONPATH=src`; the desktop editable-install `.pth` visibility issue is recorded
   as an environment limitation, not as a standard-install success.
@@ -68,8 +71,9 @@ remains Phase 10; full runtime hunting API/frontend remains Phase 12.
 
 ## Review outcome
 
-Native `codex review --base main` could not start because the installed arm64
-executable is missing (`ENOENT`), so an equivalent read-only diff review was used.
+Native post-merge `codex review` against the pre-merge base could not start because
+the installed arm64 executable is missing (`ENOENT`), so an equivalent read-only diff
+review was used.
 The first pass found one Medium issue: normal generation-gate rejection was handled
 through a silently caught exception. Commit `8c80e8e` made gate eligibility explicit
 and added regression coverage. A subsequent user review found one correctness-related
@@ -77,23 +81,28 @@ Medium lifecycle issue: group and hypothesis record creation times were incorrec
 copied from the observed event window. Commit `864ef66` introduced injectable clocks,
 separated event and lifecycle timestamps, retained generation time in structured
 evidence, preserved stable identities/idempotent creation time, and required later
-status-update timestamps. Post-fix Ruff, strict mypy, focused tests, the full suite,
-scope scans, and equivalent review passed with zero Blocking, zero High, and zero
-unresolved correctness-related Medium findings.
+status-update timestamps. Post-fix and post-merge Ruff, strict mypy, focused tests,
+the full suite, scope scans, and equivalent review passed with zero Blocking, zero
+High, and zero unresolved correctness-related Medium findings. Both PR #28 `quality`
+checks passed before merge.
 
 ## Known limitations
 
 - Correlation quality depends on retained local entity/event facts and configured
   context-sensitive thresholds.
 - Fan-in, fan-out, failure, and periodic patterns can be benign; alternatives are kept.
+- Deterministic templates are limited to the committed catalog and use no external
+  context enrichment or LLM dependency.
 - ATT&CK mappings are possible behavioral analogies, not technique proof or attribution.
 - Cross-group case management, analyst feedback export, retraining, and model activation
   are later phases.
+- Full operational API/frontend workflows remain Phase 12 scope; this remains a
+  controlled research prototype.
 - DEF-004 remains a non-blocking limitation: a completely unavailable database cannot
   persist an outage record into itself.
 
 ## Next phase
 
 Phase 10 — Investigation Case Management and Analyst Feedback, planned branch
-`phase/10-case-feedback`. It must not begin before this PR is reviewed, merged,
-checkpointed, and separately authorized.
+`phase/10-case-feedback`. It is **Not started** and must not begin without separate,
+explicit user authorization after this closure is merged and `main` is synchronized.

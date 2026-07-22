@@ -18,20 +18,18 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–8 are complete and their annotated checkpoints remain immutable. Phase 8
-PR [#25](https://github.com/SaXingrui-UM/aegishunt/pull/25) was merged from
-`phase/08-alert-explainability` into `main` as
-`f622faec6513a9fadcba11b73d2fbe1239779217`; annotated Tag
-`phase-08-complete` records that merged checkpoint. Post-merge closure PR
-[#26](https://github.com/SaXingrui-UM/aegishunt/pull/26) was subsequently
-merged into `main` as `d7b3f3c5dd0c2e22f6e8721875f5ba738ea58edc`.
-The implementation extends
-the existing `DetectionResult` and `SecurityAlert` entities with verified score
-identities, a configuration-controlled risk mapping, deterministic severity,
-threshold-gated alerts, versioned reason evidence, non-causal global/local
-explanations, immutable evidence, and an audited alert-level verdict. Phase 9
-implementation on `phase/09-hypothesis-engine` is complete and awaiting pull-request
-review; it has not been merged or checkpointed.
+Phases 0–9 are complete and their annotated checkpoints remain immutable. Phase 9
+PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28),
+`[Phase 09] Alert correlation and threat hypothesis engine`, was Squash and merged
+from `phase/09-hypothesis-engine` into `main` as
+`ffdd7639b60d944b19d70096e1ff38de0d8761f8` on 2026-07-22. Annotated Tag
+`phase-09-complete` records that merged checkpoint. The implementation adds a
+checksummed correlation policy, bounded event-time entity indexing, deterministic
+alert groups, evidence-backed proposed hunting hypotheses, audited analyst status
+transitions, and an additive schema v2→v3 migration. The lifecycle correction keeps
+observed event time separate from injectable-clock creation/update time; stable IDs
+remain independent of wall-clock time and idempotent reruns preserve the first
+persisted `created_at`.
 
 The Phase 7 run uses 144 newly identified controlled synthetic rows in 72 groups
 and does not reuse Phase 5/6 frozen-test evidence. It selected supervised/anomaly
