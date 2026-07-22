@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import JSON, ForeignKey, String, Uuid
@@ -23,9 +24,15 @@ class ThreatHypothesisRecord(Base):
     __tablename__ = "threat_hypotheses"
 
     hypothesis_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    group_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("alert_groups.group_id"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(nullable=False)
     confidence: Mapped[float] = mapped_column(nullable=False)
+    confidence_components: Mapped[dict[str, Any]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
     severity: Mapped[Severity] = mapped_column(
         string_enum(Severity, name="hypothesis_severity"), nullable=False, index=True
     )
@@ -35,15 +42,28 @@ class ThreatHypothesisRecord(Base):
     first_seen: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     last_seen: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     possible_attack_category: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    possible_mitre_mappings: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    possible_mitre_mappings: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
+    observed_facts: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    derived_inferences: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     assumptions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     alternative_explanations: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
-    recommended_queries: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    recommended_queries: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
     recommended_steps: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    primary_template_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    template_catalog_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    candidate_template_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    source_group_snapshot: Mapped[dict[str, Any]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    policy_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    policy_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    policy_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    hypothesis_schema_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[HypothesisStatus] = mapped_column(
         string_enum(HypothesisStatus, name="hypothesis_status"), nullable=False, index=True
     )
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
+    updated_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
 
 
 class InvestigationCaseRecord(Base):

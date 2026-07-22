@@ -49,6 +49,9 @@ class AlertStatus(StrEnum):
 class HypothesisStatus(StrEnum):
     PROPOSED = "proposed"
     UNDER_REVIEW = "under_review"
+    NEEDS_MORE_INFORMATION = "needs_more_information"
+    DISMISSED = "dismissed"
+    CLOSED_UNRESOLVED = "closed_unresolved"
     REJECTED = "rejected"
     CONFIRMED = "confirmed"
 

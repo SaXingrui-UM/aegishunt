@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import re
 from datetime import datetime
 from typing import Literal, Self
 from uuid import UUID, uuid4
@@ -10,6 +12,8 @@ from pydantic import AliasChoices, Field, field_validator, model_validator
 
 from aegishunt.schemas.base import CoreSchema, JsonObject, Probability, require_aware_utc, utc_now
 from aegishunt.schemas.enums import AlertStatus, AnalystVerdict, Severity
+
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class DetectionResult(CoreSchema):
@@ -112,18 +116,67 @@ class AlertGroup(CoreSchema):
     group_id: UUID = Field(default_factory=uuid4)
     alert_ids: list[str] = Field(min_length=1)
     entity_keys: list[str] = Field(default_factory=list)
+    matched_rule_ids: list[str] = Field(default_factory=list)
     correlation_score: Probability
+    score_components: dict[str, float] = Field(default_factory=dict)
     first_seen: datetime
     last_seen: datetime
+    alert_count: int | None = Field(default=None, ge=1)
+    severity: Severity | None = None
     summary: str = Field(min_length=1)
+    evidence: JsonObject = Field(default_factory=dict)
+    policy_id: str | None = Field(default=None, max_length=255)
+    policy_version: str | None = Field(default=None, max_length=64)
+    policy_checksum: str | None = Field(default=None, max_length=64)
+    status: str | None = Field(default="open", max_length=64)
+    group_schema_version: Literal["1.0.0"] | None = None
+    created_at: datetime | None = None
 
-    @field_validator("first_seen", "last_seen")
+    @field_validator("first_seen", "last_seen", "created_at")
     @classmethod
-    def validate_timestamps(cls, value: datetime) -> datetime:
-        return require_aware_utc(value)
+    def validate_timestamps(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else require_aware_utc(value)
 
     @model_validator(mode="after")
     def validate_time_order(self) -> Self:
         if self.last_seen < self.first_seen:
             raise ValueError("last_seen must not precede first_seen")
+        if self.policy_checksum is not None and not _SHA256_PATTERN.fullmatch(
+            self.policy_checksum
+        ):
+            raise ValueError("correlation policy checksum must be SHA-256")
+        if self.group_schema_version == "1.0.0":
+            expected_components = {
+                "risk",
+                "alert_count",
+                "evidence_diversity",
+                "temporal_density",
+            }
+            if set(self.score_components) != expected_components or any(
+                not math.isfinite(value) or value < 0.0 or value > 1.0
+                for value in self.score_components.values()
+            ):
+                raise ValueError("Phase 9 score components must be finite values in [0, 1]")
+            if len(self.alert_ids) < 2 or len(set(self.alert_ids)) != len(self.alert_ids):
+                raise ValueError("Phase 9 alert groups require distinct member alerts")
+            if self.alert_ids != sorted(self.alert_ids):
+                raise ValueError("Phase 9 alert IDs must use deterministic order")
+            if self.entity_keys != sorted(set(self.entity_keys)):
+                raise ValueError("Phase 9 entity keys must be distinct and ordered")
+            if self.matched_rule_ids != sorted(set(self.matched_rule_ids)):
+                raise ValueError("Phase 9 rule IDs must be distinct and ordered")
+            if not self.entity_keys or not self.matched_rule_ids:
+                raise ValueError("Phase 9 alert groups require entities and matched rules")
+            if not self.score_components or not self.evidence:
+                raise ValueError("Phase 9 alert groups require score and evidence details")
+            if self.alert_count != len(self.alert_ids) or self.severity is None:
+                raise ValueError("Phase 9 alert group count and severity are required")
+            identity = (
+                self.policy_id,
+                self.policy_version,
+                self.policy_checksum,
+                self.created_at,
+            )
+            if not all(identity):
+                raise ValueError("Phase 9 alert groups require complete policy identity")
         return self

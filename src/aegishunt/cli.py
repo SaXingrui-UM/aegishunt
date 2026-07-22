@@ -19,6 +19,7 @@ from aegishunt.config import DatabaseSettings, load_settings
 from aegishunt.datasets.cli import dataset_app
 from aegishunt.detection.cli import alerts_app, detection_app, explainability_app
 from aegishunt.errors import AegisHuntError
+from aegishunt.hunting.cli import hunt_app
 from aegishunt.ingestion.cli import ingest_app
 from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 from aegishunt.ml.anomaly.cli import anomaly_app
@@ -39,6 +40,7 @@ app.add_typer(fusion_app)
 app.add_typer(detection_app)
 app.add_typer(alerts_app)
 app.add_typer(explainability_app)
+app.add_typer(hunt_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 
