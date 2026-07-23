@@ -184,6 +184,25 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
             resume_request.details["lifecycle_timestamp"]
             == (NOW + timedelta(seconds=7)).isoformat()
         )
+        required_audit_fields = {
+            "source_id",
+            "source",
+            "attempt_id",
+            "attempt_number",
+            "worker_id",
+            "snapshot_checksum",
+            "lifecycle_timestamp",
+            "operation_id",
+            "before_state",
+            "after_state",
+            "reason",
+            "retryable",
+        }
+        assert all(
+            required_audit_fields <= set(event.details)
+            for event in audit_events
+            if event.action.startswith("runtime_")
+        )
     finally:
         database.dispose()
 def test_control_monitor_keeps_paused_job_and_worker_lease_live(

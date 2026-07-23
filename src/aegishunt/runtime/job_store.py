@@ -392,8 +392,17 @@ class RuntimeJobStore:
         details: JsonObject,
     ) -> None:
         if self._audit is not None:
+            before_state = details.get(
+                "previous_status",
+                details.get("previous_stage"),
+            )
+            after_state = details.get(
+                "status",
+                details.get("stage", row.status.value),
+            )
             enriched = {
                 "source_id": str(row.source_id),
+                "source": "runtime",
                 "attempt_id": (
                     None
                     if row.current_attempt_id is None
@@ -404,6 +413,10 @@ class RuntimeJobStore:
                 "snapshot_checksum": row.snapshot_checksum,
                 "lifecycle_timestamp": row.updated_at.isoformat(),
                 "operation_id": f"{action}:{row.job_id}:{row.updated_at.isoformat()}",
+                "before_state": before_state,
+                "after_state": after_state,
+                "reason": details.get("reason", action),
+                "retryable": details.get("retryable"),
                 **details,
             }
             self._audit.record(

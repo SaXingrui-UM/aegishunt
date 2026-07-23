@@ -70,6 +70,7 @@ class RuntimeJobService:
         try:
             loaded = self._preflight.verify(source)
         except RuntimePreflightError:
+            failed_at = self._clock.now()
             with self._database.session() as session, session.begin():
                 AuditLogRepository(session).record(
                     actor=actor,
@@ -81,8 +82,16 @@ class RuntimeJobService:
                         "stage": "preflight",
                         "retryable": False,
                         "reason": "source or pipeline verification failed",
+                        "source": "runtime",
+                        "before_state": "source_selected",
+                        "after_state": "preflight_rejected",
+                        "lifecycle_timestamp": failed_at.isoformat(),
+                        "operation_id": (
+                            f"runtime_preflight_failed:{source_id}:"
+                            f"{failed_at.isoformat()}"
+                        ),
                     },
-                    created_at=self._clock.now(),
+                    created_at=failed_at,
                 )
             raise
         now = self._clock.now()
@@ -114,6 +123,17 @@ class RuntimeJobService:
                         "runtime_policy_id": stored.snapshot.runtime_policy_id,
                         "runtime_policy_version": stored.snapshot.runtime_policy_version,
                         "artifact_count": len(stored.snapshot.artifacts),
+                        "snapshot_checksum": stored.snapshot_checksum,
+                        "source": "runtime",
+                        "before_state": "preflight_verified",
+                        "after_state": "queued",
+                        "reason": "runtime pipeline snapshot pinned",
+                        "retryable": None,
+                        "lifecycle_timestamp": now.isoformat(),
+                        "operation_id": (
+                            f"runtime_preflight_pinned:{stored.job_id}:"
+                            f"{now.isoformat()}"
+                        ),
                     },
                     created_at=now,
                 )
