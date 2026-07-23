@@ -53,7 +53,7 @@ def test_phase_08_offline_e2e_persists_explains_and_audits(tmp_path: Path) -> No
     )
     database_path = tmp_path / "phase-08-e2e.sqlite3"
     database = Database(DatabaseSettings(url=f"sqlite:///{database_path}"))
-    assert database.initialize() == 3
+    assert database.initialize() == 4
     flow = canonical_flow()
     try:
         with database.session() as session, session.begin():
@@ -93,7 +93,7 @@ def test_phase_08_offline_e2e_persists_explains_and_audits(tmp_path: Path) -> No
 
         database.dispose()
         database = Database(DatabaseSettings(url=f"sqlite:///{database_path}"))
-        assert database.initialize() == 3
+        assert database.initialize() == 4
         with database.session() as session, session.begin():
             assert DetectionResultRepository(session).get(detection.detection_id) == detection
             reloaded = SecurityAlertRepository(session).get(alert.alert_id)

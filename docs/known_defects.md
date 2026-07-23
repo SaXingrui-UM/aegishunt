@@ -36,11 +36,11 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 ## DEF-004 — Database outage cannot persist to the unavailable database
 
 - Severity: Medium
-- Status: Open; non-blocking for the Phase 5 correction and Phase 6
+- Status: Open; non-blocking for Phase 10
 - Component: database failure auditability
 - Behavior: total database unavailability fails closed, rolls back, returns a
   sanitized error, and logs safely, but cannot persist a failed record into that
   same unavailable database.
-- Constraint: this correction does not add Redis, Kafka, Celery, another
+- Constraint: Phase 10 does not add Redis, Kafka, Celery, another
   database, or any alternate broker. A later approved out-of-band/recovery design
   is required for durable outage evidence.

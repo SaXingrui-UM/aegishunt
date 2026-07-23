@@ -1,0 +1,81 @@
+policy_schema_version: 1.0.0
+policy_id: aegishunt-case-feedback-controlled
+policy_version: 1.0.0
+default_case_priority: medium
+hypothesis_severity_to_priority:
+  informational: low
+  low: low
+  medium: medium
+  high: high
+  critical: critical
+allowed_case_status_transitions:
+  open:
+    - investigating
+    - needs_more_information
+    - closed
+  investigating:
+    - needs_more_information
+    - closed
+  needs_more_information:
+    - investigating
+    - closed
+  closed: []
+eligible_hypothesis_statuses:
+  - proposed
+  - under_review
+  - needs_more_information
+final_verdicts:
+  - true_positive
+  - false_positive
+  - benign_expected
+maximum_notes_per_case: 1000
+maximum_note_length: 8000
+maximum_evidence_references: 1000
+maximum_reference_description_length: 1000
+maximum_cases_per_query: 1000
+maximum_feedback_per_query: 1000
+feedback_confidence_minimum: 0.7
+feedback_export_schema_version: 1.0.0
+candidate_dataset_schema_version: 1.0.0
+candidate_label_mapping_version: 1.0.0
+candidate_dataset_minimum_records: 1
+excluded_provenance_partitions:
+  - test
+  - frozen_test
+  - evaluation
+  - holdout
+  - benchmark_test
+  - known_evaluation
+  - loao
+  - temporal_evaluation
+  - parameter_shift
+  - independent_holdout
+  - corrective_frozen_test
+eligible_provenance_partitions:
+  - runtime
+  - demo_observation
+  - training_safe
+eligible_provenance_types:
+  - operational_feedback
+  - controlled_non_evaluation
+confidence_aggregation: minimum
+export_root: artifacts/feedback
+report_root: reports/cases
+candidate_root: artifacts/retraining_candidates
+feedback_export_inventory:
+  - checksums.json
+  - feedback.jsonl
+  - manifest.json
+  - schema.json
+candidate_dataset_inventory:
+  - candidate_manifest.json
+  - candidate_schema.json
+  - candidates.jsonl
+  - checksums.json
+  - conflicts.json
+  - exclusions.json
+case_report_inventory:
+  - case_report.json
+  - case_report.md
+  - checksums.json
+  - manifest.json

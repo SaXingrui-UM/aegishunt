@@ -16,8 +16,9 @@ experiments, group-bootstrap evidence, and a JSON-only policy artifact. Detectio
 results, configured risk/severity, threshold-gated alerts, non-causal
 explanations, and audited verdicts are implemented in Phase 8. Phase 9 adds
 bounded deterministic alert correlation and proposed threat-hunting hypotheses.
-Cases, feedback workflows, PCAP replay orchestration, and runtime workers remain
-planned.
+Phase 10 adds audited investigation cases, typed evidence, analyst feedback,
+controlled exports, and explicit retraining candidates. PCAP replay orchestration
+and runtime workers remain planned for Phase 11.
 
 ## System context
 
@@ -53,7 +54,7 @@ One deployable Python application is divided by responsibility:
 | ML fusion/evaluation | Implemented validation-selected research fusion and comparisons | 7 |
 | detection and explainability | Results, risk, alerts, reasons, explanations | 8 |
 | correlation and hunting | Entity/time groups and deterministic hypotheses | 9 |
-| cases and feedback | Investigation workflow and retraining candidates | 10 |
+| cases and feedback | Implemented investigation workflow, exports and retraining candidates | 10 |
 | runtime | Pipeline, worker, replay, health, graceful shutdown | 11 |
 | API and frontend | Complete external workflows and sample demonstration | 12 |
 
@@ -90,7 +91,7 @@ The boundary through `Supervised` and `Anomaly` is implemented for supported PCA
 features and the controlled demo. Public benchmark acquisition and label joining
 remain manual/provisional gates, so current model metrics verify the pipeline
 only. The Fusion node is implemented for the Phase 7 controlled experiment;
-Detection and every downstream node remain planned. IDs and provenance are
+Detection through Feedback are implemented within their phase boundaries. IDs and provenance are
 preserved; raw evidence, labels, supervised probability, normalized anomaly
 score, experimental fusion score, future detection, correlation, and analyst
 judgment remain distinguishable.
@@ -182,9 +183,11 @@ ADR 0016 records this boundary. No online self-modification occurs.
 4. **Correlate:** group alerts by time and shared entities under configured rules.
 5. **Hypothesize:** select deterministic templates and attach supporting and
    alternative evidence without marking an attack confirmed.
-6. **Investigate:** create cases, notes, evidence references, status, and verdict.
-7. **Learn under control:** export feedback, explicitly retrain, validate a new
-   immutable version, and explicitly activate it.
+6. **Investigate:** create cases, notes, typed evidence references, controlled
+   lifecycle status, and revisable analyst verdicts. Implemented in Phase 10.
+7. **Learn under control:** export feedback and explicitly build a provenance-gated
+   candidate dataset. Actual retraining, validation, and activation require a
+   separate future user-triggered workflow and immutable version.
 
 ## Backend and frontend relationship
 
@@ -192,9 +195,9 @@ FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
 the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 9, Streamlit remains a
-truthful static status shell rather than a runtime alert/hypothesis dashboard;
-full alert and hunting API/frontend workflows remain Phase 12 scope.
+application services for batch workflows. In Phase 10, Streamlit remains a
+truthful static status shell rather than a runtime case/feedback dashboard;
+full alert, hunting, case, and feedback API/frontend workflows remain Phase 12 scope.
 FastAPI exposes
 `/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
 initializes and verifies the empty or existing configured database. PCAP upload
@@ -205,8 +208,8 @@ uses the same service as the CLI and produces persistent flows synchronously.
 SQLite with SQLAlchemy and WAL mode is the implemented default local store.
 Foreign keys and a bounded busy timeout are enabled for SQLite connections.
 Typed repositories prevent SQL from leaking into business logic and preserve a
-future PostgreSQL migration path. Schema version `3` is registered explicitly;
-ordered additive SQLite migrations upgrade versions 1 and 2 without deleting rows,
+future PostgreSQL migration path. Schema version `4` is registered explicitly;
+ordered additive SQLite migrations upgrade versions 1, 2, and 3 without deleting rows,
 while unknown versions are rejected. Core entity
 tables exist now. Phase 2 persists ingestion lifecycle state in
 `telemetry_sources` and writes an audit event in the same transaction as every
@@ -263,7 +266,17 @@ records. Eligible groups feed deterministic templates that preserve facts,
 inferences, assumptions, benign alternatives, possible ATT&CK mappings, and
 non-executed query suggestions in `ThreatHypothesis` records. Correlation and
 confidence are not attack probabilities, no hypothesis is automatically confirmed,
-and Phase 10 cases/feedback are not invoked.
+and no hypothesis is automatically confirmed.
+
+Phase 10 loads a checksummed case/feedback policy and converts one eligible
+hypothesis into a deterministic primary case without modifying source evidence.
+Case lifecycle mutations, append-only notes/references, verdicts, and alert
+feedback are audited through typed repositories. Feedback/candidate/report
+artifacts use configured contained roots, exact inventories, checksums, and
+non-overwrite semantics. Retraining candidates require an unambiguous
+alert→detection→flow chain and explicit approved provenance; evaluation, frozen
+test, holdout, LOAO, and ambiguous provenance fail closed. No Phase 10 service
+trains, activates, or replaces a model. Phase 11 runtime workflows are not invoked.
 
 ## Deployment and trust boundaries
 

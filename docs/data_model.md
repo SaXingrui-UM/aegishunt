@@ -1,4 +1,4 @@
-# AegisHunt Data and Artifact Model Through Phase 9
+# AegisHunt Data and Artifact Model Through Phase 10
 
 ## Scope
 
@@ -10,7 +10,8 @@ adds a JSON-only fusion-policy/evaluation artifact. Phase 8 extends the existing
 identity, creates threshold-gated alerts, explains results, and audits verdicts.
 Phase 9 extends the existing `AlertGroup` and `ThreatHypothesis` foundations with
 versioned correlation, evidence, provenance, templates, and audited safe status.
-It does not open investigation cases or implement feedback workflows.
+Phase 10 implements investigation cases, notes, typed evidence references,
+analyst feedback, controlled exports, and explicit retraining-candidate artifacts.
 
 ## Contract layers
 
@@ -34,8 +35,10 @@ return naive values, so the storage type restores UTC awareness on reads.
 | `SecurityAlert` | `alert_id` UUID | Foreign key to detection; configured risk/severity; immutable entities/evidence/reasons/explanation/identities; status; nullable verdict; created/updated times |
 | `AlertGroup` | `group_id` UUID | Stable policy/member identity; ordered alert IDs; canonical entities; rule versions/evidence; bounded score components; observed event window; independent lifecycle creation time; triage severity; policy checksum |
 | `ThreatHypothesis` | `hypothesis_id` UUID | Foreign key to group; deterministic template/candidates; facts/inferences/assumptions/alternatives; possible mappings; non-executed queries; bounded confidence components; independent created/updated lifecycle times; default `proposed` |
-| `InvestigationCase` | `case_id` UUID | Optional foreign key to hypothesis; priority/status, assignment, evidence, notes, related objects, verdict, ordered timestamps |
-| `AnalystFeedback` | `feedback_id` UUID | Object reference, controlled verdict, bounded confidence, notes, audit time |
+| `InvestigationCase` | `case_id` UUID | Foreign key to one eligible primary hypothesis; deterministic policy identity; priority/status, assignment, immutable initial evidence snapshot, nullable analyst verdict, lifecycle timestamps |
+| `CaseNote` | `note_id` UUID | Foreign key to case; append-only actor/text/time evidence; no update/delete repository operation |
+| `CaseEvidenceReference` | `reference_id` UUID | Foreign key to case; typed hypothesis/group/alert/detection/flow reference plus validated snapshot and provenance |
+| `AnalystFeedback` | `feedback_id` UUID | Typed case/alert object reference, controlled revisable verdict, bounded confidence, actor, provenance, correction reason, created/updated times |
 | `ModelVersion` | `model_id` UUID | Type/version uniqueness, algorithm, feature/data/config/metric metadata, controlled artifact path, status; no model binary is loaded |
 | `AuditEvent` | `audit_id` UUID | Actor, action, object reference, safe JSON details, UTC timestamp; repository exposes no update/delete method |
 
@@ -45,7 +48,7 @@ Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
 
-## Phase 4–9 artifact integrity
+## Phase 4–10 artifact integrity
 
 - Canonical datasets keep the fixed Phase 3 feature order separate from source,
   group, session, scenario, timestamp, provenance, and label metadata.
@@ -76,6 +79,11 @@ and reports remain controlled filesystem artifacts referenced by metadata.
   hypothesis generation use injectable UTC clocks, structured evidence retains the
   generation timestamps, stable identities exclude wall-clock values, and
   idempotent reruns preserve the original persisted creation time.
+- Phase 10 feedback exports, retraining-candidate artifacts, and case reports use
+  configured contained roots, atomic exact-inventory writes, SHA-256 manifests,
+  and collision rejection. Candidate rows come only from explicit alert feedback
+  with an unambiguous alert→detection→flow chain and approved non-evaluation
+  provenance. Case verdicts are never fanned out to member flows.
 
 ## Phase 3 flow integrity
 
@@ -101,21 +109,28 @@ erDiagram
     DETECTION_RESULT ||--o{ SECURITY_ALERT : produces
     SECURITY_ALERT }o--o{ ALERT_GROUP : correlated_into
     ALERT_GROUP ||--o| THREAT_HYPOTHESIS : proposes
-    THREAT_HYPOTHESIS ||--o{ INVESTIGATION_CASE : may_create
+    THREAT_HYPOTHESIS ||--o{ INVESTIGATION_CASE : creates
+    INVESTIGATION_CASE ||--o{ CASE_NOTE : contains
+    INVESTIGATION_CASE ||--o{ CASE_EVIDENCE_REFERENCE : references
+    INVESTIGATION_CASE ||--o{ ANALYST_FEEDBACK : may_receive
+    SECURITY_ALERT ||--o{ ANALYST_FEEDBACK : may_receive
 ```
 
 Alert-group membership remains an ordered explicit alert-ID list because SQLite
 is the local prototype store. Phase 9 services validate referenced alert evidence
 before one transactional group write. Hypotheses add a nullable group foreign key
 for backward-compatible migration and retain a complete immutable group snapshot.
-Cases and feedback remain Phase 10 placeholders without workflow logic.
+Phase 10 service boundaries validate referenced evidence and use repository
+transactions for each lifecycle mutation plus its audit record. Typed references
+and snapshots do not modify the underlying hypothesis, group, alert, detection,
+or flow evidence.
 
 ## Schema version
 
 `schema_versions` records ordered integer versions and UTC application times.
-Fresh initialization records version `3`. Existing supported version-1 or version-2
-SQLite databases are upgraded additively through ordered migrations and retain all
-version records and existing rows. Repeated initialization is idempotent. Unknown versions,
+Fresh initialization records version `4`. Existing supported version-1, version-2,
+or version-3 SQLite databases are upgraded additively through ordered migrations
+and retain all version records and existing rows. Repeated initialization is idempotent. Unknown versions,
 unversioned non-empty databases, and unsupported migration dialects fail closed.
 No destructive or rollback-by-deletion migration is attempted.
 

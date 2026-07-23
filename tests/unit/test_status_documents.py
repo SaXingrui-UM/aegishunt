@@ -1,4 +1,4 @@
-"""Regression tests for current merged Phase 9 status truthfulness."""
+"""Regression tests for truthful Phase 10 implementation-review status."""
 
 from pathlib import Path
 
@@ -10,7 +10,7 @@ def _section(content: str, start: str, end: str) -> str:
     return content.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
 
 
-def test_readme_records_phase_nine_without_starting_phase_ten() -> None:
+def test_readme_records_phase_ten_without_starting_phase_eleven() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
@@ -21,7 +21,8 @@ def test_readme_records_phase_nine_without_starting_phase_ten() -> None:
     assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in current
     assert "phase-09-complete" in current
     assert "observed event time separate" in normalized
-    assert "Phase 10 is **Not started**" in normalized
+    assert "Phase 10" in normalized and "awaits pull-request review" in normalized
+    assert "Phase 11 is **Not started**" in normalized
     assert "pipeline verification only" in current
     assert "recommendation is **inconclusive**" in normalized
     assert "was not shown to be superior" in normalized
@@ -38,7 +39,8 @@ def test_readme_records_phase_nine_without_starting_phase_ten() -> None:
     assert "proof of zero-day detection" in current
     assert "pending merge" not in current
     assert "awaiting pull-request review" not in current
-    assert "Phase 10 implementation" not in normalized
+    assert "No operation trains, activates, or replaces a model" in normalized
+    assert "retraining_candidate" in normalized
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -56,14 +58,14 @@ def test_pm_def_001_is_resolved_without_erasing_history() -> None:
     assert "not public\n  benchmark or real-world performance evidence" in pm_def_001
 
 
-def test_progress_and_release_record_phase_nine_without_phase_ten_scope() -> None:
+def test_progress_and_release_record_phase_ten_without_phase_eleven_scope() -> None:
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
-    release = (PROJECT_ROOT / "docs/releases/phase-09.md").read_text(encoding="utf-8")
+    release = (PROJECT_ROOT / "docs/releases/phase-10.md").read_text(encoding="utf-8")
 
     progress_current = _section(
         progress,
         "## Current state",
-        "## Phase 9 implementation checkpoint",
+        "## Phase 10 implementation checkpoint",
     )
     release_current = _section(
         release,
@@ -74,45 +76,34 @@ def test_progress_and_release_record_phase_nine_without_phase_ten_scope() -> Non
     normalized_release_current = " ".join(release_current.split())
 
     for content in (progress, release):
-        assert "phase/09-hypothesis-engine" in content
-        assert "Phase 10" in content and "not started" in content.lower()
-        assert "not attack" in content.lower()
-        assert "confirmed" in content.lower()
+        assert "phase/10-case-feedback" in content
+        assert "Phase 11" in content and "not started" in content.lower()
+        assert "ground truth" in content.lower()
 
-    assert "Current phase | Phase 9" in normalized_progress_current
-    assert "Status | Phase complete" in normalized_progress_current
-    assert "Phase 9 status | Phase complete" in normalized_progress_current
-    assert "Phase 10 status | Not started" in normalized_progress_current
-    assert "phase/09-hypothesis-engine" in progress_current
-    assert "PR [#29]" in normalized_progress_current
-    assert "Phase 9 is fully closed" in normalized_progress_current
-    assert "8e18ae97d9710813a782182eebcfc55d0edcfed8" in normalized_progress_current
+    assert "without claiming attack confirmation" in " ".join(progress.split())
+    assert "not a confirmed attack" in release
+
+    assert "Current phase | Phase 10" in normalized_progress_current
     assert (
-        "Phase 9 implementation baseline `ffdd7639b60d944b19d70096e1ff38de0d8761f8`"
+        "Status | Implementation complete — awaiting PR review"
         in normalized_progress_current
     )
     assert (
-        "closure baseline `8e18ae97d9710813a782182eebcfc55d0edcfed8`"
+        "Phase 10 status | Implementation complete — awaiting PR review"
         in normalized_progress_current
     )
-    assert "This branch closes post-merge status surfaces" not in progress_current
-    assert "Review and merge the single Phase 9 post-merge closure PR" not in progress_current
+    assert "Phase 11 status | Not started" in normalized_progress_current
+    assert "phase/10-case-feedback" in progress_current
+    assert "phase/11-runtime-replay" in progress_current
 
-    assert "Status: **Phase complete**" in release_current
-    assert "Pull request: [#28]" in normalized_release_current
-    assert "merged from" in normalized_release_current
-    assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in normalized_release_current
-    assert "Completion tag: annotated `phase-09-complete`" in normalized_release_current
-    assert "Phase 10: Not started" in normalized_release_current
-    assert "awaiting PR review" not in progress_current
-    assert "open and ready for review" not in release_current
-    assert "Completion tag: pending" not in release_current
+    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Pull request: [#31]" in normalized_release_current
+    assert "open and ready for review" in normalized_release_current
+    assert "Completion tag: pending" in normalized_release_current
+    assert "Phase 11: Not started" in normalized_release_current
 
-    assert "ADR 0018" in release
-    assert "event-time" in release
-    assert "injectable-clock lifecycle timestamps" in release
-    assert "stable identities/idempotent creation time" in release
-    assert "ATT&CK" in release
-    assert "not technique proof or attribution" in release
-    assert "not_executed" in release
-    assert "automatic confirmation" in release
+    assert "ADR 0019" in release
+    assert "retraining_candidate" in release
+    assert "frozen-test" in release
+    assert "not benchmark ground truth" in release
+    assert "does not train" in release

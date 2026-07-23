@@ -23,3 +23,11 @@ class SchemaVersionError(DatabaseError):
 
 class RepositoryRecordNotFoundError(DatabaseError):
     """Raised when an update targets a record that no longer exists."""
+
+
+class RepositoryIntegrityError(DatabaseError):
+    """Raised when a repository mutation violates an immutable data contract."""
+
+
+class DataArtifactError(AegisHuntError):
+    """Raised when a data-only artifact violates path, inventory, or checksum rules."""

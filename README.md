@@ -18,7 +18,9 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–9 are complete and their annotated checkpoints remain immutable. Phase 9
+Phases 0–9 are complete and their annotated checkpoints remain immutable. Phase 10
+implementation is complete on `phase/10-case-feedback` and awaits pull-request
+review; Phase 11 is **Not started**. Phase 9
 PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28),
 `[Phase 09] Alert correlation and threat hypothesis engine`, was Squash and merged
 from `phase/09-hypothesis-engine` into `main` as
@@ -47,8 +49,14 @@ stable alert groups, and deterministic proposed hunting hypotheses with explicit
 facts, inferences, assumptions, benign alternatives, possible ATT&CK mappings, and
 investigation-query suggestions that are never executed by the core. Correlation/confidence scores are not
 attack probabilities, hypotheses are not facts, and no hypothesis is automatically
-confirmed. Replay orchestration and case/feedback workflows remain later-phase work;
-Phase 10 is **Not started**.
+confirmed. Phase 10 reuses the existing Case and Feedback entities for deterministic
+hypothesis-to-case creation, audited lifecycle/notes/evidence/verdict workflows,
+checksummed feedback/report exports, and explicit review-only retraining candidates.
+A Case remains a review work item, priority is triage rather than certainty, and
+analyst feedback may be noisy. Case verdicts are not propagated to every related
+Flow; candidate artifacts use status `retraining_candidate`, and
+evaluation/test/holdout or unknown provenance is excluded. No operation trains,
+activates, or replaces a model. Runtime replay/workers remain Phase 11 scope.
 
 ## Planned architecture
 
@@ -119,6 +127,19 @@ aegishunt hunt generate-hypotheses
 aegishunt hunt hypotheses list
 aegishunt hunt hypotheses describe <hypothesis-id>
 aegishunt hunt hypotheses update-status <hypothesis-id> under_review --actor <analyst-id>
+aegishunt cases --help
+aegishunt cases create-from-hypothesis <hypothesis-id> --actor <analyst-id>
+aegishunt cases list
+aegishunt cases describe <case-id>
+aegishunt cases add-note <case-id> --body <text> --actor <analyst-id>
+aegishunt cases set-verdict <case-id> true_positive --confidence 0.8 --reason <text> --actor <analyst-id>
+aegishunt cases close <case-id> --closure-note <text> --actor <analyst-id> --confirm
+aegishunt cases report <case-id> --version <new-version> --actor <analyst-id> --confirm
+aegishunt feedback --help
+aegishunt feedback record-alert <alert-id> false_positive --confidence 0.8 --notes <text> --actor <analyst-id>
+aegishunt feedback list
+aegishunt feedback export --version <new-version> --actor <analyst-id>
+aegishunt feedback build-retraining-candidates --version <new-version> --actor <analyst-id> --confirm
 aegishunt api
 aegishunt frontend
 ```
@@ -209,6 +230,28 @@ train models, create cases, or create hypotheses. See
 [`docs/detection_alerts.md`](docs/detection_alerts.md) and
 [`docs/explainability.md`](docs/explainability.md).
 
+## Investigation cases and analyst feedback
+
+`cases create-from-hypothesis` creates one deterministic primary Case per eligible
+reviewable hypothesis. It snapshots the hypothesis, source alert group, and supporting
+alerts as typed SHA-256 references without mutating any source evidence. Status,
+triage priority, assignment, append-only notes, evidence additions, verdict, and close
+operations require explicit actors and are audited. Closure requires a final analyst
+verdict and closure note. Arbitrary files, paths, URLs, and evidence downloads are not
+accepted.
+
+Alert feedback is transactionally consistent with the existing alert verdict. Feedback
+is human-supplied and potentially noisy—not ground truth. Data-only feedback exports,
+case reports, and retraining-candidate artifacts are versioned, exact-inventory,
+checksummed, non-overwriting, and restricted to configured roots. Candidates use only
+uniquely mapped alert→detection→flow evidence with fixed Phase 3 feature order and
+explicit non-evaluation provenance. Conflicts are excluded; consistent duplicates are
+deduplicated; Case verdicts never label all member Flows. Candidate status is
+`retraining_candidate` and requires manual review plus a new group-aware quality/split
+workflow. See [`docs/investigation_cases.md`](docs/investigation_cases.md),
+[`docs/analyst_feedback.md`](docs/analyst_feedback.md), and
+[`docs/retraining_candidates.md`](docs/retraining_candidates.md).
+
 ## Telemetry ingestion
 
 The ingestion API exposes `/ingestion/pcap`, `/ingestion/flow-csv`,
@@ -232,8 +275,8 @@ aegishunt init-db --config configs/application.yaml
 ```
 
 The default SQLite database uses WAL, foreign-key enforcement, a bounded busy
-timeout, and schema version `2`. The additive v1→v2 migration preserves existing
-rows and records a new schema-version event. Database files and WAL sidecars are
+timeout, and schema version `4`. Ordered additive v1→v2→v3→v4 migrations preserve
+existing rows and record new schema-version events. Database files and WAL sidecars are
 ignored by Git.
 
 Flow segmentation is configuration-controlled. Defaults are 60-second idle and
@@ -261,9 +304,10 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 8 page reports the implemented alert/explanation boundary and the
-unchanged controlled-evidence caveats. It does not display invented detections,
-alerts, hypotheses, or metrics.
+The Phase 10 page reports the implemented case/feedback boundary and unchanged
+controlled-evidence caveats. It does not display invented cases, feedback,
+candidate rows, alerts, hypotheses, or metrics. Complete interactive case and
+feedback pages remain Phase 12 scope.
 
 ## Quality checks
 

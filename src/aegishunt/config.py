@@ -149,6 +149,14 @@ class CorrelationSettings(BaseModel):
     policy_path: Path = Path("configs/correlation.yaml")
 
 
+class CaseFeedbackSettings(BaseModel):
+    """Configured Phase 10 case and analyst-feedback policy location."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_path: Path = Path("configs/case_feedback.yaml")
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -163,6 +171,7 @@ class ApplicationSettings(BaseModel):
     anomaly: AnomalySettings = Field(default_factory=AnomalySettings)
     detection: DetectionSettings = Field(default_factory=DetectionSettings)
     correlation: CorrelationSettings = Field(default_factory=CorrelationSettings)
+    case_feedback: CaseFeedbackSettings = Field(default_factory=CaseFeedbackSettings)
 
     @property
     def environment(self) -> str:

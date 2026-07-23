@@ -56,3 +56,6 @@ detection:
 
 correlation:
   policy_path: configs/correlation.yaml
+
+case_feedback:
+  policy_path: configs/case_feedback.yaml

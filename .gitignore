@@ -36,6 +36,8 @@ artifacts/logs/*
 artifacts/evaluations/*
 artifacts/figures/*
 artifacts/test-reports/*
+artifacts/feedback/*
+artifacts/retraining_candidates/*
 !artifacts/models/.gitkeep
 !artifacts/logs/.gitkeep
 !artifacts/evaluations/.gitkeep
@@ -46,6 +48,8 @@ reports/datasets/*
 
 reports/models/*
 !reports/models/.gitkeep
+
+reports/cases/*
 
 *.db
 *.sqlite

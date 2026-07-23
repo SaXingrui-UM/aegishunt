@@ -59,6 +59,7 @@ class HypothesisStatus(StrEnum):
 class CaseStatus(StrEnum):
     OPEN = "open"
     INVESTIGATING = "investigating"
+    NEEDS_MORE_INFORMATION = "needs_more_information"
     CLOSED = "closed"
 
 
@@ -82,6 +83,14 @@ class FeedbackObjectType(StrEnum):
     ALERT_GROUP = "alert_group"
     HYPOTHESIS = "hypothesis"
     CASE = "case"
+
+
+class CaseEvidenceObjectType(StrEnum):
+    THREAT_HYPOTHESIS = "threat_hypothesis"
+    ALERT_GROUP = "alert_group"
+    SECURITY_ALERT = "security_alert"
+    DETECTION_RESULT = "detection_result"
+    NETWORK_FLOW = "network_flow"
 
 
 class ModelType(StrEnum):

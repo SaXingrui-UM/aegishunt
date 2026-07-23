@@ -18,8 +18,8 @@ def database_for(tmp_path: Path) -> Database:
 def test_database_initialization_is_repeatable_and_enables_wal(tmp_path: Path) -> None:
     database = database_for(tmp_path)
     try:
-        assert database.initialize() == 3
-        assert database.initialize() == 3
+        assert database.initialize() == 4
+        assert database.initialize() == 4
         assert database.journal_mode() == "wal"
         tables = set(inspect(database.engine).get_table_names())
         assert {
@@ -31,6 +31,8 @@ def test_database_initialization_is_repeatable_and_enables_wal(tmp_path: Path) -
             "threat_hypotheses",
             "investigation_cases",
             "analyst_feedback",
+            "case_notes",
+            "case_evidence_references",
             "model_versions",
             "audit_events",
             "schema_versions",
@@ -44,7 +46,7 @@ def test_incompatible_schema_version_is_rejected(tmp_path: Path) -> None:
     try:
         database.initialize()
         with database.session() as session, session.begin():
-            session.add(SchemaVersionRecord(version=4))
+            session.add(SchemaVersionRecord(version=99))
 
         with pytest.raises(SchemaVersionError, match="incompatible"):
             database.initialize()
@@ -141,13 +143,52 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
                     "created_at DATETIME NOT NULL)"
                 )
             )
+            connection.execute(
+                text(
+                    "CREATE TABLE investigation_cases ("
+                    "case_id CHAR(32) PRIMARY KEY, hypothesis_id CHAR(32), "
+                    "title VARCHAR(255) NOT NULL, description TEXT NOT NULL, "
+                    "priority VARCHAR(32) NOT NULL, status VARCHAR(32) NOT NULL, "
+                    "assigned_to VARCHAR(255), evidence_references JSON NOT NULL, "
+                    "notes JSON NOT NULL, related_object_ids JSON NOT NULL, "
+                    "verdict VARCHAR(64), created_at DATETIME NOT NULL, "
+                    "updated_at DATETIME NOT NULL, closed_at DATETIME)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE TABLE analyst_feedback ("
+                    "feedback_id CHAR(32) PRIMARY KEY, object_type VARCHAR(64) NOT NULL, "
+                    "object_id VARCHAR(255) NOT NULL, verdict VARCHAR(64) NOT NULL, "
+                    "confidence FLOAT NOT NULL, notes TEXT NOT NULL, "
+                    "created_at DATETIME NOT NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO investigation_cases VALUES ("
+                    "'00000000000000000000000000000003', NULL, "
+                    "'Legacy case', 'Historical Phase 1 row', 'medium', 'open', "
+                    "NULL, '[]', '[]', '[]', NULL, "
+                    "'2026-01-01T00:00:00+00:00', "
+                    "'2026-01-01T00:00:00+00:00', NULL)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO analyst_feedback VALUES ("
+                    "'00000000000000000000000000000004', 'case', "
+                    "'00000000000000000000000000000003', 'needs_more_information', "
+                    "0.5, 'Legacy feedback', '2026-01-01T00:00:00+00:00')"
+                )
+            )
     finally:
         engine.dispose()
 
     database = Database(DatabaseSettings(url=f"sqlite:///{path}"))
     try:
-        assert database.initialize() == 3
-        assert database.initialize() == 3
+        assert database.initialize() == 4
+        assert database.initialize() == 4
         columns = {
             column["name"]
             for column in inspect(database.engine).get_columns("detection_results")
@@ -174,11 +215,34 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
             "template_catalog_version",
             "hypothesis_schema_version",
         } <= hypothesis_columns
+        case_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("investigation_cases")
+        }
+        assert {
+            "related_hypothesis_ids",
+            "evidence_snapshot",
+            "case_schema_version",
+            "policy_checksum",
+        } <= case_columns
+        feedback_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("analyst_feedback")
+        }
+        assert {
+            "actor",
+            "source",
+            "updated_at",
+            "feedback_schema_version",
+            "provenance",
+        } <= feedback_columns
         with database.engine.connect() as connection:
             assert connection.scalar(text("SELECT COUNT(*) FROM detection_results")) == 1
+            assert connection.scalar(text("SELECT COUNT(*) FROM investigation_cases")) == 1
+            assert connection.scalar(text("SELECT COUNT(*) FROM analyst_feedback")) == 1
             versions = connection.execute(
                 text("SELECT version FROM schema_versions ORDER BY version")
             ).scalars()
-            assert tuple(versions) == (1, 2, 3)
+            assert tuple(versions) == (1, 2, 3, 4)
     finally:
         database.dispose()

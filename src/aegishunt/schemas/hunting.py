@@ -19,6 +19,7 @@ from aegishunt.schemas.base import (
 )
 from aegishunt.schemas.enums import (
     AnalystVerdict,
+    CaseEvidenceObjectType,
     CasePriority,
     CaseStatus,
     FeedbackObjectType,
@@ -173,15 +174,25 @@ class InvestigationCase(CoreSchema):
 
     case_id: UUID = Field(default_factory=uuid4)
     hypothesis_id: UUID | None = None
+    related_hypothesis_ids: list[str] = Field(default_factory=list)
+    related_alert_ids: list[str] = Field(default_factory=list)
     title: str = Field(min_length=1, max_length=255)
     description: str = Field(min_length=1)
     priority: CasePriority = CasePriority.MEDIUM
     status: CaseStatus = CaseStatus.OPEN
     assigned_to: str | None = Field(default=None, max_length=255)
     evidence_references: list[str] = Field(default_factory=list)
+    evidence_snapshot: JsonObject = Field(default_factory=dict)
     notes: list[str] = Field(default_factory=list)
     related_object_ids: list[str] = Field(default_factory=list)
     verdict: AnalystVerdict | None = None
+    verdict_confidence: Probability | None = None
+    verdict_reason: str | None = Field(default=None, max_length=4_000)
+    created_by: str | None = Field(default=None, min_length=1, max_length=255)
+    case_schema_version: Literal["1.0.0"] | None = None
+    policy_id: str | None = Field(default=None, max_length=255)
+    policy_version: str | None = Field(default=None, max_length=64)
+    policy_checksum: str | None = Field(default=None, max_length=64)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     closed_at: datetime | None = None
@@ -197,7 +208,98 @@ class InvestigationCase(CoreSchema):
             raise ValueError("updated_at must not precede created_at")
         if self.closed_at and self.closed_at < self.created_at:
             raise ValueError("closed_at must not precede created_at")
+        if self.case_schema_version == "1.0.0":
+            if self.hypothesis_id is None or self.related_hypothesis_ids != sorted(
+                set(self.related_hypothesis_ids)
+            ):
+                raise ValueError("Phase 10 cases require ordered hypothesis references")
+            if str(self.hypothesis_id) not in self.related_hypothesis_ids:
+                raise ValueError("primary hypothesis must be retained in related hypotheses")
+            ordered_fields = (
+                self.related_alert_ids,
+                self.evidence_references,
+                self.related_object_ids,
+            )
+            if any(values != sorted(set(values)) for values in ordered_fields):
+                raise ValueError("Phase 10 case references must be distinct and ordered")
+            identity = (
+                self.created_by,
+                self.policy_id,
+                self.policy_version,
+                self.policy_checksum,
+            )
+            if not all(identity) or not self.evidence_references or not self.evidence_snapshot:
+                raise ValueError("Phase 10 case identity and evidence are required")
+            if self.policy_checksum is None or not _SHA256_PATTERN.fullmatch(
+                self.policy_checksum
+            ):
+                raise ValueError("case policy checksum must be SHA-256")
+            if self.status is CaseStatus.CLOSED:
+                if self.closed_at is None or self.verdict not in {
+                    AnalystVerdict.TRUE_POSITIVE,
+                    AnalystVerdict.FALSE_POSITIVE,
+                    AnalystVerdict.BENIGN_EXPECTED,
+                }:
+                    raise ValueError("closed cases require a final analyst verdict")
+            elif self.closed_at is not None:
+                raise ValueError("closed_at is valid only for a closed case")
+            if (self.verdict is None) != (self.verdict_confidence is None):
+                raise ValueError("case verdict and confidence must be recorded together")
         return self
+
+
+class CaseNote(CoreSchema):
+    """Append-only analyst note associated with one investigation case."""
+
+    note_id: UUID = Field(default_factory=uuid4)
+    case_id: UUID
+    author: str = Field(min_length=1, max_length=255)
+    body: str = Field(min_length=1, max_length=8_000)
+    note_type: Literal["investigation", "closure", "correction"] = "investigation"
+    created_at: datetime = Field(default_factory=utc_now)
+    note_schema_version: Literal["1.0.0"] = "1.0.0"
+
+    @field_validator("created_at")
+    @classmethod
+    def validate_created_at(cls, value: datetime) -> datetime:
+        return require_aware_utc(value)
+
+
+class CaseEvidenceReference(CoreSchema):
+    """Immutable typed reference and canonical evidence snapshot."""
+
+    reference_id: UUID = Field(default_factory=uuid4)
+    case_id: UUID
+    object_type: CaseEvidenceObjectType
+    object_id: str = Field(min_length=1, max_length=255)
+    object_schema_version: str | None = Field(default=None, max_length=64)
+    snapshot: JsonObject = Field(min_length=1)
+    snapshot_checksum: str = Field(min_length=64, max_length=64)
+    description: str = Field(min_length=1, max_length=1_000)
+    added_by: str = Field(min_length=1, max_length=255)
+    added_at: datetime = Field(default_factory=utc_now)
+    evidence_reference_schema_version: Literal["1.0.0"] = "1.0.0"
+
+    @field_validator("snapshot_checksum")
+    @classmethod
+    def validate_snapshot_checksum(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not _SHA256_PATTERN.fullmatch(normalized):
+            raise ValueError("evidence snapshot checksum must be SHA-256")
+        return normalized
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, value: str) -> str:
+        normalized = value.strip()
+        if "://" in normalized or "<" in normalized or ">" in normalized:
+            raise ValueError("evidence description must be plain text without URLs")
+        return normalized
+
+    @field_validator("added_at")
+    @classmethod
+    def validate_added_at(cls, value: datetime) -> datetime:
+        return require_aware_utc(value)
 
 
 class AnalystFeedback(CoreSchema):
@@ -208,10 +310,28 @@ class AnalystFeedback(CoreSchema):
     object_id: str = Field(min_length=1, max_length=255)
     verdict: AnalystVerdict
     confidence: Probability
-    notes: str = ""
+    notes: str = Field(default="", max_length=4_000)
+    actor: str | None = Field(default=None, min_length=1, max_length=255)
+    source: str | None = Field(default=None, min_length=1, max_length=255)
     created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime | None = None
+    feedback_schema_version: Literal["1.0.0"] | None = None
+    related_case_id: UUID | None = None
+    provenance: JsonObject = Field(default_factory=dict)
+    correction_reason: str | None = Field(default=None, max_length=4_000)
 
-    @field_validator("created_at")
+    @field_validator("created_at", "updated_at")
     @classmethod
-    def validate_timestamp(cls, value: datetime) -> datetime:
-        return require_aware_utc(value)
+    def validate_timestamp(cls, value: datetime | None) -> datetime | None:
+        return None if value is None else require_aware_utc(value)
+
+    @model_validator(mode="after")
+    def validate_phase_ten_feedback(self) -> Self:
+        if self.updated_at is not None and self.updated_at < self.created_at:
+            raise ValueError("feedback updated_at must not precede created_at")
+        if self.feedback_schema_version == "1.0.0":
+            if self.actor is None or self.source is None or self.updated_at is None:
+                raise ValueError("Phase 10 feedback requires actor, source, and updated_at")
+            if not self.provenance:
+                raise ValueError("Phase 10 feedback requires explicit provenance")
+        return self

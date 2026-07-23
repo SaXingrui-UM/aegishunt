@@ -1,11 +1,11 @@
-"""Tests for truthful merged Phase 9 content in the Streamlit shell."""
+"""Tests for truthful Phase 10 implementation-review content in Streamlit."""
 
 from typing import Any
 
 from aegishunt.frontend import app
 
 
-def test_frontend_renders_phase_nine_without_fake_results(monkeypatch: Any) -> None:
+def test_frontend_renders_phase_ten_without_fake_results(monkeypatch: Any) -> None:
     rendered: list[str] = []
     monkeypatch.setattr(app.st, "set_page_config", lambda **kwargs: None)
     monkeypatch.setattr(app.st, "title", rendered.append)
@@ -20,16 +20,21 @@ def test_frontend_renders_phase_nine_without_fake_results(monkeypatch: Any) -> N
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 9 complete" in content
-    assert "PR #28 was Squash and merged" in content
-    assert "phase/09-hypothesis-engine" in content
-    assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in content
+    assert "Phase 10 implementation complete" in content
+    assert "awaiting PR review" in content
+    assert "phase/10-case-feedback" in content
     assert "phase-09-complete" in content
-    assert "Phase 10: Not started" in content
+    assert "Phase 11: Not started" in content
     assert "Recommendation: Inconclusive" in content
     assert "deterministic proposed" in content
     assert "not a fact or confirmed attack" in content
     assert "never executed" in content
+    assert "A Case is not a confirmed attack" in content
+    assert "priority is triage" in content
+    assert "feedback may be noisy" in content
+    assert "not propagated to all related flows" in content
+    assert "never train, activate, or replace a model" in content
+    assert "No case counts or feedback metrics are fabricated" in content
     assert "did not establish a fusion advantage" in content
     assert "LOAO Recall was lower than anomaly-only" in content
     assert "held-out exfiltration and reconnaissance" in content
@@ -43,7 +48,6 @@ def test_frontend_renders_phase_nine_without_fake_results(monkeypatch: Any) -> N
     assert "non-causal global/local explanations" in content
     assert "Research prototype only" in content
     assert "pending merge" not in content
-    assert "awaiting PR review" not in content
-    assert "Phase 10 implementation" not in content
+    assert "Phase 11 implementation" not in content
     assert "Accuracy" not in content
     assert "SecurityAlert" in content
