@@ -37,10 +37,13 @@ database remains available.
 
 ## Lease reconciliation
 
-At startup a worker finds expired leases in validating, running,
-pause-requested, or paused state. It marks them `recovery_pending` and records a
-single audit event. It does not infer that replay is safe to resume and does not
-steal an unexpired lease.
+At startup a worker first reconciles persisted active worker records whose
+heartbeat is older than the configured stale-worker threshold. Those records
+become `failed` with a safe reason; this status cleanup does not recover or
+requeue any job. The worker then finds expired job leases in validating,
+running, pause-requested, or paused state. It marks those jobs
+`recovery_pending` and records a single audit event. It does not infer that
+replay is safe to resume and does not steal an unexpired lease.
 
 ## Resource monitoring
 

@@ -12,8 +12,8 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit recovery; interruptible event-time replay; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
-| Current activity | Phase 11 implementation is complete on `phase/11-runtime-replay`; final quality/review/PR publication is in progress. Phase 12 has not started |
-| Verification status | Baseline on merged `main`: Ruff passed, strict mypy passed for 185 source files, and 389 tests passed with 86.01% branch-aware coverage. Current focused Phase 11 selection passed 44 tests, including pause/heartbeat control, transaction rollback, migration/status regressions, and real temporary-bundle E2E; final complete suite results will be recorded before publication |
+| Current activity | Phase 11 implementation, final quality checks, and equivalent read-only review are complete on `phase/11-runtime-replay`; PR publication is in progress. Phase 12 has not started |
+| Verification status | Baseline on merged `main`: Ruff passed, strict mypy passed for 185 source files, and 389 tests passed with 86.01% branch-aware coverage. Final Phase 11 verification: Ruff passed, strict mypy passed for 205 source files, and all 427 tests passed with zero failures/skips/xfails and 86.07% branch-aware coverage in 1,248.47 seconds |
 | Stable branch checkpoint | PR #31 was squash-merged to `main` as `ba40211a374aa8e4efa62702a83d063f9eb88039`; annotated Tag `phase-10-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -48,7 +48,7 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 12 status | Not started |
 | Current branch | `phase/11-runtime-replay` |
 | Next planned branch | `phase/12-api-frontend` (not created; PR merge, checkpoint instructions, and explicit user authorization are required) |
-| Next action | Complete final quality/review, publish the Phase 11 PR, and stop for user review |
+| Next action | Publish the reviewed Phase 11 branch and ready pull request, then stop for user review |
 
 Phase 0 through Phase 10 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
@@ -78,6 +78,9 @@ workflows, model training, activation, response, and Case creation are disabled.
 - Added post-EOF idempotent Phase 9 correlation/hypothesis generation, psutil
   process observations with explicit unavailable/null semantics, runtime CLI
   operations, and a truthful Streamlit status shell.
+- Scoped downstream runtime counters to output-ledger evidence owned by the
+  current job, reconciled stale active worker status with the configured
+  threshold, and completed lifecycle audit timestamps and structured context.
 - Added unit, migration, race, rollback, shutdown, resource, CLI, frontend,
   integration/restart, drift, malformed-PCAP, and real temporary-bundle E2E
   coverage. No external network, root, live capture, Phase 12 workflow, training,
@@ -91,8 +94,27 @@ workflows, model training, activation, response, and Case creation are disabled.
   durable queue lifecycle/race/rollback, live-worker pause/heartbeat/resume,
   replay timing, preflight drift, malformed PCAP, schema migration, Streamlit
   status, and real temporary verified-bundle E2E.
-- Final complete quality, coverage, review, commit, push, PR, and CI state are
-  recorded at the end of this phase workflow.
+- The first full Phase 11 run exposed three stale schema-v4 expectations;
+  `595f79d` updated them to the additive schema-v5 contract. The final Ruff
+  check passed, strict mypy passed for 205 source files, and all 427 tests
+  passed with zero failures, skips, or xfails in 1,248.47 seconds at 86.07%
+  branch-aware coverage.
+- The real Phase 11 E2E now requires complete flow, detection, alert,
+  correlation-group, and hypothesis evidence from a controlled temporary PCAP,
+  then verifies restart persistence and deterministic reuse. No downstream
+  service is stubbed and no formal model evidence is regenerated.
+- Native `codex review --base main` could not start because the installed arm64
+  executable is missing (`ENOENT`). Equivalent read-only review findings for
+  job-scoped downstream counters, resume audit time, E2E completeness, signal
+  registration coverage, stale worker reconciliation, and audit context were
+  closed by commits `5789356`, `1056ad9`, `7d8eb22`, `fcdd2ca`, `ce70330`, and
+  `720f4c3`. The final equivalent review found zero Blocking, zero High, and
+  zero unresolved correctness-related Medium findings.
+- Manual runtime CLI verification used a temporary database outside the
+  repository. The desktop environment did not expose the editable-install
+  `.pth`; bare console invocation failed with `ModuleNotFoundError`, while the
+  recorded `PYTHONPATH=src` workaround passed. It is not claimed as a standard
+  installation success.
 
 ## Phase 11 startup invariant (satisfied)
 

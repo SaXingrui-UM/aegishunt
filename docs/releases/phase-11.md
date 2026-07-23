@@ -28,7 +28,12 @@ Status: **Implementation complete — awaiting PR review**.
   counters, existing Phase 3 packet/flow semantics, and EOF flush.
 - Transactional flow/detection/optional-alert/ledger/progress batches.
 - Existing idempotent Phase 9 correlation and hypothesis generation after EOF.
+- Job-scoped downstream counters derived only from the current job's output
+  ledger, so unrelated historical groups or hypotheses are never counted as
+  runtime outputs.
 - Bounded process/resource monitoring with explicit unavailable semantics.
+- Startup reconciliation of stale active worker status using the configured
+  threshold without implicitly requeuing or recovering interrupted jobs.
 - Typer runtime operations and truthful Streamlit runtime status shell.
 - Unit, migration, claim-race, transaction, integration, restart, drift,
   malformed-PCAP, CLI, frontend, and real temporary-bundle E2E coverage.
@@ -44,7 +49,59 @@ disabled live capture, and bounded resource observations.
 - Baseline before branch creation: Ruff passed; strict mypy passed for 185
   source files; 389 tests passed with 86.01% branch-aware coverage.
 - Phase 11 focused implementation selection: 44 tests passed in 38.70 seconds.
-- Final full quality and coverage results: pending final execution.
+- The first Phase 11 full-suite run exposed three stale schema-v4 test
+  expectations; commit `595f79d` updated those tests to the additive v5 schema
+  contract without weakening their assertions.
+- Final Ruff passed; strict mypy passed for 205 source files; all 427 tests
+  passed with zero failures, skips, or xfails in 1,248.47 seconds. Branch-aware
+  coverage was 86.07%, above the unchanged 85% gate.
+- The strengthened PCAP-to-runtime E2E used a controlled temporary capture and
+  verified real flow, detection, alert, correlation-group, and hypothesis
+  evidence plus restart persistence. It did not stub downstream services or
+  create formal experiment evidence.
+
+## Review outcome
+
+Native `codex review --base main` could not start because the installed arm64
+Codex executable is missing (`ENOENT`). An equivalent read-only review found:
+
+- current-job counters could include unrelated historical correlation and
+  hypothesis evidence;
+- a resume audit event used the prior lifecycle timestamp;
+- the original E2E did not require alerts, groups, and hypotheses;
+- cooperative signal-handler registration lacked direct regression coverage;
+- the configured stale-worker threshold was not applied to persisted worker
+  status during startup;
+- some runtime lifecycle audit records lacked complete structured context.
+
+Commits `5789356`, `1056ad9`, `7d8eb22`, `fcdd2ca`, `ce70330`, and `720f4c3`
+closed those findings with regression coverage. The final equivalent review
+found zero Blocking, zero High, and zero unresolved correctness-related Medium
+findings. No Phase 12 functionality was introduced.
+
+## Manual verification
+
+The runtime CLI help, policy verification, disabled live-capture status, and
+empty runtime status were exercised against a temporary database outside the
+repository. The desktop environment did not expose the editable-install
+`.pth`, so the bare console command failed with `ModuleNotFoundError`; the
+recorded `PYTHONPATH=src` workaround passed. This workaround is not represented
+as a standard editable-install success.
+
+## Commits
+
+- `288c39d` — `feat: add persistent runtime job foundation`
+- `896ee77` — `feat: orchestrate verified pcap replay pipeline`
+- `4c18e89` — `feat: add runtime worker and operator controls`
+- `c5866f9` — `test: cover phase 11 runtime and recovery boundaries`
+- `4dcbcaf` — `docs: document phase 11 runtime and recovery`
+- `595f79d` — `test: update schema version five expectations`
+- `5789356` — `fix: scope downstream runtime counters to job evidence`
+- `1056ad9` — `fix: timestamp runtime resume audit events`
+- `7d8eb22` — `test: require complete replay downstream evidence`
+- `fcdd2ca` — `test: cover cooperative runtime signal handlers`
+- `ce70330` — `fix: reconcile stale runtime worker status`
+- `720f4c3` — `fix: complete runtime lifecycle audit context`
 
 ## Known limitations
 
