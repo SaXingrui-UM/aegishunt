@@ -133,7 +133,7 @@ def test_repeatable_init_db_and_connection_pragmas(tmp_path: Path) -> None:
     assert json.loads(first.stdout)["schema_version"] == 4
     database = Database(DatabaseSettings(url=f"sqlite:///{database_path}", busy_timeout_ms=7000))
     try:
-        assert database.initialize() == 4
+        assert database.initialize() == 5
         assert database.journal_mode() == "wal"
         assert set(inspect(database.engine).get_table_names()) == EXPECTED_TABLES
         with database.engine.connect() as connection:

@@ -45,7 +45,7 @@ from tests.fixtures.detection import canonical_flow
 
 def _database(path: Path) -> Database:
     database = Database(DatabaseSettings(url=f"sqlite:///{path}"))
-    assert database.initialize() == 4
+    assert database.initialize() == 5
     return database
 
 

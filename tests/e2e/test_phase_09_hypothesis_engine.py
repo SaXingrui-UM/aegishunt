@@ -42,7 +42,7 @@ def test_phase_nine_cli_end_to_end_is_offline_and_restart_safe(tmp_path: Path) -
     database = Database(
         DatabaseSettings(url=f"sqlite:///{tmp_path / 'phase-09-cli.sqlite3'}")
     )
-    assert database.initialize() == 4
+    assert database.initialize() == 5
     seed_alerts(
         database,
         [
@@ -144,7 +144,7 @@ def test_phase_nine_cli_end_to_end_is_offline_and_restart_safe(tmp_path: Path) -
     database = Database(
         DatabaseSettings(url=f"sqlite:///{tmp_path / 'phase-09-cli.sqlite3'}")
     )
-    assert database.initialize() == 4
+    assert database.initialize() == 5
     try:
         with database.session() as session:
             groups = AlertGroupRepository(session).list()
