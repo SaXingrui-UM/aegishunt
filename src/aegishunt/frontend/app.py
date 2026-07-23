@@ -1,4 +1,4 @@
-"""Truthful Streamlit shell for Phase 10 implementation review."""
+"""Truthful Streamlit shell for the completed Phase 10 checkpoint."""
 
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ def main() -> None:
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 10 implementation complete — awaiting PR review on "
-        "phase/10-case-feedback. Phase 9 and annotated checkpoint phase-09-complete "
-        "remain closed and immutable. Phase 11: Not started."
+        "Current status: Phase 10 complete. PR #31 is merged and annotated checkpoint "
+        "phase-10-complete is verified at the canonical merge commit. Earlier phase "
+        "checkpoints remain closed and immutable. Phase 11: Not started."
     )
     st.success(
         "Recommendation: Inconclusive. The controlled experiment did not establish a "

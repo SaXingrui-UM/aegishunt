@@ -18,20 +18,21 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–9 are complete and their annotated checkpoints remain immutable. Phase 10
-implementation is complete on `phase/10-case-feedback` and awaits pull-request
-review; Phase 11 is **Not started**. Phase 9
-PR [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28),
-`[Phase 09] Alert correlation and threat hypothesis engine`, was Squash and merged
-from `phase/09-hypothesis-engine` into `main` as
-`ffdd7639b60d944b19d70096e1ff38de0d8761f8` on 2026-07-22. Annotated Tag
-`phase-09-complete` records that merged checkpoint. The implementation adds a
-checksummed correlation policy, bounded event-time entity indexing, deterministic
-alert groups, evidence-backed proposed hunting hypotheses, audited analyst status
-transitions, and an additive schema v2→v3 migration. The lifecycle correction keeps
-observed event time separate from injectable-clock creation/update time; stable IDs
-remain independent of wall-clock time and idempotent reruns preserve the first
-persisted `created_at`.
+Phases 0–10 are complete and their annotated checkpoints remain immutable. Phase
+10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31),
+`[Phase 10] Investigation cases and analyst feedback`, was Squash and merged
+from `phase/10-case-feedback` into `main` as
+`ba40211a374aa8e4efa62702a83d063f9eb88039` on 2026-07-23. Annotated Tag
+`phase-10-complete` records that canonical merged checkpoint. Phase 11 is **Not
+started**.
+
+The Phase 9 checkpoint remains immutable. Its implementation adds a checksummed
+correlation policy, bounded event-time entity indexing, deterministic alert
+groups, evidence-backed proposed hunting hypotheses, audited analyst status
+transitions, and an additive schema v2→v3 migration. The lifecycle correction
+keeps observed event time separate from injectable-clock creation/update time;
+stable IDs remain independent of wall-clock time and idempotent reruns preserve
+the first persisted `created_at`.
 
 The Phase 7 run uses 144 newly identified controlled synthetic rows in 72 groups
 and does not reuse Phase 5/6 frozen-test evidence. It selected supervised/anomaly

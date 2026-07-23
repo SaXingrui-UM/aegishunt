@@ -1,19 +1,19 @@
 # Codex Progress
 
-Last updated: 2026-07-22 (Asia/Shanghai)
+Last updated: 2026-07-23 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 10 - Investigation Case and Analyst Feedback |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
-| Current activity | Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) is open and ready for review from `phase/10-case-feedback` to `main`. Phase 9 remains fully closed and checkpointed; Phase 11 has not started |
-| Verification status | Phase 10 focused unit/integration/artifact/status/offline E2E selection passes all 27 tests in 4.93 seconds; the final complete suite passes all 388 tests in 1,092.33 seconds with 86.01% branch-aware coverage and no failures, skips, or xfails |
-| Stable branch checkpoint | PR #28 was squash-merged to `main` as `ffdd7639b60d944b19d70096e1ff38de0d8761f8`; annotated Tag `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) points to that merged commit and is remotely verified |
+| Current activity | Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) is merged into `main`; its canonical checkpoint is the PR merge commit plus annotated Tag `phase-10-complete`. Phase 11 has not started |
+| Verification status | On merged `main`, Ruff passed; strict mypy passed for 185 source files; the baseline Phase 10 focused selection passed 27 tests in 6.00 seconds, migration passed 4 tests in 0.31 seconds, and the baseline full suite passed 388 tests in 1,102.37 seconds. After the permanent status regression was added, focused Phase 10 passed 28 tests in 5.49 seconds and the final full suite passed 389 tests in 1,094.54 seconds. Both full runs had 86.01% branch-aware coverage and zero failures, skips, or xfails |
+| Stable branch checkpoint | PR #31 was squash-merged to `main` as `ba40211a374aa8e4efa62702a83d063f9eb88039`; annotated Tag `phase-10-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -21,11 +21,11 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, and Phase 9 PRs [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29) are merged. Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) is open and ready for review |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), and Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) are merged |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 9 CI is closed and passing; both Phase 10 PR #31 `quality` checks were in progress when this checkpoint was recorded |
+| CI status | Both Phase 10 PR #31 `quality` checks passed before merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -36,23 +36,43 @@ Last updated: 2026-07-22 (Asia/Shanghai)
 | Phase 7 tag | Annotated `phase-07-complete` (`b3e7059250562b140d4c119e7cee5460e3c8e7d9`) is pushed and remotely verified at merged `main` `2465f8de67be7638670f9d30c1198ff76a60d17c` |
 | Phase 8 tag | Annotated `phase-08-complete` (`239463ce855327d9896cda7640b6eda2895be4bf`) is pushed and locally/remotely verified at merged `main` `f622faec6513a9fadcba11b73d2fbe1239779217` |
 | Phase 9 tag | Annotated `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) is pushed and locally/remotely verified at merged `main` `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
-| Stable branch | `main` at Phase 10 branch baseline `92bd2f5833778d82e5b815b8c3764478f5e3b1ab`; Phase 10 remains unmerged |
-| Working tree | Phase 10 implementation changes are confined to `phase/10-case-feedback`; no model, database, upload, PCAP, dataset, secret, or runtime evidence is tracked |
+| Phase 10 tag | Annotated `phase-10-complete` peels to the PR #31 merge commit `ba40211a374aa8e4efa62702a83d063f9eb88039` and is pushed for remote verification |
+| Stable branch | The canonical Phase 10 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 10 Tag |
+| Working tree | Post-merge verification found no tracked model, database, upload, generated dataset, secret, runtime evidence, or Phase 11 implementation |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
-| Phase 10 status | Implementation complete — awaiting PR review |
+| Phase 10 status | Phase complete |
 | Phase 11 status | Not started |
-| Current branch | `phase/10-case-feedback` |
-| Next planned branch | `phase/11-runtime-replay` (do not create before Phase 10 merge/checkpoint and explicit authorization) |
-| Next action | Wait for PR #31 CI, user review, and Squash and merge; do not create a completion Tag or begin Phase 11 before the merged-main checkpoint and explicit authorization |
+| Next planned branch | `phase/11-runtime-replay` (not created; explicit user authorization is required) |
+| Next action | Wait for explicit user authorization, then rerun the invariant-based Phase 11 startup gate; do not create an additional status-only closure PR |
 
-Phase 0 through Phase 9 are checkpointed and their Tags remain unchanged. Phase
+Phase 0 through Phase 10 are checkpointed and their Tags remain unchanged. Phase
 10 consumes immutable hypotheses and underlying evidence without claiming attack
 confirmation. Case verdicts and feedback are revisable analyst judgments, not
 ground truth. Candidate exports never train, activate, or replace a model and
 exclude frozen-test/evaluation provenance. Phase 11 runtime and replay work is
 not implemented.
+
+## Phase 11 startup invariant
+
+The canonical Phase 10 checkpoint is PR #31 merge commit
+`ba40211a374aa8e4efa62702a83d063f9eb88039` plus the annotated
+`phase-10-complete` Tag whose peeled target is that commit. Later documentation
+commits may be descendants of the checkpoint and must not move the Tag.
+
+Before Phase 11 starts, verify live Git and GitHub state: the working tree is
+clean; local `main` was synchronized with `origin/main` by `git pull --ff-only`;
+PR #31 is merged with successful required checks; local and remote
+`phase-10-complete` are annotated and peel to the canonical merge commit;
+`git merge-base --is-ancestor ba40211a374aa8e4efa62702a83d063f9eb88039 main`
+succeeds; the status documents show Phase 10 complete and Phase 11 not started;
+and neither the local nor remote `phase/11-runtime-replay` branch exists.
+
+This gate intentionally uses ancestor containment rather than requiring the Tag
+to equal a future documentation-only `main` HEAD. It does not require documents
+to hard-code the live `main` HEAD or any later status-only PR merge SHA. Once the
+invariant passes, no additional final-status or closure PR is required.
 
 ## Phase 10 implementation checkpoint
 
@@ -80,10 +100,15 @@ not implemented.
 ## Phase 10 verification checkpoint
 
 - Ruff passed for the complete repository; strict mypy passed for all 185 source files.
-- The focused Phase 10 selection passed all 27 tests in 4.93 seconds.
-- The final complete pytest suite passed all 388 tests in 1,092.33 seconds with zero
+- The merged-main focused Phase 10 selection passed all 27 tests in 6.00 seconds,
+  and the migration selection passed all 4 tests in 0.31 seconds.
+- The merged-main complete pytest suite passed all 388 tests in 1,102.37 seconds with zero
   failures, skips, or xfails and 86.01% branch-aware coverage, above the unchanged
   85% gate.
+- After adding the permanent ancestor-invariant regression, the updated Phase 10
+  focused selection passed all 28 tests in 5.49 seconds and the final complete
+  suite passed all 389 tests in 1,094.54 seconds with the same 86.01% coverage
+  and no failures, skips, or xfails.
 - The first implementation review found that an empty candidate artifact caused a
   CLI exit inside the database transaction, rolling back its audit while leaving the
   valid data-only artifact. The command now returns an explicit `empty` state and
