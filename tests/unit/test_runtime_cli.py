@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import signal
+from collections.abc import Callable
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from aegishunt.cli import app
+from aegishunt.runtime import cli as runtime_cli
 
 PROJECT_ROOT = Path(__file__).parents[2]
 runner = CliRunner()
@@ -101,3 +105,47 @@ def test_runtime_config_failure_is_sanitized_without_traceback(tmp_path: Path) -
     assert "Runtime command failed" in result.stdout
     assert "Traceback" not in result.stdout
     assert str(tmp_path) not in result.stdout
+
+
+def test_runtime_worker_registers_cooperative_sigint_and_sigterm_handlers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeWorker:
+        def __init__(self, *_: object, **__: object) -> None:
+            self.shutdown_requests = 0
+            workers.append(self)
+
+        def request_shutdown(self) -> None:
+            self.shutdown_requests += 1
+
+        def run_one_and_stop(self) -> bool:
+            return False
+
+    handlers: dict[int, Callable[[int, object], None]] = {}
+    workers: list[FakeWorker] = []
+
+    def register(signum: int, handler: Callable[[int, object], None]) -> None:
+        handlers[signum] = handler
+
+    monkeypatch.setattr(runtime_cli, "RuntimeWorkerProcess", FakeWorker)
+    monkeypatch.setattr(runtime_cli.signal, "signal", register)
+
+    result = runner.invoke(
+        app,
+        [
+            "runtime",
+            "worker",
+            "run",
+            "--once",
+            "--config",
+            str(_config(tmp_path)),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert set(handlers) == {signal.SIGINT, signal.SIGTERM}
+    assert len(workers) == 1
+    handlers[signal.SIGINT](signal.SIGINT, None)
+    handlers[signal.SIGTERM](signal.SIGTERM, None)
+    assert workers[0].shutdown_requests == 2
