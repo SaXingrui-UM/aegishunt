@@ -48,6 +48,7 @@ from aegishunt.storage.repositories import (
     TelemetrySourceRepository,
     ThreatHypothesisRepository,
 )
+from tests.fixtures.packets import at, tcp_ipv4_frame, write_pcap
 from tests.fixtures.runtime import PROJECT_ROOT, build_verified_runtime_environment
 
 SAMPLE_PCAP = PROJECT_ROOT / "data" / "sample" / "phase2-benign.pcap"
@@ -56,17 +57,51 @@ SAMPLE_PCAP = PROJECT_ROOT / "data" / "sample" / "phase2-benign.pcap"
 def _ingest(
     database: Database,
     settings: ApplicationSettings,
+    source_path: Path = SAMPLE_PCAP,
 ) -> IngestionJob:
     return IngestionService(
         database,
         settings.ingestion,
         flow_settings=settings.flows,
     ).ingest_path(
-        SAMPLE_PCAP,
+        source_path,
         source_type=SourceType.PCAP,
         content_type="application/vnd.tcpdump.pcap",
         actor="phase-11-e2e",
     )
+
+
+def _controlled_correlating_pcap(path: Path) -> Path:
+    packets = []
+    source_ip = "192.0.2.10"
+    for index in range(3):
+        destination_ip = f"198.51.100.{20 + index}"
+        source_port = 40_000 + index
+        packets.extend(
+            (
+                (
+                    at(float(index)),
+                    tcp_ipv4_frame(
+                        source_ip=source_ip,
+                        destination_ip=destination_ip,
+                        source_port=source_port,
+                        destination_port=443,
+                        flags=0x02,
+                    ),
+                ),
+                (
+                    at(float(index) + 0.15),
+                    tcp_ipv4_frame(
+                        source_ip=destination_ip,
+                        destination_ip=source_ip,
+                        source_port=443,
+                        destination_port=source_port,
+                        flags=0x04,
+                    ),
+                ),
+            )
+        )
+    return write_pcap(path, packets)
 
 
 def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
@@ -77,7 +112,11 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
     database = Database(settings.database)
     assert database.initialize() == 5
     try:
-        ingestion = _ingest(database, settings)
+        ingestion = _ingest(
+            database,
+            settings,
+            _controlled_correlating_pcap(tmp_path / "correlating-runtime.pcap"),
+        )
         service = RuntimeJobService(
             database,
             settings=settings,
@@ -148,8 +187,11 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
         assert completed.progress == 1.0
         assert completed.counters.captured_packets == ingestion.records_processed
         assert completed.counters.decoded_packets == ingestion.records_processed
-        assert completed.counters.flows_reused == 1
-        assert completed.counters.detections_created == 1
+        assert completed.counters.flows_reused == 3
+        assert completed.counters.detections_created == 3
+        assert completed.counters.alerts_created >= 2
+        assert completed.counters.groups_created >= 1
+        assert completed.counters.hypotheses_created >= 1
         assert pause_injected is True
 
         with database.session() as session:
@@ -163,12 +205,18 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
             actions = [event.action for event in AuditLogRepository(session).list()]
             stored_worker = RuntimeWorkerRepository(session).get("phase-11-worker")
         assert source is not None
-        assert len(flows) == 1
-        assert len(detections) == 1
-        assert len(ledgers) == 1
-        assert ledgers[0].flow_id == flows[0].flow_id
-        assert ledgers[0].detection_id == detections[0].detection_id
-        assert len(alerts) in {0, 1}
+        assert len(flows) == 3
+        assert len(detections) == 3
+        assert len(ledgers) == 3
+        assert {item.flow_id for item in ledgers} == {
+            item.flow_id for item in flows
+        }
+        assert {item.detection_id for item in ledgers} == {
+            item.detection_id for item in detections
+        }
+        assert len(alerts) >= 2
+        assert len(groups) >= 1
+        assert len(hypotheses) >= 1
         assert all(group.alert_count >= 2 for group in groups)
         assert all(hypothesis.group_id is not None for hypothesis in hypotheses)
         assert stored_worker is not None
@@ -240,7 +288,7 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
             assert [event.action for event in source_audits] == [
                 "runtime_preflight_failed"
             ]
-            assert len(DetectionResultRepository(session).list()) == 1
+            assert len(DetectionResultRepository(session).list()) == 3
 
         recovery_ingestion = _ingest(database, settings)
         recovery_job = service.create_replay(
@@ -349,7 +397,7 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
                     recovery_job.job_id
                 )
             ) == 1
-            assert len(DetectionResultRepository(session).list()) == 2
+            assert len(DetectionResultRepository(session).list()) == 4
         with database.session() as session:
             before_restart = (
                 TelemetrySourceRepository(session).get(ingestion.job_id),
