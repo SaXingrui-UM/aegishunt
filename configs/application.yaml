@@ -59,3 +59,7 @@ correlation:
 
 case_feedback:
   policy_path: configs/case_feedback.yaml
+
+runtime:
+  policy_path: configs/runtime.yaml
+  fusion_policy_root: artifacts/models/fusion

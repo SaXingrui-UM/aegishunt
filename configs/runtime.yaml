@@ -1,0 +1,49 @@
+policy_schema_version: 1.0.0
+policy_id: aegishunt-single-node-runtime
+policy_version: 1.0.0
+job_schema_version: 1.0.0
+attempt_schema_version: 1.0.0
+worker_schema_version: 1.0.0
+resource_sample_schema_version: 1.0.0
+supervised_model_version: 1.0.1
+anomaly_model_version: 1.1.0-candidate
+fusion_policy_version: 1.0.0
+explanation_artifact_version: 1.0.0
+feature_schema_version: 1.0.0
+replay:
+  default_speed: 1.0
+  minimum_speed: 0.01
+  maximum_speed: 1000.0
+  maximum_sleep_seconds: 5.0
+  sleep_quantum_seconds: 0.1
+worker:
+  poll_interval_seconds: 0.25
+  lease_seconds: 30.0
+  heartbeat_interval_seconds: 5.0
+  stale_after_seconds: 45.0
+  maximum_attempts: 3
+  persistence_batch_size: 25
+  progress_update_packet_interval: 100
+  progress_update_seconds: 2.0
+  correlation_alert_batch_size: 100
+  maximum_jobs_per_query: 100
+  maximum_workers_per_query: 100
+resources:
+  sample_interval_seconds: 5.0
+  retention_samples_per_worker: 720
+pipeline_stages:
+  - preflight
+  - replay
+  - detection
+  - correlation
+  - hypothesis
+  - completion
+output_identity_policy: deterministic_domain_ids_with_verified_runtime_ledger
+retryable_error_categories:
+  - database_temporarily_unavailable
+  - worker_interrupted
+runtime_policy_semantics: offline_event_time_replay_with_explicit_origin_recovery
+automatic_recovery: false
+live_capture_enabled: false
+recovery_strategy: deterministic_restart_from_origin
+execution_mode: single_node_sqlite
