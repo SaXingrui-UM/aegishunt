@@ -1,4 +1,4 @@
-"""Tests for truthful Phase 10 implementation-review content in Streamlit."""
+"""Tests for truthful completed Phase 10 content in Streamlit."""
 
 from typing import Any
 
@@ -20,10 +20,9 @@ def test_frontend_renders_phase_ten_without_fake_results(monkeypatch: Any) -> No
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 10 implementation complete" in content
-    assert "awaiting PR review" in content
-    assert "phase/10-case-feedback" in content
-    assert "phase-09-complete" in content
+    assert "Phase 10 complete" in content
+    assert "PR #31 is merged" in content
+    assert "phase-10-complete is verified" in content
     assert "Phase 11: Not started" in content
     assert "Recommendation: Inconclusive" in content
     assert "deterministic proposed" in content
@@ -47,6 +46,8 @@ def test_frontend_renders_phase_ten_without_fake_results(monkeypatch: Any) -> No
     assert "alerts are not confirmed attacks" in content
     assert "non-causal global/local explanations" in content
     assert "Research prototype only" in content
+    assert "awaiting PR review" not in content
+    assert "phase/10-case-feedback" not in content
     assert "pending merge" not in content
     assert "Phase 11 implementation" not in content
     assert "Accuracy" not in content

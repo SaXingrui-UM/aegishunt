@@ -6,13 +6,14 @@ Create an analyst-controlled Investigation Case and feedback loop while preservi
 hypothesis uncertainty, immutable evidence, evaluation isolation, and explicit model
 control. A Case is a review work item, not a confirmed attack.
 
-Status: **Implementation complete — awaiting PR review**.
+Status: **Phase complete**.
 
-- Branch: `phase/10-case-feedback`
-- Base main: `92bd2f5833778d82e5b815b8c3764478f5e3b1ab`
-- Pull request: [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31), open and ready for review
-- Merge commit: pending
-- Completion tag: pending; no `phase-10-complete` Tag exists before merge
+- Implementation head: `phase/10-case-feedback`
+- Pull request: [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31), merged
+- Merge commit: `ba40211a374aa8e4efa62702a83d063f9eb88039`
+- Completion date: 2026-07-23
+- Completion tag: annotated `phase-10-complete`, peeled target
+  `ba40211a374aa8e4efa62702a83d063f9eb88039`
 - Phase 11: Not started
 
 ## Completed scope
@@ -40,14 +41,33 @@ eligibility, evaluation isolation, exact-inventory artifacts, and no-auto-traini
 boundary. Phase 11 replay/worker orchestration and Phase 12 complete Cases API/UI are
 explicitly absent.
 
+## Commits
+
+PR #31 squash-merged these reviewed implementation commits into the canonical
+merge commit above:
+
+- `1944440` — `feat: add case feedback persistence foundation`
+- `ad44fbc` — `feat: add audited case feedback workflows`
+- `06f73a7` — `test: cover phase 10 case feedback workflows`
+- `32820f0` — `docs: document phase 10 analyst review boundary`
+- `c6a10ee` — `fix: complete phase 10 audit summaries`
+- `db2f5f1` — `docs: record phase 10 review outcome`
+- `eaa9478` — `docs: record phase 10 pull request checkpoint`
+
 ## Tests
 
-- Ruff passed for the complete repository.
-- Strict mypy passed for all 185 source files.
-- Focused Phase 10 unit, integration, artifact, frontend/status, and offline E2E
-  selection passed all 27 tests in 4.93 seconds.
-- The final complete pytest suite passed all 388 tests in 1,092.33 seconds; failures,
-  skips, and xfails were all zero.
+- Both PR #31 GitHub Actions `quality` checks passed before merge.
+- On merged `main`, Ruff passed for the complete repository.
+- On merged `main`, strict mypy passed for all 185 source files.
+- The merged-main focused Phase 10 unit, integration, artifact, frontend/status,
+  and offline E2E selection passed all 27 tests in 6.00 seconds.
+- The merged-main migration selection passed all 4 tests in 0.31 seconds.
+- The merged-main complete pytest suite passed all 388 tests in 1,102.37 seconds;
+  failures, skips, and xfails were all zero.
+- After adding the permanent status/ancestor regression, the updated Phase 10
+  focused selection passed all 28 tests in 5.49 seconds and the final complete
+  suite passed all 389 tests in 1,094.54 seconds; failures, skips, and xfails
+  remained zero.
 - Branch-aware coverage was 86.01%, above the unchanged 85% project gate.
 - Tests use only temporary SQLite databases and controlled local fixtures; no network,
   root, real PCAP, formal experiment evidence, model training, or activation.
@@ -77,5 +97,15 @@ explicitly absent.
 ## Next phase
 
 Phase 11 — Runtime Pipeline and PCAP Replay, planned branch
-`phase/11-runtime-replay`. It is **Not started** and must not begin before Phase 10 PR
-review/merge, checkpoint closure, and explicit user authorization.
+`phase/11-runtime-replay`. It is **Not started** and requires explicit user
+authorization.
+
+The permanent startup invariant uses PR #31 merge commit
+`ba40211a374aa8e4efa62702a83d063f9eb88039` and annotated
+`phase-10-complete` as the canonical checkpoint. Local and remote Tags must peel
+to that commit, the commit must remain an ancestor of synchronized `main`, PR
+#31 and its required checks must remain successful, the working tree must be
+clean, and the Phase 11 branch must not exist. Documentation-only descendants of
+the checkpoint do not move the Tag. The gate does not require the Tag to equal a
+future `main` HEAD or documents to encode a later merge SHA, and it must not
+trigger another status-only closure PR.

@@ -1,4 +1,4 @@
-"""Regression tests for truthful Phase 10 implementation-review status."""
+"""Regression tests for the permanent Phase 10 post-merge status."""
 
 from pathlib import Path
 
@@ -15,13 +15,12 @@ def test_readme_records_phase_ten_without_starting_phase_eleven() -> None:
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
-    assert "Phases 0–9 are complete" in current
-    assert "phase/09-hypothesis-engine" in current
-    assert "PR [#28]" in current
-    assert "ffdd7639b60d944b19d70096e1ff38de0d8761f8" in current
-    assert "phase-09-complete" in current
+    assert "Phases 0–10 are complete" in current
+    assert "PR [#31]" in current
+    assert "was Squash and merged" in normalized
+    assert "ba40211a374aa8e4efa62702a83d063f9eb88039" in current
+    assert "phase-10-complete" in current
     assert "observed event time separate" in normalized
-    assert "Phase 10" in normalized and "awaits pull-request review" in normalized
     assert "Phase 11 is **Not started**" in normalized
     assert "pipeline verification only" in current
     assert "recommendation is **inconclusive**" in normalized
@@ -37,8 +36,16 @@ def test_readme_records_phase_ten_without_starting_phase_eleven() -> None:
     assert "never executed" in normalized
     assert "public benchmark" in current and "production validation" in current
     assert "proof of zero-day detection" in current
-    assert "pending merge" not in current
-    assert "awaiting pull-request review" not in current
+    for transient in (
+        "awaiting PR review",
+        "awaiting pull-request review",
+        "open and ready for review",
+        "Merge commit: pending",
+        "Completion tag: pending",
+        "Phase 10 remains unmerged",
+        "Wait for PR #31",
+    ):
+        assert transient not in current
     assert "No operation trains, activates, or replaces a model" in normalized
     assert "retraining_candidate" in normalized
 
@@ -76,7 +83,6 @@ def test_progress_and_release_record_phase_ten_without_phase_eleven_scope() -> N
     normalized_release_current = " ".join(release_current.split())
 
     for content in (progress, release):
-        assert "phase/10-case-feedback" in content
         assert "Phase 11" in content and "not started" in content.lower()
         assert "ground truth" in content.lower()
 
@@ -84,22 +90,20 @@ def test_progress_and_release_record_phase_ten_without_phase_eleven_scope() -> N
     assert "not a confirmed attack" in release
 
     assert "Current phase | Phase 10" in normalized_progress_current
-    assert (
-        "Status | Implementation complete — awaiting PR review"
-        in normalized_progress_current
-    )
-    assert (
-        "Phase 10 status | Implementation complete — awaiting PR review"
-        in normalized_progress_current
-    )
+    assert "Status | Phase complete" in normalized_progress_current
+    assert "Phase 10 status | Phase complete" in normalized_progress_current
     assert "Phase 11 status | Not started" in normalized_progress_current
-    assert "phase/10-case-feedback" in progress_current
     assert "phase/11-runtime-replay" in progress_current
+    assert "PR [#31]" in normalized_progress_current
+    assert "are merged" in normalized_progress_current
+    assert "ba40211a374aa8e4efa62702a83d063f9eb88039" in progress_current
+    assert "phase-10-complete" in progress_current
 
-    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Status: **Phase complete**" in release_current
     assert "Pull request: [#31]" in normalized_release_current
-    assert "open and ready for review" in normalized_release_current
-    assert "Completion tag: pending" in normalized_release_current
+    assert "merged" in normalized_release_current
+    assert "ba40211a374aa8e4efa62702a83d063f9eb88039" in release_current
+    assert "annotated `phase-10-complete`" in release_current
     assert "Phase 11: Not started" in normalized_release_current
 
     assert "ADR 0019" in release
@@ -107,3 +111,35 @@ def test_progress_and_release_record_phase_ten_without_phase_eleven_scope() -> N
     assert "frozen-test" in release
     assert "not benchmark ground truth" in release
     assert "does not train" in release
+
+    for current in (progress_current, release_current):
+        for transient in (
+            "awaiting PR review",
+            "awaiting pull-request review",
+            "open and ready for review",
+            "Merge commit: pending",
+            "Completion tag: pending",
+            "Phase 10 remains unmerged",
+            "Wait for PR #31",
+        ):
+            assert transient not in current
+
+
+def test_phase_eleven_gate_uses_stable_ancestor_invariant() -> None:
+    progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
+    startup_gate = _section(
+        progress,
+        "## Phase 11 startup invariant",
+        "## Phase 10 implementation checkpoint",
+    )
+    normalized = " ".join(startup_gate.split())
+
+    # Protect against a self-referential post-merge closure loop: the permanent
+    # checkpoint is an ancestor, not a future documentation-only main HEAD.
+    assert "git merge-base --is-ancestor" in startup_gate
+    assert "ba40211a374aa8e4efa62702a83d063f9eb88039 main" in startup_gate
+    assert "Later documentation commits may be descendants" in normalized
+    assert "rather than requiring the Tag to equal" in normalized
+    assert "does not require documents to hard-code the live `main` HEAD" in normalized
+    assert "no additional final-status or closure PR is required" in normalized
+    assert "future merge SHA" not in startup_gate
