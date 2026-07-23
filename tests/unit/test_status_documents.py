@@ -94,10 +94,16 @@ def test_progress_and_release_record_phase_eleven_without_phase_twelve_scope() -
     )
     assert "Phase 12 status | Not started" in normalized_progress_current
     assert "phase/11-runtime-replay" in progress_current
-    assert "Phase 11 PR is pending publication" in normalized_progress_current
+    assert "Phase 11 PR #33 is open and ready for review" in normalized_progress_current
 
     assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert "Pull request: pending" in normalized_release_current
+    assert "Pull request: [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33)" in (
+        normalized_release_current
+    )
+    assert "Open, ready for review" in normalized_release_current
+    assert "GitHub Actions `quality` is in progress at publication" in (
+        normalized_release_current
+    )
     assert "Completion tag: pending" in normalized_release_current
     assert "Phase 12: Not started" in normalized_release_current
 

@@ -9,7 +9,9 @@ runtime.
 Status: **Implementation complete — awaiting PR review**.
 
 - Branch: `phase/11-runtime-replay`
-- Pull request: pending
+- Pull request: [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33) —
+  Open, ready for review
+- CI: GitHub Actions `quality` is in progress at publication
 - Merge commit: pending
 - Completion tag: pending; do not create before merge
 - Phase 12: Not started

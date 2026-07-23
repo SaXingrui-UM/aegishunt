@@ -12,7 +12,7 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit recovery; interruptible event-time replay; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
-| Current activity | Phase 11 implementation, final quality checks, and equivalent read-only review are complete on `phase/11-runtime-replay`; PR publication is in progress. Phase 12 has not started |
+| Current activity | Phase 11 implementation, final quality checks, and equivalent read-only review are complete on `phase/11-runtime-replay`; ready PR #33 is open for review. Phase 12 has not started |
 | Verification status | Baseline on merged `main`: Ruff passed, strict mypy passed for 185 source files, and 389 tests passed with 86.01% branch-aware coverage. Final Phase 11 verification: Ruff passed, strict mypy passed for 205 source files, and all 427 tests passed with zero failures/skips/xfails and 86.07% branch-aware coverage in 1,248.47 seconds |
 | Stable branch checkpoint | PR #31 was squash-merged to `main` as `ba40211a374aa8e4efa62702a83d063f9eb88039`; annotated Tag `phase-10-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -22,11 +22,11 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, and Phase 10 PR #31 are merged; Phase 11 PR is pending publication |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, and Phase 10 PR #31 are merged; Phase 11 PR #33 is open and ready for review |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 10 PR #31 `quality` checks passed before merge; Phase 11 CI is pending PR publication |
+| CI status | Both Phase 10 PR #31 `quality` checks passed before merge; Phase 11 PR #33 `quality` is in progress at publication |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -48,7 +48,7 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 12 status | Not started |
 | Current branch | `phase/11-runtime-replay` |
 | Next planned branch | `phase/12-api-frontend` (not created; PR merge, checkpoint instructions, and explicit user authorization are required) |
-| Next action | Publish the reviewed Phase 11 branch and ready pull request, then stop for user review |
+| Next action | Wait for PR #33 CI, user review, and Squash and merge; do not start Phase 12 |
 
 Phase 0 through Phase 10 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
