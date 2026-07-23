@@ -68,7 +68,12 @@ class RuntimeWorkerProcess:
             heartbeat_at=now,
         )
         with self._database.session() as session, session.begin():
-            stored = RuntimeWorkerRepository(session).upsert(worker)
+            workers = RuntimeWorkerRepository(session)
+            workers.reconcile_stale(
+                now=now,
+                stale_after_seconds=self._runtime.policy.worker.stale_after_seconds,
+            )
+            stored = workers.upsert(worker)
             RuntimeJobRepository(
                 session,
                 AuditLogRepository(session),

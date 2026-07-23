@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from aegishunt.runtime.contracts import RuntimeResourceSample, RuntimeWorker
+from aegishunt.runtime.contracts import (
+    RuntimeResourceSample,
+    RuntimeWorker,
+    RuntimeWorkerStatus,
+)
 from aegishunt.storage.models.runtime import (
     RuntimeResourceSampleRecord,
     RuntimeWorkerRecord,
@@ -40,6 +46,42 @@ class RuntimeWorkerRepository:
             .offset(offset)
         ).all()
         return [RuntimeWorker.model_validate(row) for row in rows]
+
+    def reconcile_stale(
+        self,
+        *,
+        now: datetime,
+        stale_after_seconds: float,
+    ) -> tuple[RuntimeWorker, ...]:
+        """Mark activity records with expired heartbeats as failed, never stopped."""
+
+        cutoff = now - timedelta(seconds=stale_after_seconds)
+        active_statuses = (
+            RuntimeWorkerStatus.STARTING,
+            RuntimeWorkerStatus.IDLE,
+            RuntimeWorkerStatus.BUSY,
+            RuntimeWorkerStatus.STOPPING,
+            RuntimeWorkerStatus.DEGRADED,
+        )
+        rows = self._session.scalars(
+            select(RuntimeWorkerRecord)
+            .where(
+                RuntimeWorkerRecord.status.in_(active_statuses),
+                RuntimeWorkerRecord.heartbeat_at < cutoff,
+            )
+            .order_by(RuntimeWorkerRecord.worker_id)
+        ).all()
+        output: list[RuntimeWorker] = []
+        for row in rows:
+            row.status = RuntimeWorkerStatus.FAILED
+            row.current_job_id = None
+            row.latest_error_code = "stale_worker_heartbeat"
+            row.latest_error_summary = (
+                "worker heartbeat exceeded the configured stale threshold"
+            )
+            self._session.flush()
+            output.append(RuntimeWorker.model_validate(row))
+        return tuple(output)
 
 
 class RuntimeResourceRepository:

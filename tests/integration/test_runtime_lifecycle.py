@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from aegishunt.config import DatabaseSettings
+from aegishunt.config import ApplicationSettings, DatabaseSettings
 from aegishunt.runtime.clock import RuntimeClock
 from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.runtime.contracts import (
@@ -27,6 +27,7 @@ from aegishunt.runtime.repositories import (
     RuntimeWorkerRepository,
 )
 from aegishunt.runtime.resources import ProcessResourceSampler
+from aegishunt.runtime.worker import RuntimeWorkerProcess
 from aegishunt.schemas import TelemetrySource
 from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
 from aegishunt.storage import Database
@@ -410,6 +411,56 @@ def test_stale_lease_requires_explicit_recovery_and_transaction_rolls_back(
                 now=NOW + timedelta(seconds=7),
             )
             assert recovered.status is RuntimeJobStatus.QUEUED
+    finally:
+        database.dispose()
+
+
+def test_worker_start_marks_other_stale_activity_failed(tmp_path: Path) -> None:
+    database = _database(tmp_path)
+    now = NOW + timedelta(seconds=46)
+    try:
+        with database.session() as session, session.begin():
+            RuntimeWorkerRepository(session).upsert(
+                _worker("stale-worker").model_copy(
+                    update={"status": RuntimeWorkerStatus.BUSY}
+                )
+            )
+            RuntimeWorkerRepository(session).upsert(
+                _worker("stopped-worker").model_copy(
+                    update={
+                        "status": RuntimeWorkerStatus.STOPPED,
+                        "stopped_at": NOW,
+                    }
+                )
+            )
+
+        process = RuntimeWorkerProcess(
+            database,
+            settings=ApplicationSettings(
+                database=DatabaseSettings(
+                    url=f"sqlite:///{tmp_path / 'runtime-queue.sqlite3'}"
+                )
+            ),
+            runtime_policy=load_runtime_policy(
+                PROJECT_ROOT / "configs" / "runtime.yaml"
+            ),
+            project_root=PROJECT_ROOT,
+            worker_id="new-worker",
+            clock=RuntimeClock(now=lambda: now, monotonic=lambda: 46.0),
+        )
+        process.start()
+
+        with database.session() as session:
+            stale = RuntimeWorkerRepository(session).get("stale-worker")
+            stopped = RuntimeWorkerRepository(session).get("stopped-worker")
+            current = RuntimeWorkerRepository(session).get("new-worker")
+        assert stale is not None
+        assert stale.status is RuntimeWorkerStatus.FAILED
+        assert stale.latest_error_code == "stale_worker_heartbeat"
+        assert stopped is not None
+        assert stopped.status is RuntimeWorkerStatus.STOPPED
+        assert current is not None
+        assert current.status is RuntimeWorkerStatus.IDLE
     finally:
         database.dispose()
 
