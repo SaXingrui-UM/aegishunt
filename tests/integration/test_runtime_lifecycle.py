@@ -158,7 +158,13 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
         with database.session() as session:
             repository = RuntimeJobRepository(session)
             attempts = repository.list_attempts(job.job_id)
-            actions = [item.action for item in AuditLogRepository(session).list()]
+            audit_events = AuditLogRepository(session).list()
+            actions = [item.action for item in audit_events]
+            resume_request = next(
+                item
+                for item in audit_events
+                if item.action == "runtime_resume_requested"
+            )
         assert len(attempts) == 1
         assert attempts[0].status.value == "interrupted"
         assert attempts[0].restart_from_origin is True
@@ -172,6 +178,11 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
         assert "runtime_recovery_requested" in actions
         assert "runtime_heartbeat" not in actions
         assert "runtime_resource_sample" not in actions
+        assert resume_request.created_at == NOW + timedelta(seconds=7)
+        assert (
+            resume_request.details["lifecycle_timestamp"]
+            == (NOW + timedelta(seconds=7)).isoformat()
+        )
     finally:
         database.dispose()
 def test_control_monitor_keeps_paused_job_and_worker_lease_live(

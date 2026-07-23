@@ -90,6 +90,7 @@ class RuntimeJobRepository(RuntimeJobStore):
         row = self._required(job_id)
         if row.status is not RuntimeJobStatus.PAUSED or row.claimed_by is None:
             raise RuntimeStateError("only a live worker's paused replay can resume")
+        row.updated_at = now
         self._record(
             actor=actor,
             action="runtime_resume_requested",
@@ -101,7 +102,6 @@ class RuntimeJobRepository(RuntimeJobStore):
         )
         row.status = RuntimeJobStatus.RUNNING
         row.desired_action = RuntimeDesiredAction.RUN
-        row.updated_at = now
         self._set_attempt(row, RuntimeAttemptStatus.RUNNING, now=now)
         self._session.flush()
         self._record(
