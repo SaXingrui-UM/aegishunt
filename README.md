@@ -18,13 +18,13 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–10 are complete and their annotated checkpoints remain immutable. Phase
-10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31),
-`[Phase 10] Investigation cases and analyst feedback`, was Squash and merged
-from `phase/10-case-feedback` into `main` as
-`ba40211a374aa8e4efa62702a83d063f9eb88039` on 2026-07-23. Annotated Tag
-`phase-10-complete` records that canonical merged checkpoint. Phase 11 is **Not
-started**.
+Phases 0–10 are complete and their annotated checkpoints remain immutable.
+Phase 11 runtime replay is **Implementation complete — awaiting PR review** on
+`phase/11-runtime-replay`; Phase 12 is **Not started**. The Phase 11 boundary is
+offline, rootless PCAP replay on a single SQLite node with durable jobs,
+leases, explicit recovery, verified artifact pinning, transactional output
+ledgers, and bounded worker/resource observations. It does not enable live
+capture or automatic recovery.
 
 The Phase 9 checkpoint remains immutable. Its implementation adds a checksummed
 correlation policy, bounded event-time entity indexing, deterministic alert
@@ -57,7 +57,8 @@ A Case remains a review work item, priority is triage rather than certainty, and
 analyst feedback may be noisy. Case verdicts are not propagated to every related
 Flow; candidate artifacts use status `retraining_candidate`, and
 evaluation/test/holdout or unknown provenance is excluded. No operation trains,
-activates, or replaces a model. Runtime replay/workers remain Phase 11 scope.
+activates, or replaces a model. Phase 11 reuses the existing verified models and
+policies; it does not train, select, activate, or replace them.
 
 ## Planned architecture
 
@@ -141,6 +142,13 @@ aegishunt feedback record-alert <alert-id> false_positive --confidence 0.8 --not
 aegishunt feedback list
 aegishunt feedback export --version <new-version> --actor <analyst-id>
 aegishunt feedback build-retraining-candidates --version <new-version> --actor <analyst-id> --confirm
+aegishunt runtime config verify
+aegishunt runtime replay create <telemetry-source-id>
+aegishunt runtime jobs list
+aegishunt runtime jobs describe <runtime-job-id>
+aegishunt runtime worker run --once
+aegishunt runtime workers list
+aegishunt runtime status
 aegishunt api
 aegishunt frontend
 ```
@@ -151,8 +159,19 @@ returns a non-zero exit code with fixed, sanitized diagnostics when configuratio
 or database checks fail; it does not print the database URL, credentials, project
 path, or traceback. `init-db` validates configuration and idempotently initializes
 the configured database without printing its URL. `ingest pcap` validates,
-decodes supported packets, and persists deterministic flows; it does not replay
-traffic, capture an interface, open an external connection, or require root.
+decodes supported packets, and persists deterministic flows; it does not capture
+an interface, open an external connection, or require root.
+
+`runtime replay create` accepts only a completed persisted PCAP source ID. It
+pins source and verified artifact identities before durable queue creation.
+Workers repeat that preflight before the first packet, replay event-time gaps
+with configured speed/caps, and persist each output batch transactionally.
+Pause/resume uses the live worker; interruption becomes `recovery_pending`, and
+only an explicit operator recovery restarts deterministic replay from packet
+zero. This is not exact packet-cursor resume. See
+[`docs/runtime_pipeline.md`](docs/runtime_pipeline.md),
+[`docs/pcap_replay.md`](docs/pcap_replay.md), and
+[`docs/runtime_recovery.md`](docs/runtime_recovery.md).
 
 `dataset build-demo` runs entirely offline and creates ignored processed data and
 machine reports under configured roots. The demo is controlled synthetic data,
@@ -276,7 +295,7 @@ aegishunt init-db --config configs/application.yaml
 ```
 
 The default SQLite database uses WAL, foreign-key enforcement, a bounded busy
-timeout, and schema version `4`. Ordered additive v1→v2→v3→v4 migrations preserve
+timeout, and schema version `5`. Ordered additive v1→v2→v3→v4→v5 migrations preserve
 existing rows and record new schema-version events. Database files and WAL sidecars are
 ignored by Git.
 
@@ -305,10 +324,11 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 10 page reports the implemented case/feedback boundary and unchanged
-controlled-evidence caveats. It does not display invented cases, feedback,
-candidate rows, alerts, hypotheses, or metrics. Complete interactive case and
-feedback pages remain Phase 12 scope.
+The Phase 11 page reads bounded persisted queue, worker, and resource state and
+reports unavailability rather than inventing zeros. It retains the controlled-
+evidence caveats and does not display fabricated detections, alerts, hypotheses,
+cases, metrics, or resource measurements. Complete interactive workflows remain
+Phase 12 scope.
 
 ## Quality checks
 
@@ -328,7 +348,8 @@ The test command produces terminal coverage output and `coverage.xml`.
 | 1-4 | Configuration, storage, telemetry, flows, features, and dataset quality |
 | 5-7 | Supervised, anomaly, and fusion experiments |
 | 8-10 | Explainable alerts, correlation, hypotheses, cases, and feedback |
-| 11-12 | Runtime replay, API, and complete frontend demonstration |
+| 11 | Durable offline runtime replay, workers, recovery, and resource status |
+| 12 | Complete API and frontend demonstration workflows |
 | 13-14 | Hardening, performance, deployment, documentation, and final delivery |
 
 Only one declared phase is developed at a time. Progress is tracked in

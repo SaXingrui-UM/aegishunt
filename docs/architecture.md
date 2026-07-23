@@ -17,8 +17,10 @@ results, configured risk/severity, threshold-gated alerts, non-causal
 explanations, and audited verdicts are implemented in Phase 8. Phase 9 adds
 bounded deterministic alert correlation and proposed threat-hunting hypotheses.
 Phase 10 adds audited investigation cases, typed evidence, analyst feedback,
-controlled exports, and explicit retraining candidates. PCAP replay orchestration
-and runtime workers remain planned for Phase 11.
+controlled exports, and explicit retraining candidates. Phase 11 adds a durable
+single-node runtime queue, leased workers, verified offline PCAP replay,
+transactional output ledgers, explicit recovery, and bounded resource status.
+Complete external workflows remain Phase 12 scope.
 
 ## System context
 
@@ -55,7 +57,7 @@ One deployable Python application is divided by responsibility:
 | detection and explainability | Results, risk, alerts, reasons, explanations | 8 |
 | correlation and hunting | Entity/time groups and deterministic hypotheses | 9 |
 | cases and feedback | Implemented investigation workflow, exports and retraining candidates | 10 |
-| runtime | Pipeline, worker, replay, health, graceful shutdown | 11 |
+| runtime | Implemented queue, worker, replay, health, recovery, shutdown | 11 |
 | API and frontend | Complete external workflows and sample demonstration | 12 |
 
 Domain modules must not depend on Streamlit. FastAPI routes and the CLI call
@@ -194,10 +196,11 @@ ADR 0016 records this boundary. No online self-modification occurs.
 FastAPI is the authoritative programmatic boundary. Streamlit will consume API
 contracts rather than access the database or model artifacts directly. This
 supports independent API tests, explicit validation, and future replacement of
-the demonstration UI. The CLI can launch each shell and will later call the same
-application services for batch workflows. In Phase 10, Streamlit remains a
-truthful static status shell rather than a runtime case/feedback dashboard;
-full alert, hunting, case, and feedback API/frontend workflows remain Phase 12 scope.
+the demonstration UI. The CLI can launch each shell and calls the same
+application services for batch workflows. In Phase 11, Streamlit reads bounded
+persisted runtime status but remains a truthful status shell rather than a
+complete operational dashboard; full alert, hunting, case, feedback, and
+runtime API/frontend workflows remain Phase 12 scope.
 FastAPI exposes
 `/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
 initializes and verifies the empty or existing configured database. PCAP upload
@@ -208,8 +211,8 @@ uses the same service as the CLI and produces persistent flows synchronously.
 SQLite with SQLAlchemy and WAL mode is the implemented default local store.
 Foreign keys and a bounded busy timeout are enabled for SQLite connections.
 Typed repositories prevent SQL from leaking into business logic and preserve a
-future PostgreSQL migration path. Schema version `4` is registered explicitly;
-ordered additive SQLite migrations upgrade versions 1, 2, and 3 without deleting rows,
+future PostgreSQL migration path. Schema version `5` is registered explicitly;
+ordered additive SQLite migrations upgrade versions 1 through 4 without deleting rows,
 while unknown versions are rejected. Core entity
 tables exist now. Phase 2 persists ingestion lifecycle state in
 `telemetry_sources` and writes an audit event in the same transaction as every
@@ -276,7 +279,19 @@ artifacts use configured contained roots, exact inventories, checksums, and
 non-overwrite semantics. Retraining candidates require an unambiguous
 alert→detection→flow chain and explicit approved provenance; evaluation, frozen
 test, holdout, LOAO, and ambiguous provenance fail closed. No Phase 10 service
-trains, activates, or replaces a model. Phase 11 runtime workflows are not invoked.
+trains, activates, or replaces a model.
+
+Phase 11 accepts only a persisted completed PCAP source ID, pins its checksum and
+the complete verified model/policy identity set, and queues one source-scoped
+runtime job. A worker atomically claims the oldest queued job under a lease and
+revalidates the pinned snapshot before reading packets. Event-time replay reuses
+the Phase 3 parser/aggregator/finalizer. Each finalized-flow batch, detection,
+optional alert, ledger entry, and progress update shares one transaction.
+Expired or interrupted leases become `recovery_pending`; explicit recovery
+restarts from packet zero and verifies/reuses committed evidence. EOF invokes
+the existing idempotent Phase 9 correlation/hypothesis services. Live capture,
+automatic recovery, training, Case creation, and complete Phase 12 workflows
+remain disabled. See ADR 0020 and the runtime/replay/recovery documents.
 
 ## Deployment and trust boundaries
 
