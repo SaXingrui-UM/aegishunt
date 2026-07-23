@@ -30,6 +30,8 @@ from aegishunt.runtime.errors import (
 from aegishunt.runtime.pipeline import (
     ReplayInterrupted,
     RuntimePipelineRunner,
+    _groups_for_job,
+    _hypotheses_for_groups,
 )
 from aegishunt.runtime.preflight import LoadedRuntimePipeline
 from aegishunt.runtime.repositories import (
@@ -40,7 +42,7 @@ from aegishunt.runtime.repositories import (
 )
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.runtime.worker import RuntimeWorkerProcess
-from aegishunt.schemas import TelemetrySource
+from aegishunt.schemas import TelemetrySource, ThreatHypothesis
 from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
 from aegishunt.storage import Database
 from aegishunt.storage.repositories import (
@@ -48,6 +50,7 @@ from aegishunt.storage.repositories import (
     TelemetrySourceRepository,
 )
 from tests.fixtures.detection import canonical_flow
+from tests.fixtures.hunting import group
 from tests.fixtures.runtime import NOW, SOURCE_ID, runtime_job
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -78,6 +81,34 @@ def _worker(worker_id: str = "worker-a") -> RuntimeWorker:
         started_at=NOW,
         heartbeat_at=NOW,
     )
+
+
+def test_runtime_downstream_observations_exclude_unrelated_historical_evidence() -> None:
+    job_group = group()
+    unrelated_group = job_group.model_copy(
+        update={
+            "group_id": UUID(int=4_001),
+            "alert_ids": [str(UUID(int=9_001)), str(UUID(int=9_002))],
+        }
+    )
+    job_hypothesis = ThreatHypothesis.model_construct(
+        hypothesis_id=UUID(int=5_001),
+        group_id=job_group.group_id,
+    )
+    unrelated_hypothesis = ThreatHypothesis.model_construct(
+        hypothesis_id=UUID(int=5_002),
+        group_id=unrelated_group.group_id,
+    )
+
+    scoped_groups = _groups_for_job(
+        (unrelated_group, job_group),
+        {job_group.alert_ids[0]},
+    )
+    assert scoped_groups == (job_group,)
+    assert _hypotheses_for_groups(
+        (unrelated_hypothesis, job_hypothesis),
+        {item.group_id for item in scoped_groups},
+    ) == (job_hypothesis,)
 
 
 def test_job_creation_rejects_untrusted_or_unverified_sources_before_artifacts(

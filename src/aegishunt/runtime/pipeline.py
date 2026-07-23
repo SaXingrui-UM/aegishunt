@@ -44,7 +44,13 @@ from aegishunt.runtime.repositories import (
     RuntimeWorkerRepository,
 )
 from aegishunt.runtime.resources import ProcessResourceSampler
-from aegishunt.schemas import DetectionResult, NetworkFlow, SecurityAlert
+from aegishunt.schemas import (
+    AlertGroup,
+    DetectionResult,
+    NetworkFlow,
+    SecurityAlert,
+    ThreatHypothesis,
+)
 from aegishunt.storage import Database
 from aegishunt.storage.repositories import (
     AlertGroupRepository,
@@ -83,6 +89,32 @@ def _output_checksum(
         separators=(",", ":"),
     ).encode()
     return hashlib.sha256(payload).hexdigest()
+
+
+def _groups_for_job(
+    groups: Sequence[AlertGroup],
+    job_alert_ids: set[str],
+) -> tuple[AlertGroup, ...]:
+    """Retain correlation groups containing evidence emitted by one runtime job."""
+
+    return tuple(
+        group
+        for group in groups
+        if not job_alert_ids.isdisjoint(group.alert_ids)
+    )
+
+
+def _hypotheses_for_groups(
+    hypotheses: Sequence[ThreatHypothesis],
+    group_ids: set[UUID],
+) -> tuple[ThreatHypothesis, ...]:
+    """Retain hypotheses derived from correlation groups attributed to one job."""
+
+    return tuple(
+        hypothesis
+        for hypothesis in hypotheses
+        if hypothesis.group_id is not None and hypothesis.group_id in group_ids
+    )
 
 
 class RuntimePipelineRunner:
@@ -422,9 +454,24 @@ class RuntimePipelineRunner:
             with self._database.session() as session, session.begin():
                 groups_repository = AlertGroupRepository(session)
                 hypotheses_repository = ThreatHypothesisRepository(session)
-                before_group_ids = {item.group_id for item in groups_repository.list()}
+                job_alert_ids = {
+                    str(item.alert_id)
+                    for item in RuntimeOutputLedgerRepository(session).list_for_job(
+                        job.job_id
+                    )
+                    if item.alert_id is not None
+                }
+                before_groups = _groups_for_job(
+                    groups_repository.list(),
+                    job_alert_ids,
+                )
+                before_group_ids = {item.group_id for item in before_groups}
                 before_hypothesis_ids = {
-                    item.hypothesis_id for item in hypotheses_repository.list()
+                    item.hypothesis_id
+                    for item in _hypotheses_for_groups(
+                        hypotheses_repository.list(),
+                        before_group_ids,
+                    )
                 }
                 jobs = RuntimeJobRepository(
                     session,
@@ -437,17 +484,23 @@ class RuntimePipelineRunner:
                     now=self._clock.now(),
                     actor=self._worker_id,
                 )
-                groups = AlertCorrelationService(
-                    session,
-                    loaded.correlation_policy,
-                    clock=self._clock.now,
-                ).correlate(actor=self._worker_id)
-                hypotheses = ThreatHypothesisService(
-                    session,
-                    loaded.correlation_policy,
-                    clock=self._clock.now,
-                ).generate(actor=self._worker_id)
+                groups = _groups_for_job(
+                    AlertCorrelationService(
+                        session,
+                        loaded.correlation_policy,
+                        clock=self._clock.now,
+                    ).correlate(actor=self._worker_id),
+                    job_alert_ids,
+                )
                 group_ids = {item.group_id for item in groups}
+                hypotheses = _hypotheses_for_groups(
+                    ThreatHypothesisService(
+                        session,
+                        loaded.correlation_policy,
+                        clock=self._clock.now,
+                    ).generate(actor=self._worker_id),
+                    group_ids,
+                )
                 hypothesis_ids = {item.hypothesis_id for item in hypotheses}
                 new_group_observations = group_ids - self._observed_group_ids
                 new_hypothesis_observations = (
