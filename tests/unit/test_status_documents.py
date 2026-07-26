@@ -101,9 +101,10 @@ def test_progress_and_release_record_phase_eleven_without_phase_twelve_scope() -
         normalized_release_current
     )
     assert "Open, ready for review" in normalized_release_current
-    assert "GitHub Actions `quality` is in progress at publication" in (
+    assert "GitHub reports required checks against the current pushed PR Head" in (
         normalized_release_current
     )
+    assert "all required checks must pass before merge" in normalized_release_current
     assert "Completion tag: pending" in normalized_release_current
     assert "Phase 12: Not started" in normalized_release_current
 

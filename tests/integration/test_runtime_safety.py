@@ -17,7 +17,9 @@ from aegishunt.runtime.clock import RuntimeClock
 from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.runtime.contracts import (
     RuntimeCounters,
+    RuntimeJob,
     RuntimeJobStatus,
+    RuntimeProgressMode,
     RuntimeResourceSample,
     RuntimeWorker,
     RuntimeWorkerStatus,
@@ -46,11 +48,15 @@ from aegishunt.schemas import TelemetrySource, ThreatHypothesis
 from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
 from aegishunt.storage import Database
 from aegishunt.storage.repositories import (
+    AuditLogRepository,
+    DetectionResultRepository,
     NetworkFlowRepository,
+    SecurityAlertRepository,
     TelemetrySourceRepository,
 )
 from tests.fixtures.detection import canonical_flow
 from tests.fixtures.hunting import group
+from tests.fixtures.packets import at, tcp_ipv4_frame, write_pcap
 from tests.fixtures.runtime import NOW, SOURCE_ID, runtime_job
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -274,6 +280,178 @@ def test_worker_shutdown_moves_job_to_recovery_pending_without_auto_requeue(
         database.dispose()
 
 
+def test_periodic_observation_does_not_advance_durable_progress_for_open_flow(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    database = _database(tmp_path)
+    policy = load_runtime_policy(PROJECT_ROOT / "configs" / "runtime.yaml")
+    packet_count = policy.policy.worker.progress_update_packet_interval + 1
+    source_path = write_pcap(
+        tmp_path / "long-open-flow.pcap",
+        [
+            (
+                at(0.0),
+                tcp_ipv4_frame(
+                    source_ip="192.0.2.10",
+                    destination_ip="198.51.100.20",
+                    source_port=40_000,
+                    destination_port=443,
+                    flags=0x10,
+                ),
+            )
+            for _ in range(packet_count)
+        ],
+    )
+    snapshot = runtime_job().snapshot.model_copy(
+        update={
+            "stored_filename": source_path.name,
+            "source_size_bytes": source_path.stat().st_size,
+            "verified_packet_count": packet_count,
+        }
+    )
+    job = RuntimeJob(
+        source_id=SOURCE_ID,
+        replay_speed=policy.policy.replay.maximum_speed,
+        snapshot=snapshot,
+        progress_mode=RuntimeProgressMode.PACKET_COUNT,
+        progress_total=packet_count,
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    stop_event = threading.Event()
+    try:
+        with database.session() as session, session.begin():
+            RuntimeWorkerRepository(session).upsert(_worker())
+            repository = RuntimeJobRepository(session, AuditLogRepository(session))
+            repository.add(job, actor="operator")
+            claimed = repository.claim_next(
+                worker_id="worker-a",
+                now=NOW,
+                lease_seconds=30,
+                actor="worker-a",
+            )
+            assert claimed is not None
+            repository.start_attempt(
+                job.job_id,
+                worker_id="worker-a",
+                now=NOW,
+                actor="worker-a",
+            )
+
+        loaded = LoadedRuntimePipeline(
+            source_path=source_path,
+            snapshot=snapshot,
+            supervised_model=None,  # type: ignore[arg-type]
+            anomaly_model=None,  # type: ignore[arg-type]
+            fusion_policy=None,  # type: ignore[arg-type]
+            fusion_policy_checksum="0" * 64,
+            risk_policy=None,  # type: ignore[arg-type]
+            explanation_artifact=None,  # type: ignore[arg-type]
+            correlation_policy=None,  # type: ignore[arg-type]
+        )
+        runner = RuntimePipelineRunner(
+            database,
+            settings=ApplicationSettings(
+                database=DatabaseSettings(
+                    url=f"sqlite:///{tmp_path / 'runtime-queue.sqlite3'}"
+                )
+            ),
+            runtime_policy=policy,
+            project_root=PROJECT_ROOT,
+            worker_id="worker-a",
+            stop_event=stop_event,
+            clock=RuntimeClock(
+                now=lambda: NOW,
+                monotonic=lambda: 0.0,
+                sleep=lambda _: None,
+            ),
+        )
+        monkeypatch.setattr(
+            runner._preflight,  # noqa: SLF001 - controlled replay boundary
+            "verify",
+            lambda source, *, expected_snapshot: loaded,
+        )
+        original_check = runner._control.check  # noqa: SLF001
+
+        def stop_after_periodic_update(
+            job_id: UUID,
+            counters: RuntimeCounters,
+            progress: float,
+        ) -> None:
+            original_check(job_id, counters, progress)
+            if (
+                counters.captured_packets
+                >= policy.policy.worker.progress_update_packet_interval
+            ):
+                stop_event.set()
+
+        monkeypatch.setattr(
+            runner._control,  # noqa: SLF001 - injected cooperative interruption
+            "check",
+            stop_after_periodic_update,
+        )
+
+        with pytest.raises(ReplayInterrupted, match="shutdown"):
+            runner.run(claimed)
+
+        with database.session() as session:
+            persisted = RuntimeJobRepository(session).get(job.job_id)
+            flows = NetworkFlowRepository(session).list_by_source(SOURCE_ID)
+            detections = DetectionResultRepository(session).list()
+            alerts = SecurityAlertRepository(session).list()
+            ledgers = RuntimeOutputLedgerRepository(session).list_for_job(job.job_id)
+        assert persisted is not None
+        assert persisted.counters == RuntimeCounters()
+        assert persisted.progress_current == 0
+        assert persisted.progress == 0.0
+        assert persisted.progress_semantics == "durable_committed_evidence"
+        assert persisted.observed_counters.captured_packets == (
+            policy.policy.worker.progress_update_packet_interval
+        )
+        assert persisted.observed_counters.decoded_packets == (
+            policy.policy.worker.progress_update_packet_interval
+        )
+        assert persisted.observed_progress_current == (
+            policy.policy.worker.progress_update_packet_interval
+        )
+        assert persisted.observed_progress > 0.0
+        assert (
+            persisted.observed_progress_semantics
+            == "non_durable_live_observation"
+        )
+        assert flows == []
+        assert detections == []
+        assert alerts == []
+        assert ledgers == ()
+
+        with database.session() as session, session.begin():
+            interrupted = RuntimeJobRepository(
+                session,
+                AuditLogRepository(session),
+            ).interrupt(
+                job.job_id,
+                worker_id="worker-a",
+                reason="injected before first durable flow",
+                now=NOW + timedelta(seconds=1),
+                actor="worker-a",
+            )
+        with database.session() as session:
+            attempts = RuntimeJobRepository(session).list_attempts(job.job_id)
+        assert interrupted.status is RuntimeJobStatus.RECOVERY_PENDING
+        assert interrupted.progress == 0.0
+        assert interrupted.counters == RuntimeCounters()
+        assert interrupted.observed_progress == persisted.observed_progress
+        assert attempts[0].status.value == "interrupted"
+        assert attempts[0].progress == 0.0
+        assert attempts[0].observed_progress == persisted.observed_progress
+        assert attempts[0].observed_counters.captured_packets == (
+            policy.policy.worker.progress_update_packet_interval
+        )
+    finally:
+        database.dispose()
+
+
 def test_runtime_output_batch_rolls_back_flow_ledger_and_progress_together(
     tmp_path: Path,
     monkeypatch: Any,
@@ -304,6 +482,13 @@ def test_runtime_output_batch_rolls_back_flow_ledger_and_progress_together(
                 worker_id="worker-a",
                 now=NOW,
                 actor="worker-a",
+            )
+            repository.update_observed_progress(
+                job.job_id,
+                worker_id="worker-a",
+                counters=RuntimeCounters(captured_packets=1, decoded_packets=1),
+                progress=0.5,
+                now=NOW,
             )
 
         def fail_detection(self: DetectionAlertService, *args: object, **kwargs: object) -> None:
@@ -353,8 +538,7 @@ def test_runtime_output_batch_rolls_back_flow_ledger_and_progress_together(
                 running,
                 loaded,
                 (flow,),
-                RuntimeCounters(captured_packets=1, decoded_packets=1),
-                progress=0.5,
+                RuntimeCounters(),
             )
 
         with database.session() as session:
@@ -364,5 +548,7 @@ def test_runtime_output_batch_rolls_back_flow_ledger_and_progress_together(
         assert unchanged is not None
         assert unchanged.progress == 0.0
         assert unchanged.counters == RuntimeCounters()
+        assert unchanged.observed_progress == 0.5
+        assert unchanged.observed_counters.captured_packets == 1
     finally:
         database.dispose()

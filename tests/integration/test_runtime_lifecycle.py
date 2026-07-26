@@ -101,13 +101,30 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
                 actor="worker-a",
             )
             assert running.current_attempt_id == attempt.attempt_id
-            repository.update_progress(
+            repository.update_observed_progress(
                 claimed.job_id,
                 worker_id="worker-a",
-                counters=RuntimeCounters(captured_packets=2),
+                counters=RuntimeCounters(captured_packets=2, decoded_packets=2),
                 progress=0.5,
                 now=NOW + timedelta(seconds=3),
             )
+            with pytest.raises(RuntimeStateError, match="counters cannot decrease"):
+                repository.update_observed_progress(
+                    claimed.job_id,
+                    worker_id="worker-a",
+                    counters=RuntimeCounters(captured_packets=2, decoded_packets=1),
+                    progress=0.5,
+                    now=NOW + timedelta(seconds=3),
+                )
+            with pytest.raises(RuntimeStateError, match="only through completion"):
+                repository.update_durable_progress(
+                    claimed.job_id,
+                    worker_id="worker-a",
+                    counters=RuntimeCounters(),
+                    progress_current=0,
+                    progress=1.0,
+                    now=NOW + timedelta(seconds=3),
+                )
             repository.heartbeat(
                 claimed.job_id,
                 worker_id="worker-a",
@@ -126,11 +143,18 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
                 now=NOW + timedelta(seconds=6),
             )
             assert paused.status is RuntimeJobStatus.PAUSED
-            assert repository.resume(
+            assert paused.current_attempt_id == attempt.attempt_id
+            assert paused.progress == 0.0
+            assert paused.observed_progress == 0.5
+            resumed = repository.resume(
                 claimed.job_id,
                 actor="operator",
                 now=NOW + timedelta(seconds=7),
-            ).status is RuntimeJobStatus.RUNNING
+            )
+            assert resumed.status is RuntimeJobStatus.RUNNING
+            assert resumed.current_attempt_id == attempt.attempt_id
+            assert resumed.progress == 0.0
+            assert resumed.observed_progress == 0.5
             interrupted = repository.interrupt(
                 claimed.job_id,
                 worker_id="worker-a",
@@ -140,7 +164,8 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
             )
             assert interrupted.status is RuntimeJobStatus.RECOVERY_PENDING
             assert interrupted.claimed_by is None
-            assert interrupted.progress == 0.5
+            assert interrupted.progress == 0.0
+            assert interrupted.observed_progress == 0.5
 
         with database.session() as session, session.begin():
             recovered = RuntimeJobRepository(
@@ -154,6 +179,8 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
             assert recovered.status is RuntimeJobStatus.QUEUED
             assert recovered.progress == 0.0
             assert recovered.counters == RuntimeCounters()
+            assert recovered.observed_progress == 0.0
+            assert recovered.observed_counters == RuntimeCounters()
             assert recovered.recovery_count == 1
 
         with database.session() as session:
@@ -169,6 +196,9 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
         assert len(attempts) == 1
         assert attempts[0].status.value == "interrupted"
         assert attempts[0].restart_from_origin is True
+        assert attempts[0].progress == 0.0
+        assert attempts[0].observed_progress == 0.5
+        assert attempts[0].observed_counters.captured_packets == 2
         assert "runtime_job_create" in actions
         assert "runtime_job_claim" in actions
         assert "runtime_attempt_start" in actions
@@ -197,6 +227,13 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
             "after_state",
             "reason",
             "retryable",
+            "durable_progress_semantics",
+            "durable_progress",
+            "durable_counters",
+            "observed_progress_semantics",
+            "observed_progress",
+            "observed_packet_count",
+            "recovery_strategy",
         }
         assert all(
             required_audit_fields <= set(event.details)
@@ -284,7 +321,8 @@ def test_control_monitor_keeps_paused_job_and_worker_lease_live(
             ),
             resource_sampler=ProcessResourceSampler(lambda: object()),
         )
-        monitor.check(job.job_id, RuntimeCounters(), 0.0)
+        observed = RuntimeCounters(captured_packets=2, decoded_packets=2)
+        monitor.check(job.job_id, observed, 0.5)
 
         with database.session() as session:
             resumed = RuntimeJobRepository(session).get(job.job_id)
@@ -294,19 +332,39 @@ def test_control_monitor_keeps_paused_job_and_worker_lease_live(
         assert resumed is not None
         assert resumed.status is RuntimeJobStatus.RUNNING
         assert resumed.heartbeat_at == NOW + timedelta(seconds=6)
+        assert resumed.progress == 0.0
+        assert resumed.counters == RuntimeCounters()
+        assert resumed.observed_progress == 0.5
+        assert resumed.observed_counters == observed
         assert worker is not None
         assert worker.heartbeat_at == NOW + timedelta(seconds=6)
         assert attempts[0].paused_at is not None
         assert attempts[0].resumed_at == NOW + timedelta(seconds=12)
+        assert attempts[0].progress == 0.0
+        assert attempts[0].observed_progress == 0.5
+        assert attempts[0].observed_counters == observed
         assert len(samples) == 1
         assert samples[0].monitoring_status == "unavailable"
 
         with database.session() as session, session.begin():
             repository = RuntimeJobRepository(session, AuditLogRepository(session))
+            with pytest.raises(
+                RuntimeStateError,
+                match="durable packet counters must match",
+            ):
+                repository.complete(
+                    job.job_id,
+                    worker_id="worker-a",
+                    counters=RuntimeCounters(),
+                    observed_counters=observed,
+                    now=NOW + timedelta(seconds=13),
+                    actor="worker-a",
+                )
             repository.complete(
                 job.job_id,
                 worker_id="worker-a",
-                counters=RuntimeCounters(),
+                counters=observed,
+                observed_counters=observed,
                 now=NOW + timedelta(seconds=13),
                 actor="worker-a",
             )
@@ -400,7 +458,7 @@ def test_stale_lease_requires_explicit_recovery_and_transaction_rolls_back(
             database.session() as session,
             session.begin(),
         ):
-            RuntimeJobRepository(session).update_progress(
+            RuntimeJobRepository(session).update_observed_progress(
                 job.job_id,
                 worker_id="worker-a",
                 counters=RuntimeCounters(captured_packets=99),
@@ -412,6 +470,7 @@ def test_stale_lease_requires_explicit_recovery_and_transaction_rolls_back(
             unchanged = RuntimeJobRepository(session).get(job.job_id)
         assert unchanged is not None
         assert unchanged.progress == 0.0
+        assert unchanged.observed_progress == 0.0
 
         with database.session() as session, session.begin():
             stale = RuntimeJobRepository(

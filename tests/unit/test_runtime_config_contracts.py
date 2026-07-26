@@ -11,6 +11,8 @@ from pydantic import ValidationError
 from aegishunt.runtime.config import RuntimePolicy, load_runtime_policy
 from aegishunt.runtime.contracts import (
     RuntimeArtifactIdentity,
+    RuntimeAttempt,
+    RuntimeAttemptStatus,
     RuntimeJob,
     RuntimeJobStatus,
     RuntimePipelineSnapshot,
@@ -188,3 +190,67 @@ def test_runtime_contract_forbids_non_finite_numbers() -> None:
 
     with pytest.raises(ValidationError):
         RuntimePolicy.model_validate(payload)
+
+
+@pytest.mark.parametrize("value", (float("nan"), float("inf"), float("-inf")))
+@pytest.mark.parametrize("field", ("progress", "observed_progress"))
+def test_runtime_contract_rejects_non_finite_progress(
+    field: str,
+    value: float,
+) -> None:
+    job = runtime_job()
+
+    with pytest.raises(ValidationError):
+        RuntimeJob.model_validate(
+            {
+                **job.model_dump(mode="python"),
+                field: value,
+            }
+        )
+
+
+def test_runtime_progress_contract_enforces_totals_and_completion_gate() -> None:
+    job = runtime_job()
+    packet_progress = {
+        **job.model_dump(mode="python"),
+        "progress_mode": RuntimeProgressMode.PACKET_COUNT,
+        "progress_total": 2,
+        "observed_progress_total": 2,
+    }
+
+    with pytest.raises(ValidationError, match="cannot exceed"):
+        RuntimeJob.model_validate({**packet_progress, "progress_current": 3})
+    with pytest.raises(ValidationError, match="cannot exceed"):
+        RuntimeJob.model_validate({**packet_progress, "observed_progress_current": 3})
+    with pytest.raises(ValidationError, match="only completed"):
+        RuntimeJob.model_validate({**job.model_dump(mode="python"), "progress": 1.0})
+    with pytest.raises(ValidationError, match="require complete progress"):
+        RuntimeJob.model_validate(
+            {
+                **job.model_dump(mode="python"),
+                "status": RuntimeJobStatus.COMPLETED,
+                "completed_at": NOW,
+            }
+        )
+
+    attempt = RuntimeAttempt(
+        job_id=job.job_id,
+        worker_id="worker-a",
+        attempt_number=1,
+        started_at=NOW,
+        updated_at=NOW,
+    )
+    with pytest.raises(ValidationError, match="only completed"):
+        RuntimeAttempt.model_validate(
+            {
+                **attempt.model_dump(mode="python"),
+                "progress": 1.0,
+            }
+        )
+    with pytest.raises(ValidationError, match="require complete progress"):
+        RuntimeAttempt.model_validate(
+            {
+                **attempt.model_dump(mode="python"),
+                "status": RuntimeAttemptStatus.COMPLETED,
+            }
+        )

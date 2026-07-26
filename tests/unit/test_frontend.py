@@ -49,6 +49,9 @@ def test_frontend_renders_phase_eleven_runtime_without_fake_results(
     assert "stage=queued" in content
     assert "attempt=0" in content
     assert "progress_mode=indeterminate" in content
+    assert "Observed replay progress (non-durable)=0.000000" in content
+    assert "Durable committed evidence=0.000000" in content
+    assert "not a checkpoint or resume cursor" in content
     assert "automatic recovery and live capture are disabled" in content
     assert "deterministically restarts from packet zero" in content
     assert "not exact packet-cursor resume" in content
@@ -100,3 +103,27 @@ def test_frontend_does_not_fabricate_unavailable_runtime_status(
     assert "Runtime status is unavailable" in content
     assert "No zero-valued resource measurements" in content
     assert "queued=0" not in content
+
+
+def test_runtime_summary_has_truthful_empty_state_without_fake_progress() -> None:
+    summary = app._runtime_summary(  # noqa: SLF001 - frontend status contract
+        RuntimeStatus(
+            queue_length=0,
+            recovery_pending=0,
+            running_jobs=0,
+            paused_jobs=0,
+            latest_jobs=(),
+            workers=(),
+            latest_samples=(),
+            latest_errors=(),
+            model_loading_state="verified_per_job_preflight",
+            live_capture_enabled=False,
+            automatic_recovery=False,
+        )
+    )
+
+    assert "latest_job=none" in summary
+    assert "Observed replay progress (non-durable)=" not in summary
+    assert "Durable committed evidence=" not in summary
+    assert "queued=0" in summary
+    assert "not a checkpoint or resume cursor" in summary

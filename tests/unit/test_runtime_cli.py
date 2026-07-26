@@ -11,7 +11,14 @@ import pytest
 from typer.testing import CliRunner
 
 from aegishunt.cli import app
+from aegishunt.config import DatabaseSettings
 from aegishunt.runtime import cli as runtime_cli
+from aegishunt.runtime.repositories import RuntimeJobRepository
+from aegishunt.schemas import TelemetrySource
+from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
+from aegishunt.storage import Database
+from aegishunt.storage.repositories import TelemetrySourceRepository
+from tests.fixtures.runtime import SOURCE_ID, runtime_job
 
 PROJECT_ROOT = Path(__file__).parents[2]
 runner = CliRunner()
@@ -76,8 +83,63 @@ def test_runtime_status_and_empty_lists_are_machine_readable(tmp_path: Path) -> 
     assert status_payload["queue_length"] == 0
     assert status_payload["model_loading_state"] == "verified_per_job_preflight"
     assert status_payload["automatic_recovery"] is False
+    assert (
+        status_payload["observed_progress_semantics"]
+        == "non_durable_live_observation"
+    )
+    assert status_payload["durable_progress_semantics"] == "durable_committed_evidence"
+    assert status_payload["recovery_strategy"] == "deterministic_restart_from_origin"
     assert json.loads(jobs.stdout) == {"items": [], "total": 0}
     assert json.loads(workers.stdout) == []
+
+
+def test_runtime_job_describe_exposes_separate_progress_contract(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    database = Database(
+        DatabaseSettings(url=f"sqlite:///{tmp_path / 'runtime-cli.sqlite3'}")
+    )
+    assert database.initialize() == 5
+    job = runtime_job()
+    try:
+        with database.session() as session, session.begin():
+            TelemetrySourceRepository(session).add(
+                TelemetrySource(
+                    source_id=SOURCE_ID,
+                    source_type=SourceType.PCAP,
+                    filename_or_interface="runtime-cli.pcap",
+                    ingestion_mode=IngestionMode.IMPORT,
+                    status=LifecycleStatus.COMPLETED,
+                )
+            )
+            RuntimeJobRepository(session).add(job, actor="test")
+
+        result = runner.invoke(
+            app,
+            [
+                "runtime",
+                "jobs",
+                "describe",
+                str(job.job_id),
+                "--config",
+                str(config),
+            ],
+        )
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["job"]["progress_semantics"] == "durable_committed_evidence"
+        assert (
+            payload["job"]["observed_progress_semantics"]
+            == "non_durable_live_observation"
+        )
+        assert payload["progress_contract"] == {
+            "durable": "durable_committed_evidence",
+            "exact_cursor_resume": False,
+            "observed": "non_durable_live_observation",
+            "observed_is_checkpoint": False,
+            "recovery_strategy": "deterministic_restart_from_origin",
+        }
+    finally:
+        database.dispose()
 
 
 def test_runtime_config_failure_is_sanitized_without_traceback(tmp_path: Path) -> None:

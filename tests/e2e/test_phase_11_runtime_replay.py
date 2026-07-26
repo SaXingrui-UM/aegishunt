@@ -3,25 +3,34 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
 
-from aegishunt.config import ApplicationSettings
+from aegishunt.config import ApplicationSettings, DatabaseSettings
 from aegishunt.ingestion.schemas import IngestionJob
 from aegishunt.ingestion.service import IngestionService
+from aegishunt.runtime.clock import RuntimeClock
+from aegishunt.runtime.config import LoadedRuntimePolicy
 from aegishunt.runtime.contracts import (
     RuntimeCounters,
+    RuntimeJob,
     RuntimeJobStatus,
     RuntimeWorker,
     RuntimeWorkerStatus,
 )
 from aegishunt.runtime.control import RuntimeControlMonitor
-from aegishunt.runtime.errors import RuntimePreflightError, RuntimeStateError
+from aegishunt.runtime.errors import (
+    ReplayInterrupted,
+    RuntimePreflightError,
+    RuntimeStateError,
+)
 from aegishunt.runtime.pipeline import RuntimePipelineRunner
 from aegishunt.runtime.preflight import RuntimePreflightVerifier
 from aegishunt.runtime.repositories import (
@@ -104,6 +113,69 @@ def _controlled_correlating_pcap(path: Path) -> Path:
     return write_pcap(path, packets)
 
 
+def _mixed_committed_and_open_pcap(path: Path) -> Path:
+    """Expire one flow while retaining a second flow in aggregator memory."""
+
+    return write_pcap(
+        path,
+        (
+            (
+                at(0.0),
+                tcp_ipv4_frame(
+                    source_ip="192.0.2.10",
+                    destination_ip="198.51.100.20",
+                    source_port=40_000,
+                    destination_port=443,
+                    flags=0x10,
+                ),
+            ),
+            (
+                at(61.0),
+                tcp_ipv4_frame(
+                    source_ip="192.0.2.30",
+                    destination_ip="198.51.100.40",
+                    source_port=50_000,
+                    destination_port=53,
+                    flags=0x10,
+                ),
+            ),
+            (
+                at(61.1),
+                tcp_ipv4_frame(
+                    source_ip="192.0.2.30",
+                    destination_ip="198.51.100.40",
+                    source_port=50_000,
+                    destination_port=53,
+                    flags=0x10,
+                ),
+            ),
+        ),
+    )
+
+
+def _single_batch_runtime_policy(
+    runtime_policy: LoadedRuntimePolicy,
+) -> LoadedRuntimePolicy:
+    policy = runtime_policy.policy.model_copy(
+        update={
+            "worker": runtime_policy.policy.worker.model_copy(
+                update={
+                    "persistence_batch_size": 1,
+                    "progress_update_packet_interval": 1,
+                }
+            )
+        }
+    )
+    checksum = hashlib.sha256(
+        json.dumps(
+            policy.model_dump(mode="json"),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    return LoadedRuntimePolicy(policy=policy, configuration_checksum=checksum)
+
+
 def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -136,8 +208,36 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
             service.create_replay(ingestion.job_id, actor="phase-11-e2e")
 
         original_control_check = RuntimeControlMonitor.check
+        original_complete = RuntimeJobRepository.complete
         pause_injected = False
+        paused_snapshots: list[RuntimeJob] = []
+        completion_gate_seen = False
         resume_errors: list[BaseException] = []
+
+        def complete_after_downstream(
+            repository: RuntimeJobRepository,
+            job_id: UUID,
+            **kwargs: Any,
+        ) -> RuntimeJob:
+            nonlocal completion_gate_seen
+            if job_id == job.job_id:
+                before = repository.get(job_id)
+                assert before is not None
+                assert before.status is RuntimeJobStatus.RUNNING
+                assert before.progress < 1.0
+                assert before.progress_current == 0
+                assert AlertGroupRepository(
+                    repository._session  # noqa: SLF001 - same transaction gate
+                ).list()
+                assert ThreatHypothesisRepository(
+                    repository._session  # noqa: SLF001 - same transaction gate
+                ).list()
+                completion_gate_seen = True
+            completed = original_complete(repository, job_id, **kwargs)
+            if job_id == job.job_id:
+                assert completed.status is RuntimeJobStatus.COMPLETED
+                assert completed.progress == 1.0
+            return completed
 
         def pause_once(
             monitor: RuntimeControlMonitor,
@@ -157,6 +257,7 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
                     deadline = time.monotonic() + 5.0
                     while time.monotonic() < deadline:
                         if service.get(job.job_id).status is RuntimeJobStatus.PAUSED:
+                            paused_snapshots.append(service.get(job.job_id))
                             service.resume(job.job_id, actor="phase-11-e2e")
                             return
                         time.sleep(0.01)
@@ -174,6 +275,7 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
                 raise resume_errors[0]
 
         monkeypatch.setattr(RuntimeControlMonitor, "check", pause_once)
+        monkeypatch.setattr(RuntimeJobRepository, "complete", complete_after_downstream)
         worker = RuntimeWorkerProcess(
             database,
             settings=settings,
@@ -193,6 +295,13 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
         assert completed.counters.groups_created >= 1
         assert completed.counters.hypotheses_created >= 1
         assert pause_injected is True
+        assert completion_gate_seen is True
+        assert len(paused_snapshots) == 1
+        paused_snapshot = paused_snapshots[0]
+        assert paused_snapshot.current_attempt_id == completed.current_attempt_id
+        assert paused_snapshot.observed_progress > 0.0
+        assert paused_snapshot.progress == 0.0
+        assert paused_snapshot.counters == RuntimeCounters()
 
         with database.session() as session:
             source = TelemetrySourceRepository(session).get(ingestion.job_id)
@@ -230,6 +339,126 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
             "runtime_completed",
         } <= set(actions)
         assert "runtime_heartbeat" not in actions
+
+        mixed_database = Database(
+            DatabaseSettings(url=f"sqlite:///{tmp_path / 'mixed-runtime.sqlite3'}")
+        )
+        assert mixed_database.initialize() == 5
+        mixed_policy = _single_batch_runtime_policy(runtime_policy)
+        mixed_settings = settings.model_copy(
+            update={
+                "database": DatabaseSettings(
+                    url=f"sqlite:///{tmp_path / 'mixed-runtime.sqlite3'}"
+                )
+            }
+        )
+        mixed_source_id = uuid4()
+        mixed_filename = "mixed-committed-open.pcap"
+        mixed_path = _mixed_committed_and_open_pcap(
+            settings.ingestion.storage_root / mixed_filename
+        )
+        mixed_bytes = mixed_path.read_bytes()
+        mixed_source = TelemetrySource(
+            source_id=mixed_source_id,
+            source_type=SourceType.PCAP,
+            filename_or_interface=mixed_filename,
+            ingestion_mode=IngestionMode.IMPORT,
+            status=LifecycleStatus.COMPLETED,
+            records_processed=3,
+            checksum=hashlib.sha256(mixed_bytes).hexdigest(),
+            source_metadata={
+                "stored_filename": mixed_filename,
+                "byte_size": len(mixed_bytes),
+            },
+        )
+        try:
+            with mixed_database.session() as session, session.begin():
+                TelemetrySourceRepository(session).add(mixed_source)
+                RuntimeWorkerRepository(session).upsert(
+                    RuntimeWorker(
+                        worker_id="mixed-worker",
+                        status=RuntimeWorkerStatus.IDLE,
+                    )
+                )
+            mixed_service = RuntimeJobService(
+                mixed_database,
+                settings=mixed_settings,
+                runtime_policy=mixed_policy,
+                project_root=PROJECT_ROOT,
+            )
+            mixed_job = mixed_service.create_replay(
+                mixed_source_id,
+                speed=mixed_policy.policy.replay.maximum_speed,
+                actor="phase-11-e2e",
+            )
+            with mixed_database.session() as session, session.begin():
+                mixed_repository = RuntimeJobRepository(
+                    session,
+                    AuditLogRepository(session),
+                )
+                claimed_mixed = mixed_repository.claim_next(
+                    worker_id="mixed-worker",
+                    now=datetime.now(UTC),
+                    lease_seconds=mixed_policy.policy.worker.lease_seconds,
+                    actor="mixed-worker",
+                )
+                assert claimed_mixed is not None
+                mixed_repository.start_attempt(
+                    mixed_job.job_id,
+                    worker_id="mixed-worker",
+                    now=datetime.now(UTC),
+                    actor="mixed-worker",
+                )
+            mixed_stop = threading.Event()
+            mixed_runner = RuntimePipelineRunner(
+                mixed_database,
+                settings=mixed_settings,
+                runtime_policy=mixed_policy,
+                project_root=PROJECT_ROOT,
+                worker_id="mixed-worker",
+                stop_event=mixed_stop,
+                clock=RuntimeClock(sleep=lambda _: None),
+            )
+            original_mixed_check = mixed_runner._control.check  # noqa: SLF001
+
+            def stop_with_second_flow_open(
+                job_id: UUID,
+                counters: RuntimeCounters,
+                progress: float,
+            ) -> None:
+                original_mixed_check(job_id, counters, progress)
+                if counters.captured_packets == 2:
+                    mixed_stop.set()
+
+            monkeypatch.setattr(
+                mixed_runner._control,  # noqa: SLF001 - controlled F3 boundary
+                "check",
+                stop_with_second_flow_open,
+            )
+            with pytest.raises(ReplayInterrupted, match="shutdown"):
+                mixed_runner.run(claimed_mixed)
+            with mixed_database.session() as session:
+                mixed_persisted = RuntimeJobRepository(session).get(
+                    mixed_job.job_id
+                )
+                mixed_flows = NetworkFlowRepository(session).list_by_source(
+                    mixed_source_id
+                )
+                mixed_ledgers = RuntimeOutputLedgerRepository(session).list_for_job(
+                    mixed_job.job_id
+                )
+            assert mixed_persisted is not None
+            assert mixed_persisted.observed_counters.captured_packets == 2
+            assert mixed_persisted.observed_progress == pytest.approx(2 / 3)
+            assert mixed_persisted.progress == 0.0
+            assert mixed_persisted.progress_current == 0
+            assert mixed_persisted.counters.captured_packets == 0
+            assert mixed_persisted.counters.flows_created == 1
+            assert mixed_persisted.counters.detections_created == 1
+            assert len(mixed_flows) == 1
+            assert len(mixed_ledgers) == 1
+        finally:
+            mixed_database.dispose()
 
         drift_ingestion = _ingest(database, settings)
         drift_job = service.create_replay(drift_ingestion.job_id, speed=1_000.0)
@@ -342,6 +571,16 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
                 now=recovery_now,
                 actor="interrupted-worker",
             )
+            recovery_repository.update_observed_progress(
+                recovery_job.job_id,
+                worker_id="interrupted-worker",
+                counters=RuntimeCounters(
+                    captured_packets=recovery_ingestion.records_processed,
+                    decoded_packets=recovery_ingestion.records_processed,
+                ),
+                progress=0.5,
+                now=recovery_now,
+            )
         partial_counters = RuntimePipelineRunner(
             database,
             settings=settings,
@@ -353,10 +592,29 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
             running_recovery,
             loaded_recovery,
             recovery_flows,
-            RuntimeCounters(captured_packets=recovery_ingestion.records_processed),
-            progress=0.5,
+            RuntimeCounters(),
         )
         assert partial_counters.detections_created == 1
+        with database.session() as session:
+            mixed_evidence = RuntimeJobRepository(session).get(recovery_job.job_id)
+            original_ledgers = RuntimeOutputLedgerRepository(session).list_for_job(
+                recovery_job.job_id
+            )
+            original_detection = DetectionResultRepository(session).get(
+                original_ledgers[0].detection_id
+            )
+        assert mixed_evidence is not None
+        assert mixed_evidence.progress == 0.0
+        assert mixed_evidence.progress_current == 0
+        assert mixed_evidence.counters.flows_reused == 1
+        assert mixed_evidence.counters.detections_created == 1
+        assert mixed_evidence.observed_progress == 0.5
+        assert mixed_evidence.observed_counters.captured_packets == (
+            recovery_ingestion.records_processed
+        )
+        assert mixed_evidence.progress != mixed_evidence.observed_progress
+        assert len(original_ledgers) == 1
+        assert original_detection is not None
         with database.session() as session, session.begin():
             interrupted = RuntimeJobRepository(
                 session,
@@ -376,27 +634,73 @@ def test_phase_11_replay_persists_verified_pipeline_and_survives_restart(
         )
         assert recovered.status is RuntimeJobStatus.QUEUED
         assert recovered.failure_code == "interrupted"
-        assert RuntimeWorkerProcess(
+        assert recovered.progress == 0.0
+        assert recovered.observed_progress == 0.0
+        assert recovered.counters == RuntimeCounters()
+        assert recovered.observed_counters == RuntimeCounters()
+        with database.session() as session, session.begin():
+            RuntimeWorkerRepository(session).upsert(
+                RuntimeWorker(
+                    worker_id="recovery-worker",
+                    status=RuntimeWorkerStatus.IDLE,
+                    started_at=datetime.now(UTC),
+                    heartbeat_at=datetime.now(UTC),
+                )
+            )
+            recovery_repository = RuntimeJobRepository(
+                session,
+                AuditLogRepository(session),
+            )
+            claimed_recovery = recovery_repository.claim_next(
+                worker_id="recovery-worker",
+                now=datetime.now(UTC),
+                lease_seconds=runtime_policy.policy.worker.lease_seconds,
+                actor="recovery-worker",
+            )
+            assert claimed_recovery is not None
+            new_attempt = recovery_repository.start_attempt(
+                recovery_job.job_id,
+                worker_id="recovery-worker",
+                now=datetime.now(UTC),
+                actor="recovery-worker",
+                maximum_attempts=runtime_policy.policy.worker.maximum_attempts,
+            )
+            assert new_attempt.progress == 0.0
+            assert new_attempt.observed_progress == 0.0
+            assert new_attempt.counters == RuntimeCounters()
+            assert new_attempt.observed_counters == RuntimeCounters()
+            assert new_attempt.restart_from_origin is True
+        RuntimePipelineRunner(
             database,
             settings=settings,
             runtime_policy=runtime_policy,
             project_root=PROJECT_ROOT,
             worker_id="recovery-worker",
-        ).run_one_and_stop()
+            stop_event=threading.Event(),
+        ).run(claimed_recovery)
         recovered_complete = service.get(recovery_job.job_id)
         assert recovered_complete.status is RuntimeJobStatus.COMPLETED
         assert recovered_complete.counters.flows_reused == 1
         assert recovered_complete.counters.detections_reused == 1
         recovery_attempts = service.attempts(recovery_job.job_id)
         assert len(recovery_attempts) == 2
-        assert recovery_attempts[0].progress == 0.5
+        assert recovery_attempts[0].progress == 0.0
+        assert recovery_attempts[0].observed_progress == 0.5
+        assert recovery_attempts[0].observed_counters.captured_packets == (
+            recovery_ingestion.records_processed
+        )
+        assert recovery_attempts[1].observed_progress == 1.0
         assert recovery_attempts[1].status.value == "completed"
         with database.session() as session:
-            assert len(
-                RuntimeOutputLedgerRepository(session).list_for_job(
-                    recovery_job.job_id
-                )
-            ) == 1
+            recovered_ledgers = RuntimeOutputLedgerRepository(session).list_for_job(
+                recovery_job.job_id
+            )
+            recovered_detection = DetectionResultRepository(session).get(
+                recovered_ledgers[0].detection_id
+            )
+            assert len(recovered_ledgers) == 1
+            assert recovered_ledgers == original_ledgers
+            assert recovered_detection == original_detection
             assert len(DetectionResultRepository(session).list()) == 4
         with database.session() as session:
             before_restart = (

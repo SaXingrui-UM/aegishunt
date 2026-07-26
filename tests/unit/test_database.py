@@ -251,12 +251,32 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
             "current_stage",
             "current_attempt_number",
             "progress_mode",
+            "progress_semantics",
             "progress_current",
             "progress_total",
+            "observed_counters",
+            "observed_progress_semantics",
+            "observed_progress_current",
+            "observed_progress_total",
+            "observed_progress",
+            "observed_at",
             "latest_error_retryable",
             "started_at",
             "completed_at",
         } <= runtime_job_columns
+        runtime_attempt_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("runtime_attempts")
+        }
+        assert {
+            "progress_semantics",
+            "observed_counters",
+            "observed_progress_semantics",
+            "observed_progress_current",
+            "observed_progress_total",
+            "observed_progress",
+            "observed_at",
+        } <= runtime_attempt_columns
         with database.engine.connect() as connection:
             assert connection.scalar(text("SELECT COUNT(*) FROM detection_results")) == 1
             assert connection.scalar(text("SELECT COUNT(*) FROM investigation_cases")) == 1
