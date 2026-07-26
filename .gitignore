@@ -38,6 +38,7 @@ artifacts/figures/*
 artifacts/test-reports/*
 artifacts/feedback/*
 artifacts/retraining_candidates/*
+artifacts/demo/*
 !artifacts/models/.gitkeep
 !artifacts/logs/.gitkeep
 !artifacts/evaluations/.gitkeep
@@ -62,6 +63,7 @@ reports/cases/*
 
 # Explicitly reviewed, deterministic Phase 2 demonstration inputs.
 !data/sample/phase2-benign.pcap
+!data/sample/phase12-demo.pcap
 !data/sample/phase2-flows.csv
 !data/sample/manifest.yaml
 !data/sample/README.md

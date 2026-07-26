@@ -6,6 +6,7 @@ import os
 from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
@@ -166,6 +167,155 @@ class RuntimeSettings(BaseModel):
     fusion_policy_root: Path = Path("artifacts/models/fusion")
 
 
+class WebSettings(BaseModel):
+    """Local-only API and Streamlit integration policy."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    api_host: str = "127.0.0.1"
+    api_port: int = Field(default=8_000, ge=1, le=65_535)
+    docs_enabled: bool = True
+    api_base_url: str = "http://127.0.0.1:8000"
+    allowed_origins: tuple[str, ...] = ()
+    request_id_header: str = Field(
+        default="X-Request-ID",
+        pattern=r"^[A-Za-z][A-Za-z0-9-]{0,63}$",
+    )
+    actor_header: str = Field(
+        default="X-AegisHunt-Actor",
+        pattern=r"^[A-Za-z][A-Za-z0-9-]{0,63}$",
+    )
+    frontend_origin: str = "http://127.0.0.1:8501"
+    request_id_max_length: int = Field(default=64, ge=8, le=128)
+    default_page_size: int = Field(default=50, ge=1, le=100)
+    maximum_page_size: int = Field(default=100, ge=1, le=100)
+    request_timeout_seconds: float = Field(default=15.0, gt=0.0, le=120.0)
+    upload_chunk_size_bytes: int = Field(default=65_536, ge=1, le=1_048_576)
+    auto_refresh_enabled: bool = True
+    auto_refresh_seconds: int = Field(default=5, ge=1, le=300)
+    minimum_refresh_seconds: int = Field(default=1, ge=1, le=300)
+    maximum_refresh_seconds: int = Field(default=300, ge=1, le=300)
+    sample_mode_enabled: bool = True
+    maximum_table_rows: int = Field(default=50, ge=1, le=100)
+    default_actor: str = Field(default="local-analyst", min_length=1, max_length=128)
+    page_title: str = Field(default="AegisHunt", min_length=1, max_length=128)
+    safe_download_types: tuple[str, ...] = ("case_report",)
+    maximum_pcap_upload_bytes: int = Field(default=52_428_800, ge=1)
+    maximum_csv_upload_bytes: int = Field(default=10_485_760, ge=1)
+    maximum_json_upload_bytes: int = Field(default=10_485_760, ge=1)
+    demo_sample_ids: tuple[str, ...] = ("phase12-demo-pcap",)
+    demo_dataset_version: str = Field(
+        default="1.0.0",
+        pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$",
+    )
+    demo_replay_speed: float = Field(default=1.0, gt=0.0, le=1_000.0)
+    demo_artifact_root: Path = Path("artifacts/demo/phase12")
+    demo_namespace: str = Field(
+        default="phase12-controlled-demo",
+        pattern=r"^[a-z0-9][a-z0-9-]{2,63}$",
+    )
+    demo_operation_version: str = Field(
+        default="1.0.0",
+        pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$",
+    )
+    demo_worker_id: str = Field(
+        default="phase12-demo-worker",
+        pattern=r"^[a-z0-9][a-z0-9-]{2,63}$",
+    )
+
+    @field_validator("api_base_url")
+    @classmethod
+    def validate_api_base_url(cls, value: str) -> str:
+        """Accept only an explicit loopback HTTP API endpoint."""
+
+        normalized = value.rstrip("/")
+        parsed = urlsplit(normalized)
+        if (
+            parsed.scheme not in {"http", "https"}
+            or parsed.hostname not in {"127.0.0.1", "localhost"}
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("web API base URL must be a credential-free loopback URL")
+        return normalized
+
+    @field_validator("allowed_origins", "frontend_origin")
+    @classmethod
+    def validate_origins(cls, values: tuple[str, ...] | str) -> tuple[str, ...] | str:
+        """Limit CORS to explicit local HTTP origins."""
+
+        origins = (values,) if isinstance(values, str) else values
+        for value in origins:
+            parsed = urlsplit(value)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or parsed.hostname not in {"127.0.0.1", "localhost"}
+                or parsed.username is not None
+                or parsed.password is not None
+                or parsed.path not in {"", "/"}
+                or parsed.query
+                or parsed.fragment
+            ):
+                raise ValueError("web origins must be credential-free loopback URLs")
+        return values
+
+    @field_validator("api_host")
+    @classmethod
+    def validate_api_host(cls, value: str) -> str:
+        """Keep the local research API bound to a loopback interface."""
+
+        normalized = value.strip().lower()
+        if normalized not in {"127.0.0.1", "localhost"}:
+            raise ValueError("web API host must be a loopback interface")
+        return normalized
+
+    @field_validator("safe_download_types")
+    @classmethod
+    def validate_safe_download_types(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        """Reject arbitrary artifact download categories."""
+
+        allowed = {"case_report", "feedback_export", "retraining_candidate"}
+        if not values or any(value not in allowed for value in values):
+            raise ValueError("safe download types must use the declared allowlist")
+        return values
+
+    @field_validator("demo_sample_ids")
+    @classmethod
+    def validate_demo_sample_ids(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        """Require one or more stable packaged sample identifiers."""
+
+        if not values:
+            raise ValueError("at least one demo sample ID is required")
+        for value in values:
+            if not value or len(value) > 64 or not all(
+                character.islower() or character.isdigit() or character == "-"
+                for character in value
+            ):
+                raise ValueError("demo sample IDs must be lowercase slug values")
+        return values
+
+    @model_validator(mode="after")
+    def validate_web_bounds(self) -> WebSettings:
+        """Keep configurable pagination, refresh, and upload bounds coherent."""
+
+        if self.default_page_size > self.maximum_page_size:
+            raise ValueError("default page size must not exceed the maximum page size")
+        if self.maximum_table_rows > self.maximum_page_size:
+            raise ValueError("maximum table rows must not exceed the maximum page size")
+        if self.minimum_refresh_seconds > self.maximum_refresh_seconds:
+            raise ValueError("minimum refresh interval must not exceed the maximum")
+        if not (
+            self.minimum_refresh_seconds
+            <= self.auto_refresh_seconds
+            <= self.maximum_refresh_seconds
+        ):
+            raise ValueError("auto-refresh interval must be within configured bounds")
+        return self
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -182,6 +332,7 @@ class ApplicationSettings(BaseModel):
     correlation: CorrelationSettings = Field(default_factory=CorrelationSettings)
     case_feedback: CaseFeedbackSettings = Field(default_factory=CaseFeedbackSettings)
     runtime: RuntimeSettings = Field(default_factory=RuntimeSettings)
+    web: WebSettings = Field(default_factory=WebSettings)
 
     @property
     def environment(self) -> str:

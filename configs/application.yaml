@@ -63,3 +63,41 @@ case_feedback:
 runtime:
   policy_path: configs/runtime.yaml
   fusion_policy_root: artifacts/models/fusion
+
+web:
+  api_host: 127.0.0.1
+  api_port: 8000
+  docs_enabled: true
+  api_base_url: http://127.0.0.1:8000
+  allowed_origins:
+    - http://127.0.0.1:8501
+    - http://localhost:8501
+  request_id_header: X-Request-ID
+  actor_header: X-AegisHunt-Actor
+  frontend_origin: http://127.0.0.1:8501
+  request_id_max_length: 64
+  default_page_size: 50
+  maximum_page_size: 100
+  request_timeout_seconds: 15.0
+  upload_chunk_size_bytes: 65536
+  auto_refresh_enabled: true
+  auto_refresh_seconds: 5
+  minimum_refresh_seconds: 1
+  maximum_refresh_seconds: 300
+  sample_mode_enabled: true
+  maximum_table_rows: 50
+  default_actor: local-analyst
+  page_title: AegisHunt
+  safe_download_types:
+    - case_report
+  maximum_pcap_upload_bytes: 52428800
+  maximum_csv_upload_bytes: 10485760
+  maximum_json_upload_bytes: 10485760
+  demo_sample_ids:
+    - phase12-demo-pcap
+  demo_dataset_version: 1.0.0
+  demo_replay_speed: 1.0
+  demo_artifact_root: artifacts/demo/phase12
+  demo_namespace: phase12-controlled-demo
+  demo_operation_version: 1.0.0
+  demo_worker_id: phase12-demo-worker
