@@ -27,6 +27,7 @@ def test_upload_status_failure_and_sample_end_to_end(tmp_path: Path) -> None:
         uploaded = client.post(
             "/ingestion/pcap",
             files={"file": ("capture.pcap", pcap, "application/vnd.tcpdump.pcap")},
+            data={"actor": "api-test", "reason": "ingestion regression", "confirm": "true"},
         )
         assert uploaded.status_code == 201
         payload = uploaded.json()
@@ -43,16 +44,18 @@ def test_upload_status_failure_and_sample_end_to_end(tmp_path: Path) -> None:
         rejected = client.post(
             "/ingestion/pcap",
             files={"file": ("broken.pcap", b"broken", "application/octet-stream")},
+            data={"actor": "api-test", "reason": "failure regression", "confirm": "true"},
         )
         assert rejected.status_code == 422
-        error = rejected.json()["detail"]
-        assert error["code"] == "telemetry_format_error"
-        failed = client.get(f"/ingestion/jobs/{error['job_id']}")
+        error = rejected.json()
+        assert error["error_code"] == "telemetry_format_error"
+        assert error["details"] is not None
+        failed = client.get(f"/ingestion/jobs/{error['details']['job_id']}")
         assert failed.json()["status"] == "failed"
 
         samples = client.get("/ingestion/samples")
         assert samples.status_code == 200
-        assert len(samples.json()) == 2
+        assert len(samples.json()) == 3
         sample_job = client.post("/ingestion/samples/phase2-flow-csv")
         assert sample_job.status_code == 201
         assert sample_job.json()["source_type"] == "sample"

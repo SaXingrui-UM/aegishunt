@@ -40,6 +40,11 @@ def _forged_pcap() -> bytes:
 
 
 PCAP = (SAMPLE_ROOT / "phase2-benign.pcap").read_bytes()
+UPLOAD_FORM = {
+    "actor": "security-test",
+    "reason": "bounded file-boundary regression",
+    "confirm": "true",
+}
 CASES = (
     pytest.param(
         "/ingestion/pcap", "zero.pcap", b"", "application/octet-stream", True, id="zero-pcap"
@@ -162,12 +167,14 @@ def test_rejected_uploads_fail_closed_without_path_or_error_leakage(
         response = client.post(
             endpoint,
             files={"file": (request_filename, content, content_type)},
+            data=UPLOAD_FORM,
         )
         assert response.status_code == 422
-        detail = response.json()["detail"]
-        assert bool(detail.get("job_id")) is has_job
+        detail = response.json()
+        job_id = None if detail["details"] is None else detail["details"].get("job_id")
+        assert bool(job_id) is has_job
         if has_job:
-            job = client.get(f"/ingestion/jobs/{detail['job_id']}")
+            job = client.get(f"/ingestion/jobs/{job_id}")
             assert job.status_code == 200
             assert job.json()["status"] == "failed"
             assert job.json()["error"] is not None
@@ -190,6 +197,7 @@ def test_duplicate_names_and_content_create_jobs_without_overwrite(tmp_path: Pat
             client.post(
                 "/ingestion/pcap",
                 files={"file": (filename, PCAP, "application/octet-stream")},
+                data=UPLOAD_FORM,
             )
             for filename in ("same.pcap", "same.pcap", "different.pcap")
         ]
@@ -210,11 +218,13 @@ def test_unavailable_storage_persists_safe_failed_job(tmp_path: Path) -> None:
         response = client.post(
             "/ingestion/pcap",
             files={"file": ("capture.pcap", PCAP, "application/octet-stream")},
+            data=UPLOAD_FORM,
         )
         assert response.status_code == 422
-        detail = response.json()["detail"]
-        assert detail["code"] == "file_storage_error"
-        failed = client.get(f"/ingestion/jobs/{detail['job_id']}").json()
+        detail = response.json()
+        assert detail["error_code"] == "file_storage_error"
+        assert detail["details"] is not None
+        failed = client.get(f"/ingestion/jobs/{detail['details']['job_id']}").json()
         assert failed["status"] == "failed"
         assert str(tmp_path) not in response.text
 
@@ -246,12 +256,16 @@ def test_database_failure_is_generic_and_never_commits_a_job(
             response = client.post(
                 "/ingestion/pcap",
                 files={"file": ("capture.pcap", PCAP, "application/octet-stream")},
+                data=UPLOAD_FORM,
             )
             assert response.status_code == 503
-            assert response.json()["detail"] == {
-                "code": "database_unavailable",
-                "message": "database is unavailable; request was not completed",
-            }
+            error = response.json()
+            assert error["error_code"] == "database_unavailable"
+            assert error["message"] == (
+                "database is unavailable; request was not completed"
+            )
+            assert error["details"] is None
+            assert error["status_code"] == 503
             assert "controlled database failure marker" not in response.text
             assert str(tmp_path) not in response.text
             monkeypatch.setattr(database, "session", original_session)
