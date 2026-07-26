@@ -157,6 +157,15 @@ class CaseFeedbackSettings(BaseModel):
     policy_path: Path = Path("configs/case_feedback.yaml")
 
 
+class RuntimeSettings(BaseModel):
+    """Configured Phase 11 runtime policy and verified artifact roots."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_path: Path = Path("configs/runtime.yaml")
+    fusion_policy_root: Path = Path("artifacts/models/fusion")
+
+
 class ApplicationSettings(BaseModel):
     """Complete validated settings assembled from YAML and environment values."""
 
@@ -172,6 +181,7 @@ class ApplicationSettings(BaseModel):
     detection: DetectionSettings = Field(default_factory=DetectionSettings)
     correlation: CorrelationSettings = Field(default_factory=CorrelationSettings)
     case_feedback: CaseFeedbackSettings = Field(default_factory=CaseFeedbackSettings)
+    runtime: RuntimeSettings = Field(default_factory=RuntimeSettings)
 
     @property
     def environment(self) -> str:

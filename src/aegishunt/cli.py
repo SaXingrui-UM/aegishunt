@@ -27,6 +27,7 @@ from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
 from aegishunt.ml.anomaly.cli import anomaly_app
 from aegishunt.ml.fusion.cli import fusion_app
 from aegishunt.ml.supervised.cli import model_app
+from aegishunt.runtime.cli import runtime_app
 from aegishunt.storage import Database
 
 app = typer.Typer(
@@ -45,6 +46,7 @@ app.add_typer(explainability_app)
 app.add_typer(hunt_app)
 app.add_typer(cases_app)
 app.add_typer(feedback_app)
+app.add_typer(runtime_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 

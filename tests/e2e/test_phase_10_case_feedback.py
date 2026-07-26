@@ -66,7 +66,7 @@ def test_phase_ten_cli_end_to_end_is_offline_persistent_and_has_no_training(
 ) -> None:
     database_path = tmp_path / "phase-10-e2e.sqlite3"
     database = Database(DatabaseSettings(url=f"sqlite:///{database_path}"))
-    assert database.initialize() == 4
+    assert database.initialize() == 5
     now = datetime.now(UTC)
     alerts = [
         _historical_alert(1, now - timedelta(days=30), "198.51.100.10"),
@@ -319,7 +319,7 @@ def test_phase_ten_cli_end_to_end_is_offline_persistent_and_has_no_training(
     assert "Traceback" not in missing.output
 
     database = Database(DatabaseSettings(url=f"sqlite:///{database_path}"))
-    assert database.initialize() == 4
+    assert database.initialize() == 5
     try:
         with database.session() as session:
             case = InvestigationCaseRepository(session).get(UUID(case_id))
@@ -342,7 +342,7 @@ def test_phase_ten_cli_end_to_end_is_offline_persistent_and_has_no_training(
     empty_database = Database(
         DatabaseSettings(url=f"sqlite:///{empty_database_path}")
     )
-    assert empty_database.initialize() == 4
+    assert empty_database.initialize() == 5
     empty_database.dispose()
     empty_config = tmp_path / "empty-application.yaml"
     policy = Path(__file__).parents[2] / "configs" / "case_feedback.yaml"

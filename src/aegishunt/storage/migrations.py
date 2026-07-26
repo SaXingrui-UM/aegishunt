@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from sqlalchemy import Engine, inspect, text
 
 from aegishunt.errors import SchemaVersionError
+from aegishunt.storage.base import Base
 
 _V1_TO_V2_COLUMNS: dict[str, tuple[str, ...]] = {
     "detection_results": (
@@ -112,7 +113,7 @@ def migrate_existing_schema(engine: Engine, *, current_version: int) -> None:
     if existing is None or int(existing) == current_version:
         return
     version = int(existing)
-    if current_version != 4 or version not in {1, 2, 3}:
+    if current_version != 5 or version not in {1, 2, 3, 4}:
         raise SchemaVersionError(
             f"database schema version {existing} is incompatible with required "
             f"version {current_version}"
@@ -137,5 +138,27 @@ def migrate_existing_schema(engine: Engine, *, current_version: int) -> None:
                 {"version": target, "applied_at": datetime.now(UTC).isoformat()},
             )
         version = target
+    if version == 4:
+        runtime_tables = {
+            table.name
+            for table in Base.metadata.sorted_tables
+            if table.name.startswith("runtime_")
+        }
+        Base.metadata.create_all(
+            engine,
+            tables=[
+                Base.metadata.tables[name]
+                for name in sorted(runtime_tables)
+            ],
+        )
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO schema_versions (version, applied_at) "
+                    "VALUES (:version, :applied_at)"
+                ),
+                {"version": 5, "applied_at": datetime.now(UTC).isoformat()},
+            )
+        version = 5
     if version != current_version:
         raise SchemaVersionError("database schema migration did not reach required version")

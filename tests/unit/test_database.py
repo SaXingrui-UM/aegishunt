@@ -18,8 +18,8 @@ def database_for(tmp_path: Path) -> Database:
 def test_database_initialization_is_repeatable_and_enables_wal(tmp_path: Path) -> None:
     database = database_for(tmp_path)
     try:
-        assert database.initialize() == 4
-        assert database.initialize() == 4
+        assert database.initialize() == 5
+        assert database.initialize() == 5
         assert database.journal_mode() == "wal"
         tables = set(inspect(database.engine).get_table_names())
         assert {
@@ -36,6 +36,11 @@ def test_database_initialization_is_repeatable_and_enables_wal(tmp_path: Path) -
             "model_versions",
             "audit_events",
             "schema_versions",
+            "runtime_attempts",
+            "runtime_jobs",
+            "runtime_output_ledger",
+            "runtime_resource_samples",
+            "runtime_workers",
         } <= tables
     finally:
         database.dispose()
@@ -187,8 +192,8 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
 
     database = Database(DatabaseSettings(url=f"sqlite:///{path}"))
     try:
-        assert database.initialize() == 4
-        assert database.initialize() == 4
+        assert database.initialize() == 5
+        assert database.initialize() == 5
         columns = {
             column["name"]
             for column in inspect(database.engine).get_columns("detection_results")
@@ -236,6 +241,42 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
             "feedback_schema_version",
             "provenance",
         } <= feedback_columns
+        runtime_job_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("runtime_jobs")
+        }
+        assert {
+            "snapshot_checksum",
+            "desired_action",
+            "current_stage",
+            "current_attempt_number",
+            "progress_mode",
+            "progress_semantics",
+            "progress_current",
+            "progress_total",
+            "observed_counters",
+            "observed_progress_semantics",
+            "observed_progress_current",
+            "observed_progress_total",
+            "observed_progress",
+            "observed_at",
+            "latest_error_retryable",
+            "started_at",
+            "completed_at",
+        } <= runtime_job_columns
+        runtime_attempt_columns = {
+            column["name"]
+            for column in inspect(database.engine).get_columns("runtime_attempts")
+        }
+        assert {
+            "progress_semantics",
+            "observed_counters",
+            "observed_progress_semantics",
+            "observed_progress_current",
+            "observed_progress_total",
+            "observed_progress",
+            "observed_at",
+        } <= runtime_attempt_columns
         with database.engine.connect() as connection:
             assert connection.scalar(text("SELECT COUNT(*) FROM detection_results")) == 1
             assert connection.scalar(text("SELECT COUNT(*) FROM investigation_cases")) == 1
@@ -243,6 +284,6 @@ def test_schema_version_one_is_additively_migrated_without_deleting_rows(
             versions = connection.execute(
                 text("SELECT version FROM schema_versions ORDER BY version")
             ).scalars()
-            assert tuple(versions) == (1, 2, 3, 4)
+            assert tuple(versions) == (1, 2, 3, 4, 5)
     finally:
         database.dispose()

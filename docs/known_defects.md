@@ -1,6 +1,6 @@
 # Known Defects
 
-Last updated: 2026-07-18 (Asia/Shanghai)
+Last updated: 2026-07-23 (Asia/Shanghai)
 
 ## PM-DEF-001 — Zero Brier score treated as missing
 
@@ -36,11 +36,12 @@ Last updated: 2026-07-18 (Asia/Shanghai)
 ## DEF-004 — Database outage cannot persist to the unavailable database
 
 - Severity: Medium
-- Status: Open; non-blocking for Phase 10
+- Status: Open; non-blocking for Phase 11
 - Component: database failure auditability
 - Behavior: total database unavailability fails closed, rolls back, returns a
   sanitized error, and logs safely, but cannot persist a failed record into that
   same unavailable database.
-- Constraint: Phase 10 does not add Redis, Kafka, Celery, another
-  database, or any alternate broker. A later approved out-of-band/recovery design
-  is required for durable outage evidence.
+- Constraint: Phase 11 adds a durable SQLite queue and explicit recovery but does
+  not add Redis, Kafka, Celery, another database, or an alternate broker. Total
+  loss of that same SQLite store still requires a later approved out-of-band
+  design for durable outage evidence.

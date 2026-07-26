@@ -1,4 +1,4 @@
-# AegisHunt Data and Artifact Model Through Phase 10
+# AegisHunt Data and Artifact Model Through Phase 11
 
 ## Scope
 
@@ -11,7 +11,9 @@ identity, creates threshold-gated alerts, explains results, and audits verdicts.
 Phase 9 extends the existing `AlertGroup` and `ThreatHypothesis` foundations with
 versioned correlation, evidence, provenance, templates, and audited safe status.
 Phase 10 implements investigation cases, notes, typed evidence references,
-analyst feedback, controlled exports, and explicit retraining-candidate artifacts.
+analyst feedback, controlled exports, and explicit retraining-candidate
+artifacts. Phase 11 adds durable runtime job, attempt, worker, resource-sample,
+and output-ledger records without changing the evidence contracts of Phases 3–9.
 
 ## Contract layers
 
@@ -39,6 +41,11 @@ return naive values, so the storage type restores UTC awareness on reads.
 | `CaseNote` | `note_id` UUID | Foreign key to case; append-only actor/text/time evidence; no update/delete repository operation |
 | `CaseEvidenceReference` | `reference_id` UUID | Foreign key to case; typed hypothesis/group/alert/detection/flow reference plus validated snapshot and provenance |
 | `AnalystFeedback` | `feedback_id` UUID | Typed case/alert object reference, controlled revisable verdict, bounded confidence, actor, provenance, correction reason, created/updated times |
+| `RuntimeJob` | `job_id` UUID | One job per completed PCAP source; pinned verified snapshot; controlled lifecycle, lease owner/expiry, committed progress/counters, safe failure |
+| `RuntimeAttempt` | `attempt_id` UUID | Foreign key to job; worker/execution identity, origin-replay number, lifecycle times, outcome and safe error |
+| `RuntimeWorker` | bounded string `worker_id` | Process identity, current job, heartbeat/lease status, lifecycle state, sanitized error |
+| `RuntimeResourceSample` | `sample_id` UUID | Foreign key to worker and optional job; bounded CPU/RSS/thread observations plus queue/heartbeat state, or explicit unavailable/null semantics |
+| `RuntimeOutputLedger` | `ledger_id` UUID | Unique job/flow output identity; flow/detection/optional-alert references and checksums used to verify origin-replay reuse |
 | `ModelVersion` | `model_id` UUID | Type/version uniqueness, algorithm, feature/data/config/metric metadata, controlled artifact path, status; no model binary is loaded |
 | `AuditEvent` | `audit_id` UUID | Actor, action, object reference, safe JSON details, UTC timestamp; repository exposes no update/delete method |
 
@@ -48,7 +55,7 @@ Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
 
-## Phase 4–10 artifact integrity
+## Phase 4–11 artifact integrity
 
 - Canonical datasets keep the fixed Phase 3 feature order separate from source,
   group, session, scenario, timestamp, provenance, and label metadata.
@@ -84,6 +91,10 @@ and reports remain controlled filesystem artifacts referenced by metadata.
   and collision rejection. Candidate rows come only from explicit alert feedback
   with an unambiguous alert→detection→flow chain and approved non-evaluation
   provenance. Case verdicts are never fanned out to member flows.
+- Phase 11 pins the completed source checksum, logical stored filename, verified
+  artifact IDs/versions/checksums, schema versions, runtime-policy checksum, and
+  capture session. Absolute artifact paths are not persisted. Before the first
+  packet, all pinned bytes and identities are revalidated; drift fails closed.
 
 ## Phase 3 flow integrity
 
@@ -114,6 +125,12 @@ erDiagram
     INVESTIGATION_CASE ||--o{ CASE_EVIDENCE_REFERENCE : references
     INVESTIGATION_CASE ||--o{ ANALYST_FEEDBACK : may_receive
     SECURITY_ALERT ||--o{ ANALYST_FEEDBACK : may_receive
+    TELEMETRY_SOURCE ||--o| RUNTIME_JOB : replays
+    RUNTIME_JOB ||--o{ RUNTIME_ATTEMPT : executes
+    RUNTIME_JOB ||--o{ RUNTIME_OUTPUT_LEDGER : commits
+    RUNTIME_WORKER ||--o{ RUNTIME_ATTEMPT : owns
+    RUNTIME_WORKER ||--o{ RUNTIME_RESOURCE_SAMPLE : samples
+    NETWORK_FLOW ||--o| RUNTIME_OUTPUT_LEDGER : verifies
 ```
 
 Alert-group membership remains an ordered explicit alert-ID list because SQLite
@@ -125,11 +142,18 @@ transactions for each lifecycle mutation plus its audit record. Typed references
 and snapshots do not modify the underlying hypothesis, group, alert, detection,
 or flow evidence.
 
+Phase 11 job claim is an atomic conditional update. Heartbeats, progress, and
+resource samples use dedicated bounded records instead of audit-event spam.
+One output batch commits the deterministic flow reuse/create, detection,
+optional alert, ledger, counters, and progress together. Recovery never deletes
+committed outputs: it starts from origin and accepts only checksum-equivalent
+ledger evidence.
+
 ## Schema version
 
 `schema_versions` records ordered integer versions and UTC application times.
-Fresh initialization records version `4`. Existing supported version-1, version-2,
-or version-3 SQLite databases are upgraded additively through ordered migrations
+Fresh initialization records version `5`. Existing supported version-1 through
+version-4 SQLite databases are upgraded additively through ordered migrations
 and retain all version records and existing rows. Repeated initialization is idempotent. Unknown versions,
 unversioned non-empty databases, and unsupported migration dialects fail closed.
 No destructive or rollback-by-deletion migration is attempted.

@@ -46,7 +46,7 @@ class BelowThresholdScorer:
 
 def _database(tmp_path: Path) -> Database:
     database = Database(DatabaseSettings(url=f"sqlite:///{tmp_path / 'phase-08.sqlite3'}"))
-    assert database.initialize() == 4
+    assert database.initialize() == 5
     return database
 
 

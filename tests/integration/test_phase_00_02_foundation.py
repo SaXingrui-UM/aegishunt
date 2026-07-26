@@ -32,6 +32,11 @@ EXPECTED_TABLES = {
     "investigation_cases",
     "model_versions",
     "network_flows",
+    "runtime_attempts",
+    "runtime_jobs",
+    "runtime_output_ledger",
+    "runtime_resource_samples",
+    "runtime_workers",
     "schema_versions",
     "security_alerts",
     "telemetry_sources",
@@ -130,16 +135,16 @@ def test_repeatable_init_db_and_connection_pragmas(tmp_path: Path) -> None:
     second = runner.invoke(cli.app, ["init-db", "--config", str(config_path)])
 
     assert first.exit_code == second.exit_code == 0
-    assert json.loads(first.stdout)["schema_version"] == 4
+    assert json.loads(first.stdout)["schema_version"] == 5
     database = Database(DatabaseSettings(url=f"sqlite:///{database_path}", busy_timeout_ms=7000))
     try:
-        assert database.initialize() == 4
+        assert database.initialize() == 5
         assert database.journal_mode() == "wal"
         assert set(inspect(database.engine).get_table_names()) == EXPECTED_TABLES
         with database.engine.connect() as connection:
             assert connection.scalar(text("PRAGMA foreign_keys")) == 1
             assert connection.scalar(text("PRAGMA busy_timeout")) == 7000
-            assert connection.scalar(text("SELECT MAX(version) FROM schema_versions")) == 4
+            assert connection.scalar(text("SELECT MAX(version) FROM schema_versions")) == 5
     finally:
         database.dispose()
 

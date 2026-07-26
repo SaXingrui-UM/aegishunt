@@ -123,6 +123,14 @@ class DetectionResultRepository(SqlAlchemyRepository[DetectionResult, DetectionR
             audit_log=audit_log,
         )
 
+    def get_by_flow(self, flow_id: UUID) -> DetectionResult | None:
+        """Return the unique runtime detection for one deterministic flow."""
+
+        row = self._session.scalar(
+            select(DetectionResultRecord).where(DetectionResultRecord.flow_id == flow_id)
+        )
+        return None if row is None else DetectionResult.model_validate(row)
+
 
 class SecurityAlertRepository(SqlAlchemyRepository[SecurityAlert, SecurityAlertRecord]):
     def __init__(self, session: Session, audit_log: AuditLogRepository | None = None) -> None:
@@ -133,6 +141,16 @@ class SecurityAlertRepository(SqlAlchemyRepository[SecurityAlert, SecurityAlertR
             id_attribute="alert_id",
             audit_log=audit_log,
         )
+
+    def get_by_detection(self, detection_id: UUID) -> SecurityAlert | None:
+        """Return the optional threshold-gated alert for one detection."""
+
+        row = self._session.scalar(
+            select(SecurityAlertRecord).where(
+                SecurityAlertRecord.detection_id == detection_id
+            )
+        )
+        return None if row is None else SecurityAlert.model_validate(row)
 
     def update_verdict(
         self,

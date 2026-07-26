@@ -1,18 +1,19 @@
 # Codex Progress
 
-Last updated: 2026-07-23 (Asia/Shanghai)
+Last updated: 2026-07-26 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 10 - Investigation Case and Analyst Feedback |
-| Status | Phase complete |
+| Current phase | Phase 11 - Runtime Pipeline, PCAP Replay, and Background Worker |
+| Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
-| Current activity | Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) is merged into `main`; its canonical checkpoint is the PR merge commit plus annotated Tag `phase-10-complete`. Phase 11 has not started |
-| Verification status | On merged `main`, Ruff passed; strict mypy passed for 185 source files; the baseline Phase 10 focused selection passed 27 tests in 6.00 seconds, migration passed 4 tests in 0.31 seconds, and the baseline full suite passed 388 tests in 1,102.37 seconds. After the permanent status regression was added, focused Phase 10 passed 28 tests in 5.49 seconds and the final full suite passed 389 tests in 1,094.54 seconds. Both full runs had 86.01% branch-aware coverage and zero failures, skips, or xfails |
+| Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
+| Current activity | Phase 11 durable-progress correction is implemented and locally verified on `phase/11-runtime-replay`; PR #33 remains open and ready for review. Required CI for the pushed Head must pass before merge. Phase 12 has not started |
+| Verification status | Baseline on merged `main`: Ruff passed, strict mypy passed for 185 source files, and 389 tests passed with 86.01% branch-aware coverage. Durable-progress corrective verification: Ruff passed, strict mypy passed for 205 source files, 53 focused tests passed in 37.78 seconds, and all 437 tests passed with zero failures/skips/xfails and 86.20% branch-aware coverage in 1,253.12 seconds |
 | Stable branch checkpoint | PR #31 was squash-merged to `main` as `ba40211a374aa8e4efa62702a83d063f9eb88039`; annotated Tag `phase-10-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -21,11 +22,11 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs [#28](https://github.com/SaXingrui-UM/aegishunt/pull/28) and [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), and Phase 10 PR [#31](https://github.com/SaXingrui-UM/aegishunt/pull/31) are merged |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, and Phase 10 PR #31 are merged; Phase 11 PR #33 is open and ready for review |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 10 PR #31 `quality` checks passed before merge |
+| CI status | Both Phase 10 PR #31 `quality` checks passed before merge; PR #33 required checks are reported by GitHub against the current pushed Head and must pass before merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -38,36 +39,121 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 9 tag | Annotated `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) is pushed and locally/remotely verified at merged `main` `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
 | Phase 10 tag | Annotated `phase-10-complete` peels to the PR #31 merge commit `ba40211a374aa8e4efa62702a83d063f9eb88039` and is pushed for remote verification |
 | Stable branch | The canonical Phase 10 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 10 Tag |
-| Working tree | Post-merge verification found no tracked model, database, upload, generated dataset, secret, runtime evidence, or Phase 11 implementation |
+| Working tree | Phase 11 implementation branch contains reviewed source/config/test/docs changes only; no runtime database, upload, model binary, generated dataset, secret, or formal experiment evidence is intended for commit |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
 | Phase 10 status | Phase complete |
-| Phase 11 status | Not started |
-| Next planned branch | `phase/11-runtime-replay` (not created; explicit user authorization is required) |
-| Next action | Wait for explicit user authorization, then rerun the invariant-based Phase 11 startup gate; do not create an additional status-only closure PR |
+| Phase 11 status | Implementation complete — awaiting PR review |
+| Phase 12 status | Not started |
+| Current branch | `phase/11-runtime-replay` |
+| Next planned branch | `phase/12-api-frontend` (not created; PR merge, checkpoint instructions, and explicit user authorization are required) |
+| Next action | Wait for PR #33 CI, user review, and Squash and merge; do not start Phase 12 |
 
 Phase 0 through Phase 10 are checkpointed and their Tags remain unchanged. Phase
-10 consumes immutable hypotheses and underlying evidence without claiming attack
-confirmation. Case verdicts and feedback are revisable analyst judgments, not
-ground truth. Candidate exports never train, activate, or replace a model and
-exclude frozen-test/evaluation provenance. Phase 11 runtime and replay work is
-not implemented.
+11 joins the immutable offline evidence pipeline through deterministic replay
+without changing its scientific claims: a risk or fusion score is not attack
+probability, an alert is not confirmation, and a hypothesis is not fact.
+Recovery restarts from capture origin and verifies committed evidence; it is not
+exact packet-cursor resume. Live capture, automatic recovery, complete Phase 12
+workflows, model training, activation, response, and Case creation are disabled.
 
-## Phase 11 startup invariant
+## Phase 11 implementation checkpoint
+
+- Added strict configured runtime policy and complete source/model/policy/schema
+  preflight. Jobs accept only a persisted completed PCAP source ID; pinned
+  snapshots contain logical filenames and checksums rather than absolute paths.
+- Added additive schema v4→v5 with durable runtime jobs, attempts, workers,
+  bounded resource samples, and transactional output ledgers.
+- Added atomic oldest-job claims, bounded leases/heartbeats, stale reconciliation,
+  pause/resume, graceful shutdown, explicit origin recovery, and no automatic
+  requeue. Interrupted partial flow state is never flushed.
+- Added interruptible event-time replay with configured speed and gap cap,
+  explicit out-of-order/gap counters, existing Phase 3 aggregation/finalization,
+  and EOF flush.
+- Added one transaction per finalized output batch: flow reuse/create,
+  supervised/anomaly/fusion scoring, DetectionResult, optional SecurityAlert,
+  ledger, and durable output counters. Observed packet telemetry is persisted
+  separately and is explicitly non-durable; the conservative durable packet
+  position remains zero until final completion. Recovery verifies/reuses only
+  matching committed evidence and never uses observed progress as a cursor.
+- Added post-EOF idempotent Phase 9 correlation/hypothesis generation, psutil
+  process observations with explicit unavailable/null semantics, runtime CLI
+  operations, and a truthful Streamlit status shell.
+- Scoped downstream runtime counters to output-ledger evidence owned by the
+  current job, reconciled stale active worker status with the configured
+  threshold, and completed lifecycle audit timestamps and structured context.
+- Added unit, migration, race, rollback, shutdown, resource, CLI, frontend,
+  integration/restart, drift, malformed-PCAP, and real temporary-bundle E2E
+  coverage. No external network, root, live capture, Phase 12 workflow, training,
+  formal frozen-test evidence, or model binary is used.
+- Corrected periodic control updates that previously could persist in-memory
+  packet progress ahead of an open flow or pending output batch. Jobs and
+  attempts now retain explicit observed/durable semantics, recovery creates a
+  zeroed origin-restart attempt while preserving history, pause/resume keeps the
+  live attempt, and completion reaches 100% only after EOF plus final
+  correlation/hypothesis commit.
+
+## Phase 11 verification checkpoint
+
+- Pre-branch baseline: Ruff passed; strict mypy passed for 185 source files; the
+  full suite passed 389 tests with 86.01% branch-aware coverage.
+- The pre-corrective focused Phase 11 selection passed 44 tests in 38.70 seconds, including
+  durable queue lifecycle/race/rollback, live-worker pause/heartbeat/resume,
+  replay timing, preflight drift, malformed PCAP, schema migration, Streamlit
+  status, and real temporary verified-bundle E2E.
+- The first full Phase 11 run exposed three stale schema-v4 expectations;
+  `595f79d` updated them to the additive schema-v5 contract. The final Ruff
+  check passed, strict mypy passed for 205 source files, and all 427 tests
+  passed with zero failures, skips, or xfails in 1,248.47 seconds at 86.07%
+  branch-aware coverage.
+- The real Phase 11 E2E now requires complete flow, detection, alert,
+  correlation-group, and hypothesis evidence from a controlled temporary PCAP,
+  then verifies restart persistence and deterministic reuse. No downstream
+  service is stubbed and no formal model evidence is regenerated.
+- The durable-progress corrective focused selection passed 53 tests in 37.78
+  seconds. It covers a long open flow before commit, interruption before the
+  first durable flow, mixed committed/open evidence, atomic rollback,
+  pause/resume, zeroed origin recovery with historical attempt preservation,
+  output reuse without duplication, completion gating, truthful CLI/frontend
+  labels, and repeatable v4→v5/fresh schema initialization.
+- Final corrective Ruff passed; strict mypy passed for 205 source files; all 437
+  tests passed with zero failures, skips, or xfails in 1,253.12 seconds at
+  86.20% branch-aware coverage, above the unchanged 85% gate.
+- Native `codex review --base main` could not start because the installed arm64
+  executable is missing (`ENOENT`). Equivalent read-only review findings for
+  job-scoped downstream counters, resume audit time, E2E completeness, signal
+  registration coverage, stale worker reconciliation, and audit context were
+  closed by commits `5789356`, `1056ad9`, `7d8eb22`, `fcdd2ca`, `ce70330`, and
+  `720f4c3`. The final equivalent review found zero Blocking, zero High, and
+  zero unresolved correctness-related Medium findings.
+- The native corrective review attempt failed with the same arm64 executable
+  `ENOENT`. Its equivalent read-only review confirmed the observed/durable
+  split, output transaction boundaries, rollback, completion gate, origin
+  recovery, attempt history, counter monotonicity, UI/CLI wording, schema-v5
+  contract, and Phase 12 exclusion. It found zero Blocking, zero High, and zero
+  unresolved correctness-related Medium findings.
+- Manual runtime CLI verification used a temporary database outside the
+  repository. The desktop environment did not expose the editable-install
+  `.pth`; bare console invocation failed with `ModuleNotFoundError`, while the
+  recorded `PYTHONPATH=src` workaround passed. It is not claimed as a standard
+  installation success.
+
+## Phase 11 startup invariant (satisfied)
 
 The canonical Phase 10 checkpoint is PR #31 merge commit
 `ba40211a374aa8e4efa62702a83d063f9eb88039` plus the annotated
 `phase-10-complete` Tag whose peeled target is that commit. Later documentation
 commits may be descendants of the checkpoint and must not move the Tag.
 
-Before Phase 11 starts, verify live Git and GitHub state: the working tree is
-clean; local `main` was synchronized with `origin/main` by `git pull --ff-only`;
-PR #31 is merged with successful required checks; local and remote
-`phase-10-complete` are annotated and peel to the canonical merge commit;
+Before the Phase 11 branch was created, live Git and GitHub checks confirmed the
+working tree was clean; local `main` was synchronized with `origin/main` by
+`git pull --ff-only`; PR #31 was merged with successful required checks; local
+and remote `phase-10-complete` were annotated and peeled to the canonical merge
+commit; and
 `git merge-base --is-ancestor ba40211a374aa8e4efa62702a83d063f9eb88039 main`
-succeeds; the status documents show Phase 10 complete and Phase 11 not started;
-and neither the local nor remote `phase/11-runtime-replay` branch exists.
+succeeded. The Phase 11 branch did not exist locally or remotely at that point.
+The full baseline then passed before `phase/11-runtime-replay` was created.
 
 This gate intentionally uses ancestor containment rather than requiring the Tag
 to equal a future documentation-only `main` HEAD. It does not require documents
