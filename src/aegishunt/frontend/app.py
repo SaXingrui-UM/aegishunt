@@ -1,143 +1,124 @@
-"""Truthful Streamlit shell for the Phase 11 runtime checkpoint."""
+"""API-only Streamlit application for the complete Phase 12 local workflow."""
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import streamlit as st
-from sqlalchemy.exc import SQLAlchemyError
 
 from aegishunt.config import load_settings
-from aegishunt.errors import AegisHuntError
-from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
-from aegishunt.runtime.contracts import RuntimeStatus
-from aegishunt.runtime.status import RuntimeStatusReader
-from aegishunt.storage import Database
-
-PLANNED_MODULES = (
-    "Public benchmark acquisition and validated label joining",
-    "Complete Cases API and Streamlit investigation workspace",
-    "Unified Phase 12 API and frontend workflow",
-    "Model activation and controlled retraining",
+from aegishunt.frontend.client import AegisHuntApiClient
+from aegishunt.frontend.components import research_disclaimer
+from aegishunt.frontend.pages import (
+    alerts,
+    cases,
+    evaluation,
+    hunts,
+    ingestion,
+    models,
+    overview,
+    system,
+    traffic,
 )
+from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
+
+PageRenderer = Callable[[AegisHuntApiClient], None]
+
+PAGES: dict[str, PageRenderer] = {
+    "Overview": overview.render,
+    "Data Ingestion": ingestion.render,
+    "Traffic Explorer": traffic.render,
+    "Alerts": alerts.render,
+    "Threat Hunts": hunts.render,
+    "Cases": cases.render,
+    "Model Lab": models.render,
+    "Evaluation": evaluation.render,
+    "System Health": system.render,
+}
 
 
-def _read_runtime_status() -> RuntimeStatus | None:
-    """Read persisted runtime state or return explicit UI-unavailable semantics."""
+def _client(
+    base_url: str,
+    timeout_seconds: float,
+    *,
+    page_size: int = 50,
+    actor_header: str = "X-AegisHunt-Actor",
+    safe_download_types: tuple[str, ...] = ("case_report",),
+) -> AegisHuntApiClient:
+    """Create one HTTP client; no database or artifact access occurs."""
 
-    database: Database | None = None
-    try:
-        settings = load_settings()
-        database = Database(settings.database)
-        database.initialize()
-        return RuntimeStatusReader(database).read()
-    except (AegisHuntError, SQLAlchemyError):
-        return None
-    finally:
-        if database is not None:
-            database.dispose()
-
-
-def _runtime_summary(status: RuntimeStatus) -> str:
-    workers = len(status.workers)
-    available_samples = sum(
-        sample.sampler_available for sample in status.latest_samples
-    )
-    latest = (
-        "latest_job=none"
-        if not status.latest_jobs
-        else (
-            f"latest_job={status.latest_jobs[0].job_id}, "
-            f"stage={status.latest_jobs[0].current_stage.value}, "
-            f"attempt={status.latest_jobs[0].current_attempt_number}, "
-            f"progress_mode={status.latest_jobs[0].progress_mode.value}, "
-            "Observed replay progress (non-durable)="
-            f"{status.latest_jobs[0].observed_progress:.6f}, "
-            "Durable committed evidence="
-            f"{status.latest_jobs[0].progress:.6f}"
-        )
-    )
-    return (
-        "Runtime status: "
-        f"queued={status.queue_length}, running={status.running_jobs}, "
-        f"paused={status.paused_jobs}, recovery_pending={status.recovery_pending}, "
-        f"workers={workers}, resource_samples_available={available_samples}, "
-        f"{latest}. "
-        "Observed replay progress is non-durable live telemetry and resets on "
-        "deterministic restart-from-origin recovery; it is not a checkpoint or "
-        "resume cursor. Durable committed evidence advances only with persisted "
-        "outputs. "
-        "Models and policies are verified per job before packet replay; automatic "
-        "recovery and live capture are disabled."
+    return AegisHuntApiClient(
+        base_url,
+        timeout_seconds=timeout_seconds,
+        page_size=page_size,
+        actor_header=actor_header,
+        safe_download_types=safe_download_types,
     )
 
 
 def main() -> None:
-    """Render Phase 11 state without inventing jobs, resources, or detections."""
+    """Render nine API-backed pages with explicit mutation forms."""
 
-    st.set_page_config(page_title=APPLICATION_NAME, page_icon="🛡️", layout="wide")
-    st.title(APPLICATION_NAME)
-    st.caption(APPLICATION_DESCRIPTION)
-    st.info(
-        "Current status: Phase 11 complete. PR #33 is merged and the annotated "
-        "phase-11-complete checkpoint is verified. The supported runtime is offline, "
-        "rootless PCAP replay on a single SQLite node. Phase 12: Not started."
+    settings = load_settings()
+    st.session_state.setdefault("aegishunt_default_actor", settings.web.default_actor)
+    st.set_page_config(
+        page_title=settings.web.page_title,
+        page_icon="🛡️",
+        layout="wide",
+        initial_sidebar_state="expanded",
     )
-    runtime_status = _read_runtime_status()
-    if runtime_status is None:
-        st.warning(
-            "Runtime status is unavailable. No zero-valued resource measurements, "
-            "queue counts, job results, or worker state are fabricated."
-        )
+    st.sidebar.title(APPLICATION_NAME)
+    st.sidebar.caption("Autonomous Threat Hunting Research Prototype")
+    page_name = st.sidebar.radio("Navigation", tuple(PAGES), label_visibility="collapsed")
+    st.sidebar.divider()
+    auto_refresh = st.sidebar.toggle(
+        "Auto-refresh current read view",
+        value=False,
+        disabled=not settings.web.auto_refresh_enabled,
+        help=(
+            "Refreshes GET-backed rendering only. It never triggers ingestion, replay, "
+            "training, activation, verdicts, cases, or demo work."
+        ),
+    )
+    st.sidebar.caption(
+        f"Configured interval: {settings.web.auto_refresh_seconds}s · "
+        "Local single-user mode · authentication/RBAC not implemented"
+    )
+    if st.sidebar.button("Refresh now"):
+        st.rerun()
+    st.sidebar.divider()
+    st.sidebar.caption(
+        "Phase 12 implementation branch. Phase 13: Not started. "
+        "FastAPI is the only business interface."
+    )
+    st.sidebar.caption(APPLICATION_DESCRIPTION)
+    renderer = PAGES[page_name]
+    if auto_refresh:
+        def refreshed() -> None:
+            with _client(
+                settings.web.api_base_url,
+                settings.web.request_timeout_seconds,
+                page_size=settings.web.maximum_table_rows,
+                actor_header=settings.web.actor_header,
+                safe_download_types=settings.web.safe_download_types,
+            ) as client:
+                renderer(client)
+
+        refreshed_fragment: Callable[[], None] = st.fragment(
+            run_every=f"{settings.web.auto_refresh_seconds}s"
+        )(refreshed)
+        refreshed_fragment()
     else:
-        st.info(_runtime_summary(runtime_status))
-    st.success(
-        "Recommendation: Inconclusive. The controlled experiment did not establish a "
-        "fusion advantage; fusion family-macro LOAO Recall was lower than anomaly-only, "
-        "and held-out exfiltration and reconnaissance rows were missed. Negative results "
-        "are retained."
-    )
-    st.info(
-        "Phase 8 implements configuration-controlled operational risk, severity, "
-        "threshold-gated SecurityAlert records, evidence-backed reason codes, "
-        "non-causal global/local explanations, and audited analyst verdicts. Risk is "
-        "not attack probability; severity is not certainty; alerts are not confirmed "
-        "attacks. No runtime alert records or metrics are fabricated on this page."
-    )
-    st.info(
-        "Phase 9 adds bounded event-time alert correlation and deterministic proposed "
-        "hunting hypotheses. Correlation and confidence are non-probabilistic triage "
-        "scores; a hypothesis is a reviewable lead, not a fact or confirmed attack. "
-        "Suggested queries are structured data only and are never executed by the core."
-    )
-    st.info(
-        "Phase 10 adds deterministic InvestigationCase creation, audited lifecycle and "
-        "append-only notes, typed evidence snapshots, analyst verdict/feedback, and "
-        "checksummed data-only exports. A Case is not a confirmed attack; priority is "
-        "triage, feedback may be noisy, and a Case verdict is not propagated to all "
-        "related flows. Retraining candidates require manual review and never train, "
-        "activate, or replace a model. No case counts or feedback metrics are fabricated."
-    )
-    st.info(
-        "Phase 11 adds a persistent RuntimeJob queue, atomic claim and lease ownership, "
-        "explicit pause/resume/recovery, interruptible event-time replay, verified "
-        "artifact pinning, transactional flow/detection output ledgers, worker health, "
-        "and bounded resource samples. Recovery deterministically restarts from packet "
-        "zero and reuses committed evidence; it is not exact packet-cursor resume. "
-        "Observed replay progress is non-durable live telemetry; durable progress "
-        "describes committed evidence and reaches 100% only after final downstream "
-        "completion. Open-flow state remains in memory and is never a checkpoint. "
-        "No live capture, external target, automatic recovery, or Phase 12 workflow is "
-        "enabled."
-    )
-    st.subheader("Planned system modules")
-    for module in PLANNED_MODULES:
-        st.markdown(f"- {module}")
-    st.warning(
-        "Research prototype only. This is controlled synthetic pipeline verification—"
-        "not a public benchmark, production validation, real-world performance result, "
-        "or proof of zero-day detection. AegisHunt does not confirm attacks or perform "
-        "automated response actions. Fusion score is not probability, risk, severity, "
-        "or attack confirmation."
-    )
+        with _client(
+            settings.web.api_base_url,
+            settings.web.request_timeout_seconds,
+            page_size=settings.web.maximum_table_rows,
+            actor_header=settings.web.actor_header,
+            safe_download_types=settings.web.safe_download_types,
+        ) as client:
+            renderer(client)
+    st.divider()
+    research_disclaimer()
 
 
 if __name__ == "__main__":
