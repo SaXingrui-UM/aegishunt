@@ -127,6 +127,12 @@ workflows, model training, activation, response, and Case creation are disabled.
   closed by commits `5789356`, `1056ad9`, `7d8eb22`, `fcdd2ca`, `ce70330`, and
   `720f4c3`. The final equivalent review found zero Blocking, zero High, and
   zero unresolved correctness-related Medium findings.
+- The native corrective review attempt failed with the same arm64 executable
+  `ENOENT`. Its equivalent read-only review confirmed the observed/durable
+  split, output transaction boundaries, rollback, completion gate, origin
+  recovery, attempt history, counter monotonicity, UI/CLI wording, schema-v5
+  contract, and Phase 12 exclusion. It found zero Blocking, zero High, and zero
+  unresolved correctness-related Medium findings.
 - Manual runtime CLI verification used a temporary database outside the
   repository. The desktop environment did not expose the editable-install
   `.pth`; bare console invocation failed with `ModuleNotFoundError`, while the

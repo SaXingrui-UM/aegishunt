@@ -102,8 +102,11 @@ corrective implementation splits observed telemetry from durable evidence,
 keeps the latter in domain-output transactions, resets recovery from origin,
 and reaches 100% only after final correlation/hypothesis completion. Its
 pre-fix regression reproduced observed packet progress with zero Flow,
-DetectionResult, SecurityAlert, and ledger rows. Corrective review and new-Head
-CI results are recorded in the PR checkpoint before merge.
+DetectionResult, SecurityAlert, and ledger rows. The native corrective review
+attempt failed with the same arm64 executable `ENOENT`; equivalent read-only
+review found zero Blocking, zero High, and zero unresolved correctness-related
+Medium findings. New-Head CI results are recorded in the PR checkpoint before
+merge.
 
 ## Manual verification
 
