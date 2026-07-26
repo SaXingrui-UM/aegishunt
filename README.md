@@ -18,14 +18,15 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–10 are complete and their annotated checkpoints remain immutable.
-Phase 11 runtime replay is **Implementation complete — awaiting PR review** on
-`phase/11-runtime-replay`; Phase 12 is **Not started**. The Phase 11 boundary is
-offline, rootless PCAP replay on a single SQLite node with durable jobs,
-leases, explicit recovery, verified artifact pinning, transactional output
-ledgers, separate non-durable observed replay telemetry and durable committed
-evidence progress, and bounded worker/resource observations. It does not enable
-live capture or automatic recovery.
+Phases 0–11 are complete and their annotated checkpoints remain immutable.
+Phase 11 PR [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33) is merged as
+`8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated
+`phase-11-complete` peels to that canonical merge commit. Phase 12 is **Not
+started**. The Phase 11 boundary is offline, rootless PCAP replay on a single
+SQLite node with durable jobs, leases, explicit recovery, verified artifact
+pinning, transactional output ledgers, separate non-durable observed replay
+telemetry and durable committed evidence progress, and bounded worker/resource
+observations. It does not enable live capture or automatic recovery.
 
 The Phase 9 checkpoint remains immutable. Its implementation adds a checksummed
 correlation policy, bounded event-time entity indexing, deterministic alert

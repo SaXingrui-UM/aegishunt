@@ -1,4 +1,4 @@
-"""Tests for truthful completed Phase 10 content in Streamlit."""
+"""Tests for truthful completed Phase 11 content in Streamlit."""
 
 from typing import Any
 
@@ -41,8 +41,11 @@ def test_frontend_renders_phase_eleven_runtime_without_fake_results(
 
     content = "\n".join(rendered)
     assert "AegisHunt" in content
-    assert "Phase 11 implementation complete — awaiting PR review" in content
+    assert "Phase 11 complete" in content
+    assert "PR #33 is merged" in content
+    assert "phase-11-complete checkpoint is verified" in content
     assert "Phase 12: Not started" in content
+    assert "awaiting PR review" not in content
     assert "queued=2" in content
     assert "running=1" in content
     assert "recovery_pending=1" in content
