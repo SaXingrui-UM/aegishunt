@@ -9,7 +9,8 @@ sample demonstration.
 Status: **Implementation complete — awaiting PR review**.
 
 - Branch: `phase/12-api-frontend`
-- Pull request: pending
+- Pull request: [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35),
+  `[Phase 12] FastAPI and Streamlit demonstration`, open and ready for review
 - Merge commit: pending
 - Completion tag: pending; do not create before merge
 - Phase 13: Not started

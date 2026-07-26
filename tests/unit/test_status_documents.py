@@ -99,12 +99,17 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     )
     assert "Phase 13 status | Not started" in normalized_progress_current
     assert "Phase 12 implementation is complete" in normalized_progress_current
-    assert "Phase 12 pull request not yet created" in normalized_progress_current
+    assert "PR [#35]" in normalized_progress_current
+    assert "pull/35" in normalized_progress_current
+    assert "open and ready for review" in normalized_progress_current
+    assert "PR #35 `quality` check is in progress" in normalized_progress_current
     assert "phase-11-complete" in progress_current
     assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in progress_current
 
     assert "Status: **Implementation complete — awaiting PR review**" in release_current
-    assert "Pull request: pending" in normalized_release_current
+    assert "Pull request: [#35]" in normalized_release_current
+    assert "pull/35" in normalized_release_current
+    assert "open and ready for review" in normalized_release_current
     assert "Completion tag: pending" in normalized_release_current
     assert "Phase 13: Not started" in normalized_release_current
 
@@ -114,7 +119,6 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
 
     for current in (progress_current, release_current):
         for transient in (
-            "open and ready for review",
             "PR #33 remains open",
             "must pass before merge",
             "Phase 11 remains unmerged",
