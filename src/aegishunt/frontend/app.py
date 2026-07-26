@@ -77,9 +77,9 @@ def main() -> None:
     st.title(APPLICATION_NAME)
     st.caption(APPLICATION_DESCRIPTION)
     st.info(
-        "Current status: Phase 11 implementation complete — awaiting PR review. "
-        "The supported runtime is offline, rootless PCAP replay on a single SQLite "
-        "node. Phase 12: Not started."
+        "Current status: Phase 11 complete. PR #33 is merged and the annotated "
+        "phase-11-complete checkpoint is verified. The supported runtime is offline, "
+        "rootless PCAP replay on a single SQLite node. Phase 12: Not started."
     )
     runtime_status = _read_runtime_status()
     if runtime_status is None:

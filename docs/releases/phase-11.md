@@ -6,15 +6,15 @@ Join the completed offline PCAP, flow, scoring, alert, correlation, and
 hypothesis components with a durable, observable, interruptible single-node
 runtime.
 
-Status: **Implementation complete — awaiting PR review**.
+Status: **Phase complete**.
 
-- Branch: `phase/11-runtime-replay`
+- Historical implementation branch: `phase/11-runtime-replay`
 - Pull request: [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33) —
-  Open, ready for review
-- CI: GitHub reports required checks against the current pushed PR Head; all
-  required checks must pass before merge
-- Merge commit: pending
-- Completion tag: pending; do not create before merge
+  merged
+- CI: both required `quality` checks passed before merge
+- Merge commit: `8f85949406e3db7d2fa2b3c48d04e832e84f3559`
+- Completion tag: annotated `phase-11-complete`, peeled to the merge commit
+- Completion date: 2026-07-26
 - Phase 12: Not started
 
 ## Completed scope
@@ -69,6 +69,10 @@ exact cursor without persisted open-flow state.
   seconds. The final corrective full suite passed 437 tests with zero failures,
   skips, or xfails in 1,253.12 seconds. Branch-aware coverage was 86.20%, above
   the unchanged 85% gate; Ruff and strict mypy for 205 source files also passed.
+- Merged-main checkpoint verification passed Ruff, strict mypy for 205 source
+  files, and a 57-test Phase 11 focused selection in 39.04 seconds. The full
+  merged-main suite passed all 437 tests with zero failures, skips, or xfails in
+  1,232.92 seconds at 86.20% branch-aware coverage.
 - The strengthened PCAP-to-runtime E2E used a controlled temporary capture and
   verified real flow, detection, alert, correlation-group, and hypothesis
   evidence plus restart persistence. The corrective E2E also verifies a
@@ -150,5 +154,5 @@ as a standard editable-install success.
 ## Next phase
 
 Phase 12 — Complete API and Frontend, planned branch
-`phase/12-api-frontend`. It is **Not started** and requires PR merge, checkpoint
-instructions, and explicit user authorization.
+`phase/12-api-frontend`. It is **Not started** and requires the invariant-based
+startup checks plus explicit user authorization.

@@ -1,4 +1,4 @@
-"""Regression tests for the Phase 11 pre-merge status boundary."""
+"""Regression tests for the stable Phase 11 post-merge status boundary."""
 
 from pathlib import Path
 
@@ -15,9 +15,11 @@ def test_readme_records_phase_eleven_without_starting_phase_twelve() -> None:
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
-    assert "Phases 0–10 are complete" in current
-    assert "Phase 11 runtime replay is **Implementation complete" in current
-    assert "phase/11-runtime-replay" in current
+    assert "Phases 0–11 are complete" in current
+    assert "Phase 11 PR [#33]" in current
+    assert "is merged as" in normalized
+    assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in current
+    assert "phase-11-complete" in current
     assert "Phase 12 is **Not started**" in normalized
     assert "offline, rootless PCAP replay" in normalized
     assert "durable jobs" in normalized
@@ -43,6 +45,7 @@ def test_readme_records_phase_eleven_without_starting_phase_twelve() -> None:
         "Phase 12 implementation",
         "live capture is enabled",
         "automatic recovery is enabled",
+        "awaiting PR review",
     ):
         assert transient not in current
     assert "No operation trains, activates, or replaces a model" in normalized
@@ -82,30 +85,29 @@ def test_progress_and_release_record_phase_eleven_without_phase_twelve_scope() -
     normalized_release_current = " ".join(release_current.split())
 
     for content in (progress_current, release_current):
-        assert "Implementation complete — awaiting PR review" in content
+        assert "Phase complete" in content
         assert "Phase 12" in content and "not started" in content.lower()
 
     assert "Current phase | Phase 11" in normalized_progress_current
-    assert "Status | Implementation complete — awaiting PR review" in normalized_progress_current
+    assert "Status | Phase complete" in normalized_progress_current
     assert "Phase 10 status | Phase complete" in normalized_progress_current
-    assert (
-        "Phase 11 status | Implementation complete — awaiting PR review"
-        in normalized_progress_current
-    )
+    assert "Phase 11 status | Phase complete" in normalized_progress_current
     assert "Phase 12 status | Not started" in normalized_progress_current
-    assert "phase/11-runtime-replay" in progress_current
-    assert "Phase 11 PR #33 is open and ready for review" in normalized_progress_current
+    assert "PR #33 is merged into `main`" in normalized_progress_current
+    assert "Both PR #33 `quality` checks passed" in normalized_progress_current
+    assert "phase-11-complete" in progress_current
+    assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in progress_current
 
-    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Status: **Phase complete**" in release_current
     assert "Pull request: [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33)" in (
         normalized_release_current
     )
-    assert "Open, ready for review" in normalized_release_current
-    assert "GitHub reports required checks against the current pushed PR Head" in (
+    assert "merged" in normalized_release_current
+    assert "both required `quality` checks passed before merge" in normalized_release_current
+    assert "Merge commit: `8f85949406e3db7d2fa2b3c48d04e832e84f3559`" in (
         normalized_release_current
     )
-    assert "all required checks must pass before merge" in normalized_release_current
-    assert "Completion tag: pending" in normalized_release_current
+    assert "Completion tag: annotated `phase-11-complete`" in normalized_release_current
     assert "Phase 12: Not started" in normalized_release_current
 
     assert "ADR 0020" in release
@@ -115,6 +117,16 @@ def test_progress_and_release_record_phase_eleven_without_phase_twelve_scope() -
 
     for current in (progress_current, release_current):
         for transient in (
+            "Implementation complete — awaiting PR review",
+            "awaiting pull-request review",
+            "open and ready for review",
+            "PR #33 remains open",
+            "must pass before merge",
+            "Merge commit: pending",
+            "Completion tag: pending",
+            "Phase 11 remains unmerged",
+            "Wait for PR #33",
+            "Current branch | `phase/11-runtime-replay`",
             "Phase 12 implementation complete",
             "Phase 12 is in progress",
             "phase/12-api-frontend` (created",
@@ -127,7 +139,7 @@ def test_phase_eleven_gate_records_satisfied_stable_ancestor_invariant() -> None
     startup_gate = _section(
         progress,
         "## Phase 11 startup invariant (satisfied)",
-        "## Phase 10 implementation checkpoint",
+        "## Phase 12 startup invariant",
     )
     normalized = " ".join(startup_gate.split())
 
@@ -141,3 +153,30 @@ def test_phase_eleven_gate_records_satisfied_stable_ancestor_invariant() -> None
     assert "no additional final-status or closure PR is required" in normalized
     assert "The full baseline then passed" in normalized
     assert "future merge SHA" not in startup_gate
+
+
+def test_phase_twelve_gate_records_stable_phase_eleven_ancestor_invariant() -> None:
+    progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
+    startup_gate = _section(
+        progress,
+        "## Phase 12 startup invariant",
+        "## Phase 10 implementation checkpoint",
+    )
+    normalized = " ".join(startup_gate.split())
+
+    # Protect against a self-referential post-merge closure loop: the permanent
+    # checkpoint remains an ancestor of later documentation-only descendants.
+    assert "PR #33 merge commit" in normalized
+    assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in startup_gate
+    assert "annotated `phase-11-complete` Tag" in normalized
+    assert "Later documentation-only commits may be descendants" in normalized
+    assert "git merge-base --is-ancestor" in startup_gate
+    assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559 main" in startup_gate
+    assert "does not require the Tag to equal" in normalized
+    assert "does not require permanent documents to hard-code the live `main` HEAD" in (
+        normalized
+    )
+    assert "does not require another final-status or closure PR" in normalized
+    assert "`phase/12-api-frontend` branch must not already exist" in normalized
+    assert "required baseline tests must pass" in normalized
+    assert "explicit user authorization" in normalized
