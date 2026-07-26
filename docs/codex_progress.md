@@ -6,14 +6,15 @@ Last updated: 2026-07-26 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 11 - Runtime Pipeline, PCAP Replay, and Background Worker |
-| Status | Phase complete |
+| Current phase | Phase 12 - FastAPI and Streamlit Complete Demonstration |
+| Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
-| Current activity | Phase 11 PR #33 is merged into `main`; the canonical Phase 11 checkpoint is merge commit `8f85949406e3db7d2fa2b3c48d04e832e84f3559` plus annotated Tag `phase-11-complete`. Phase 12 has not started |
-| Verification status | Merged-main verification on 2026-07-26: Ruff passed, strict mypy passed for 205 source files, the 57-test Phase 11 focused selection passed in 39.04 seconds, and all 437 tests passed with zero failures/skips/xfails and 86.20% branch-aware coverage in 1,232.92 seconds |
+| Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
+| Current activity | Phase 12 implementation is complete on `phase/12-api-frontend` and is awaiting pull-request review. Phase 13 has not started |
+| Verification status | Phase 12 focused API/client/frontend/demo tests pass; final repository-wide Ruff, strict mypy, pytest/coverage, manual browser verification, and review results are recorded below |
 | Stable branch checkpoint | PR #33 was squash-merged to `main` as `8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated Tag `phase-11-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -26,7 +27,7 @@ Last updated: 2026-07-26 (Asia/Shanghai)
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both PR #33 `quality` checks passed before merge; merged-main local verification also passed |
+| CI status | Phase 12 pull request not yet created; local required checks are recorded below |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -40,24 +41,94 @@ Last updated: 2026-07-26 (Asia/Shanghai)
 | Phase 10 tag | Annotated `phase-10-complete` peels to the PR #31 merge commit `ba40211a374aa8e4efa62702a83d063f9eb88039` and is pushed for remote verification |
 | Phase 11 tag | Annotated `phase-11-complete` peels to the PR #33 merge commit `8f85949406e3db7d2fa2b3c48d04e832e84f3559` and is pushed for remote verification |
 | Stable branch | The canonical Phase 11 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 11 Tag |
-| Working tree | The canonical merged Phase 11 evidence contains no tracked runtime database, upload, model binary, generated dataset, secret, or rewritten formal experiment evidence |
+| Working tree | Phase 12 branch changes are limited to the declared API/frontend/demo scope; generated databases, uploads, demo model binaries, evaluation artifacts, secrets, and formal evidence remain untracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
 | Phase 10 status | Phase complete |
 | Phase 11 status | Phase complete |
-| Phase 12 status | Not started |
-| Current branch | Stable work starts from synchronized `main`; documentation-only descendants may follow the canonical checkpoint without moving its Tag |
-| Next planned branch | `phase/12-api-frontend` (not created; the Phase 12 startup invariant and explicit user authorization are required) |
-| Next action | Wait for explicit user authorization, then re-run the invariant-based Phase 12 Startup Gate; do not start Phase 12 automatically |
+| Phase 12 status | Implementation complete — awaiting PR review |
+| Phase 13 status | Not started |
+| Current branch | `phase/12-api-frontend` |
+| Next planned branch | `phase/13-hardening` (not created) |
+| Next action | Complete Phase 12 review and PR workflow; wait for user review and merge; do not start Phase 13 |
 
 Phase 0 through Phase 11 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
 without changing its scientific claims: a risk or fusion score is not attack
 probability, an alert is not confirmation, and a hypothesis is not fact.
 Recovery restarts from capture origin and verifies committed evidence; it is not
-exact packet-cursor resume. Live capture, automatic recovery, complete Phase 12
-workflows, model training, activation, response, and Case creation are disabled.
+exact packet-cursor resume. Phase 12 exposes complete explicit local API and
+frontend workflows without enabling live capture, automatic recovery, automatic
+training/activation, or response actions.
+
+## Phase 12 implementation checkpoint
+
+- Added modular typed FastAPI routes for system/runtime, ingestion,
+  flows/detections, alerts, groups/hypotheses, cases/feedback, models,
+  evaluation, and controlled demonstration. List reads are bounded and
+  deterministic; mutations require explicit attribution and confirmation where
+  applicable.
+- Added request IDs, one sanitized error envelope, documented status mappings,
+  loopback-only CORS, streaming upload limits, Phase 2 secure-storage reuse,
+  verified identity-based downloads, and unique OpenAPI operation regression
+  coverage.
+- Added a typed HTTP frontend client and nine modular Streamlit pages. No
+  production frontend module imports storage, repositories, SQLAlchemy, or
+  artifact readers. Empty, unavailable, error, and controlled-evidence states
+  remain explicit.
+- Added `phase12-demo-pcap`, a deterministic 350-byte controlled capture with
+  UDP and TCP exchanges over documentation addresses, plus a reproducible
+  generator and manifest checksum.
+- Added an isolated versioned demo artifact manager that invokes existing
+  production dataset, model, anomaly, fusion, explanation, detection, runtime,
+  correlation, hypothesis, and case services. Explicit preparation is atomic;
+  reuse verifies checksums and inventory; formal Phase 5–11 roots and active
+  model pointers are not overwritten.
+- Added a fresh-database full E2E that produces actual flows, detections, alerts,
+  a group, a hypothesis, and an optional case, verifies typed client retrieval,
+  repeats idempotently, and confirms formal artifact roots remain untouched.
+- ADR 0021 and `docs/api_frontend.md` define the API-only frontend boundary,
+  sample isolation, upload/download safety, research truthfulness, and Phase 13
+  exclusion.
+
+## Phase 12 verification checkpoint
+
+- Final Ruff passed. Strict mypy passed for 234 source files. The final complete
+  pytest run passed all 452 tests with zero failures, skips, or xfails in
+  1,466.61 seconds at 85.28% branch-aware coverage, above the unchanged 85%
+  gate.
+- The Phase 12 API/client/frontend/demo and CLI selection passed 31 tests in
+  7.64 seconds. Configuration and ingestion regression coverage passed 35 tests
+  in 6.79 seconds. The final OpenAPI/config/pagination selection passed 7 tests
+  in 3.97 seconds, including exact pagination metadata with 101 workers.
+- The first full run exposed one stale exact-set sample-registry assertion (449
+  passed, 1 failed) and 82.55% coverage for the newly exposed paths. The sample
+  assertion was corrected and a populated nine-page API/frontend regression
+  now exercises real reads and explicit mutations. No test was removed,
+  skipped, weakened, or excluded, and the coverage threshold remains 85%.
+- Manual FastAPI verification returned HTTP 200 for health, docs, and OpenAPI;
+  the schema contained 57 paths and 61 unique operations. The real controlled
+  demo produced two flows, two alerts, one group, one hypothesis, and an
+  explicitly created case, then reused those identities idempotently.
+- Headless Streamlit health and root returned HTTP 200. Browser verification
+  covered all nine populated pages, explicit forms, empty/error semantics, and
+  truthful research limitations. The API's missing-object response was
+  sanitized and contained no traceback or local path.
+- Bare `.venv/bin/aegishunt demo` failed because this desktop runtime did not
+  expose the editable-install `.pth` (`ModuleNotFoundError`). The documented
+  `PYTHONPATH=src` workaround ran the same real demo successfully; it is not
+  claimed as clean-install success.
+- Native `codex review --base main` could not start because the installed arm64
+  executable is missing (`ENOENT`). Equivalent read-only review covered API and
+  frontend boundaries, pagination, GET/mutation semantics, streaming uploads,
+  artifact paths, auditing, model safety, demo isolation, research truthfulness,
+  generated files, and Phase 13 scope.
+- That review found one correctness-related Medium: runtime-worker pagination
+  counted only the first 100 records. Exact repository counting plus a
+  101-worker regression corrected it; local origins also reject path-bearing
+  values. Final retesting passed with zero Blocking, zero High, and zero
+  unresolved correctness-related Medium findings.
 
 ## Phase 11 implementation checkpoint
 

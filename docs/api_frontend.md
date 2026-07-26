@@ -1,0 +1,145 @@
+# Phase 12 API and Frontend Contract
+
+## Purpose and boundary
+
+Phase 12 exposes the completed Phase 0–11 local services through FastAPI and a
+typed Streamlit client. FastAPI is the only external business boundary.
+Streamlit never creates a database session, imports a repository, reads a model
+file, resolves an artifact path, or duplicates mutation rules.
+
+This is a loopback-only, single-user research prototype. The `actor` field
+attributes audit events; it is not authentication. Authentication/RBAC,
+performance hardening, security automation, distributed workers, Docker, and
+deployment are not implemented.
+
+## API conventions
+
+- Lists use `items`, `total`, `limit`, `offset`, `has_more`, and a deterministic
+  `next_offset`. Limits are validated and bounded.
+- Validation uses typed filters and timezone-aware UTC timestamps.
+- Every request has a bounded `X-Request-ID`, generated when omitted.
+- Errors contain `error_code`, safe `message`, `request_id`, optional structured
+  `details`, `retryable`, and `status_code`.
+- Errors never return a traceback, raw SQL error, credential-bearing URL,
+  packet payload, model bytes, or local artifact path.
+- Mutations require explicit forms. Consequential operations also require
+  confirmation, actor, and a reason/notes field.
+- GET requests are read-only. Auto-refresh uses GET requests only.
+
+HTTP errors distinguish malformed requests (400), missing identities (404),
+state/version conflicts (409), oversized uploads (413), validation failures
+(422), unavailable local dependencies (503), and sanitized internal failures
+(500).
+
+## Route inventory
+
+| Area | Routes and capabilities |
+| --- | --- |
+| System/runtime | `/health`, `/system/status`, runtime status/jobs/workers, pause/resume/recover, bounded run-once |
+| Ingestion | streamed PCAP/CSV/JSON upload, allowlisted samples, sources/jobs, source-ID replay |
+| Traffic | bounded flow list/detail/summary and detection list/detail |
+| Alerts | list/detail with immutable evidence and explicit analyst-verdict update |
+| Hunts | alert-group and hypothesis list/detail, safe hypothesis transition, idempotent case creation |
+| Cases/feedback | case lifecycle, notes, evidence references, feedback, report/export/candidate artifacts |
+| Models | verified list/detail/active/importance, controlled explicit train, verified explicit activate |
+| Evaluation | verified read-only run list/latest/detail; unavailable fields stay unavailable |
+| Demo | read-only status and explicit allowlisted sample execution |
+
+The generated `/openapi.json`, `/docs`, and `/redoc` describe the same typed
+contracts. Operation IDs are regression-tested for uniqueness.
+
+## Upload and download safety
+
+Uploads are read from `UploadFile` in configured chunks. Size is checked before
+and during streaming. The existing Phase 2 service validates extension, content,
+format/schema, checksum, empty/truncated input, storage containment, and atomic
+commit. Client filenames are metadata only. Traversal, absolute filenames,
+unsupported types, malformed inputs, and partial oversized uploads fail safely.
+
+Downloads are identity-based, not path-based. Case reports and controlled
+artifacts must pass configured-root containment, exact inventory/checksum,
+regular-file, and symlink checks before a sanitized download response is
+returned.
+
+## Typed frontend
+
+`aegishunt.frontend.client.ApiClient` validates response contracts and parses
+API error envelopes. It applies bounded timeouts and does not silently turn
+errors into empty results, retry mutations, or fall back to direct storage.
+
+The nine pages are:
+
+1. **Overview** — server-side KPIs, active artifacts, bounded activity, and
+   explicit research caveats.
+2. **Data Ingestion** — uploads, sample selection, replay creation and controls,
+   worker run-once, and separate observed versus durable progress.
+3. **Traffic Explorer** — server-paginated flow filters, bounded summaries,
+   detections, and associated alerts.
+4. **Alerts** — scores, reason codes, facts/inferences/limitations,
+   non-causal explanations, related hunts, and verdict form.
+5. **Threat Hunts** — groups, hypotheses, facts/inferences/assumptions,
+   benign alternatives, possible mappings, non-executed queries, transitions,
+   and explicit case creation.
+6. **Cases** — lifecycle, priority/assignment/verdict, append-only notes and
+   typed evidence, feedback, closure, and verified report export.
+7. **Model Lab** — verified model identities, cards, thresholds, schemas,
+   non-causal importance, controlled training, and explicit activation.
+8. **Evaluation** — verified metrics and comparisons with missing curves or
+   measurements shown as not generated/unavailable.
+9. **System Health** — API/database/schema, queue/workers, observed/durable
+   replay state, resource availability, policies, and disabled live capture.
+
+Pages provide explicit empty, loading, success, warning, and API-error states.
+No page uses untrusted unsafe HTML. Configurable auto-refresh is bounded and
+cannot repeat a mutation.
+
+## Controlled sample demonstration
+
+`POST /demo/sample` and `aegishunt demo run` require explicit confirmation and
+accept only `phase12-demo-pcap`. The deterministic 350-byte PCAP uses IANA
+documentation addresses and contains one UDP exchange and one TCP handshake.
+It neither contacts nor targets a network.
+
+In a fresh environment the demo:
+
+1. initializes the configured SQLite database;
+2. verifies or atomically prepares isolated demo-only datasets, bundles,
+   evaluation evidence, explanation data, and policies;
+3. ingests the allowlisted PCAP through the Phase 2 service;
+4. creates a Phase 11 runtime job and explicitly runs one existing worker;
+5. persists real flows, detections, alerts, groups, and hypotheses;
+6. optionally creates a case only when separately requested; and
+7. exposes the resulting identities through the same API/client used by all
+   pages.
+
+Repeated execution verifies and reuses matching identities. It does not reset
+the database, duplicate outputs, overwrite historical evidence, activate a
+model, access the network, require root, use live capture, or perform response
+actions. Generated artifacts live under the configured ignored demo root.
+
+The sample uses controlled synthetic evidence solely to verify the pipeline.
+It is not a public benchmark, production validation, real-world performance,
+proof of zero-day detection, or attack probability.
+
+## Research truthfulness
+
+- Phase 6 LOF is `validation_qualified`; no untouched independent holdout exists.
+- Phase 7 fusion is `inconclusive`, was not shown superior to the strongest
+  single engine, and underperformed anomaly-only in family-macro LOAO Recall.
+- Risk, fusion, correlation, and hypothesis-confidence scores are not attack
+  probabilities.
+- Severity is triage, alerts are not confirmed attacks, hypotheses are not
+  facts, possible MITRE mappings are not attribution, and feature contributions
+  are non-causal.
+- Analyst feedback can be noisy and retraining candidates are not approved
+  training data.
+- Observed replay progress is non-durable. Recovery restarts from origin rather
+  than an exact packet cursor.
+
+## Verification
+
+Phase 12 tests cover API contracts/OpenAPI, errors, pagination/filtering,
+uploads, runtime controls, traffic, alerts/hunts/cases, model/evaluation access,
+the typed client, frontend source boundaries, and a fresh-database full sample
+E2E. The E2E verifies idempotent real outputs and confirms that formal artifact
+roots remain unchanged.

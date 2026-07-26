@@ -193,18 +193,35 @@ ADR 0016 records this boundary. No online self-modification occurs.
 
 ## Backend and frontend relationship
 
-FastAPI is the authoritative programmatic boundary. Streamlit will consume API
-contracts rather than access the database or model artifacts directly. This
-supports independent API tests, explicit validation, and future replacement of
-the demonstration UI. The CLI can launch each shell and calls the same
-application services for batch workflows. In Phase 11, Streamlit reads bounded
-persisted runtime status but remains a truthful status shell rather than a
-complete operational dashboard; full alert, hunting, case, feedback, and
-runtime API/frontend workflows remain Phase 12 scope.
-FastAPI exposes
-`/health` plus typed ingestion, sample, and job endpoints; API lifespan startup
-initializes and verifies the empty or existing configured database. PCAP upload
-uses the same service as the CLI and produces persistent flows synchronously.
+FastAPI is the authoritative programmatic boundary. Streamlit consumes typed
+HTTP contracts and does not access the database, repositories, model files, or
+internal mutation services directly. Thin routers adapt validated requests to
+the existing Phase 0–11 services and repositories; they do not duplicate
+ingestion, replay, scoring, correlation, case, training, or artifact rules.
+This supports independent API tests, explicit validation, and future
+replacement of the demonstration UI.
+
+The Phase 12 API provides bounded pagination and filtering, stable operation
+IDs, request correlation IDs, sanitized error envelopes, streamed uploads, and
+explicit audited mutations across system/runtime, ingestion, flows,
+detections/alerts, hunting, cases/feedback, models, evaluation, and the
+controlled sample demonstration. API lifespan startup initializes and verifies
+the empty or existing configured database.
+
+The Phase 12 Streamlit client presents nine modular pages and treats API
+failures, empty datasets, and unavailable measurements as first-class states.
+Auto-refresh is bounded and GET-only; page reruns do not trigger mutations.
+Actor fields are audit attribution, not authentication. Both default listeners
+remain loopback-only, and configured CORS accepts only explicit loopback
+origins.
+
+The controlled demonstration uses an allowlisted deterministic PCAP and a
+versioned demo namespace. Missing demo dependencies are constructed only after
+explicit confirmation through existing production artifact writers. Generated
+model, policy, evaluation, and runtime files are isolated under the configured
+ignored demo root and verified before reuse. Formal Phase 5–11 evidence,
+active-model pointers, and historical frozen identities are not overwritten.
+See ADR 0021 and `docs/api_frontend.md`.
 
 ## Planned storage approach
 
@@ -292,6 +309,14 @@ restarts from packet zero and verifies/reuses committed evidence. EOF invokes
 the existing idempotent Phase 9 correlation/hypothesis services. Live capture,
 automatic recovery, training, Case creation, and complete Phase 12 workflows
 remain disabled. See ADR 0020 and the runtime/replay/recovery documents.
+
+Phase 12 exposes those services through a local FastAPI boundary. Uploads reuse
+Phase 2 bounded staging and validation; list endpoints use server-side bounded
+queries; verified downloads resolve only known report identities. The
+Streamlit layer uses the typed API client exclusively. The controlled
+demonstration stores generated evidence and verified ML artifacts below an
+isolated configured demo root; generated binaries and runtime databases remain
+untracked.
 
 ## Deployment and trust boundaries
 
