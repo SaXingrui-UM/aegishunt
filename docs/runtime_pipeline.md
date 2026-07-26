@@ -65,6 +65,27 @@ Only one runtime job may exist for one telemetry source. A duplicate create is
 rejected with instructions to use explicit recovery. This prevents two jobs from
 claiming the same deterministic flow/detection evidence.
 
+## Progress contracts
+
+Phase 11 exposes two deliberately different progress layers:
+
+- **Observed replay progress** is `non_durable_live_observation`. It records the
+  current live attempt's packet reads, decoded/skipped counts, current/total,
+  fraction, and observation time. It may include packets still held in an open
+  `FlowAggregator` state. It is useful for live observability only; it is not a
+  checkpoint, committed cursor, or resume position.
+- **Durable evidence progress** is `durable_committed_evidence`. Its output
+  counters change only in the transaction that commits the supporting
+  flow/detection/optional-alert/ledger or downstream group/hypothesis evidence.
+  Packet progress uses the conservative zero-until-final-completion policy
+  because Phase 11 does not persist a safe packet cursor plus open-flow state.
+
+Observed updates may use an independent bounded transaction and do not generate
+per-packet audit events. They never modify durable counters, evidence progress,
+domain records, output ledgers, lease identity, or completion state. A new
+origin-recovery attempt resets both progress layers to zero while the prior
+attempt retains its last observed and durable values as history.
+
 ## Transaction boundary
 
 One output batch transaction contains:
@@ -74,17 +95,20 @@ One output batch transaction contains:
 3. `DetectionResult`;
 4. optional threshold-gated `SecurityAlert`;
 5. `RuntimeOutputLedger`;
-6. committed counters and progress.
+6. committed durable output counters and the conservative durable lower bound.
 
-A failure rolls back the entire batch. Progress never describes uncommitted
-output. On origin replay after interruption, a matching ledger verifies the
-stored flow/detection/alert checksum and counts it as reused. Missing or
-different evidence fails closed.
+A failure rolls back the entire batch. Durable counters and progress never
+describe uncommitted output; observed telemetry may still truthfully show that
+the live worker read the packet. On origin replay after interruption, a matching
+ledger verifies the stored flow/detection/alert checksum and counts it as reused.
+Missing or different evidence fails closed.
 
 EOF flushes only complete Phase 3 flow state. A shutdown does not flush partial
 flow state because that would change deterministic segmentation. After all
 batches commit, existing idempotent correlation and hypothesis services run in a
-final transaction before the job becomes `completed`.
+final transaction before the job becomes `completed`. Durable progress reaches
+100% only in that completion transaction, after EOF flush, final correlation,
+and final hypothesis generation have succeeded.
 
 ## Operator boundaries
 

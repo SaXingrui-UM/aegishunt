@@ -23,8 +23,9 @@ Phase 11 runtime replay is **Implementation complete — awaiting PR review** on
 `phase/11-runtime-replay`; Phase 12 is **Not started**. The Phase 11 boundary is
 offline, rootless PCAP replay on a single SQLite node with durable jobs,
 leases, explicit recovery, verified artifact pinning, transactional output
-ledgers, and bounded worker/resource observations. It does not enable live
-capture or automatic recovery.
+ledgers, separate non-durable observed replay telemetry and durable committed
+evidence progress, and bounded worker/resource observations. It does not enable
+live capture or automatic recovery.
 
 The Phase 9 checkpoint remains immutable. Its implementation adds a checksummed
 correlation policy, bounded event-time entity indexing, deterministic alert
@@ -168,7 +169,11 @@ Workers repeat that preflight before the first packet, replay event-time gaps
 with configured speed/caps, and persist each output batch transactionally.
 Pause/resume uses the live worker; interruption becomes `recovery_pending`, and
 only an explicit operator recovery restarts deterministic replay from packet
-zero. This is not exact packet-cursor resume. See
+zero. Observed packet progress is non-durable live telemetry, is not a
+checkpoint, and resets for the new attempt. Durable progress represents
+committed evidence and reaches 100% only after EOF flush and final downstream
+completion. Open-flow state remains in memory. This is not exact packet-cursor
+resume or a distributed exactly-once guarantee. See
 [`docs/runtime_pipeline.md`](docs/runtime_pipeline.md),
 [`docs/pcap_replay.md`](docs/pcap_replay.md), and
 [`docs/runtime_recovery.md`](docs/runtime_recovery.md).
@@ -325,10 +330,11 @@ aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
 The Phase 11 page reads bounded persisted queue, worker, and resource state and
-reports unavailability rather than inventing zeros. It retains the controlled-
-evidence caveats and does not display fabricated detections, alerts, hypotheses,
-cases, metrics, or resource measurements. Complete interactive workflows remain
-Phase 12 scope.
+reports unavailability rather than inventing zeros. When a job exists it labels
+observed replay progress as non-durable and separately reports durable committed
+evidence. It retains the controlled-evidence caveats and does not display
+fabricated detections, alerts, hypotheses, cases, metrics, or resource
+measurements. Complete interactive workflows remain Phase 12 scope.
 
 ## Quality checks
 

@@ -1,6 +1,6 @@
 # Codex Progress
 
-Last updated: 2026-07-23 (Asia/Shanghai)
+Last updated: 2026-07-26 (Asia/Shanghai)
 
 ## Current state
 
@@ -11,9 +11,9 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
-| Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit recovery; interruptible event-time replay; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
-| Current activity | Phase 11 implementation, final quality checks, and equivalent read-only review are complete on `phase/11-runtime-replay`; ready PR #33 is open for review. Phase 12 has not started |
-| Verification status | Baseline on merged `main`: Ruff passed, strict mypy passed for 185 source files, and 389 tests passed with 86.01% branch-aware coverage. Final Phase 11 verification: Ruff passed, strict mypy passed for 205 source files, and all 427 tests passed with zero failures/skips/xfails and 86.07% branch-aware coverage in 1,248.47 seconds |
+| Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
+| Current activity | Phase 11 durable-progress correction is implemented and locally verified on `phase/11-runtime-replay`; PR #33 remains open and ready for review. Required CI for the pushed Head must pass before merge. Phase 12 has not started |
+| Verification status | Baseline on merged `main`: Ruff passed, strict mypy passed for 185 source files, and 389 tests passed with 86.01% branch-aware coverage. Durable-progress corrective verification: Ruff passed, strict mypy passed for 205 source files, 53 focused tests passed in 37.78 seconds, and all 437 tests passed with zero failures/skips/xfails and 86.20% branch-aware coverage in 1,253.12 seconds |
 | Stable branch checkpoint | PR #31 was squash-merged to `main` as `ba40211a374aa8e4efa62702a83d063f9eb88039`; annotated Tag `phase-10-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -26,7 +26,7 @@ Last updated: 2026-07-23 (Asia/Shanghai)
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Both Phase 10 PR #31 `quality` checks passed before merge; Phase 11 PR #33 `quality` is in progress at publication |
+| CI status | Both Phase 10 PR #31 `quality` checks passed before merge; PR #33 required checks are reported by GitHub against the current pushed Head and must pass before merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -73,8 +73,10 @@ workflows, model training, activation, response, and Case creation are disabled.
   and EOF flush.
 - Added one transaction per finalized output batch: flow reuse/create,
   supervised/anomaly/fusion scoring, DetectionResult, optional SecurityAlert,
-  ledger, counters, and progress. Recovery verifies/reuses only matching
-  committed evidence.
+  ledger, and durable output counters. Observed packet telemetry is persisted
+  separately and is explicitly non-durable; the conservative durable packet
+  position remains zero until final completion. Recovery verifies/reuses only
+  matching committed evidence and never uses observed progress as a cursor.
 - Added post-EOF idempotent Phase 9 correlation/hypothesis generation, psutil
   process observations with explicit unavailable/null semantics, runtime CLI
   operations, and a truthful Streamlit status shell.
@@ -85,12 +87,18 @@ workflows, model training, activation, response, and Case creation are disabled.
   integration/restart, drift, malformed-PCAP, and real temporary-bundle E2E
   coverage. No external network, root, live capture, Phase 12 workflow, training,
   formal frozen-test evidence, or model binary is used.
+- Corrected periodic control updates that previously could persist in-memory
+  packet progress ahead of an open flow or pending output batch. Jobs and
+  attempts now retain explicit observed/durable semantics, recovery creates a
+  zeroed origin-restart attempt while preserving history, pause/resume keeps the
+  live attempt, and completion reaches 100% only after EOF plus final
+  correlation/hypothesis commit.
 
 ## Phase 11 verification checkpoint
 
 - Pre-branch baseline: Ruff passed; strict mypy passed for 185 source files; the
   full suite passed 389 tests with 86.01% branch-aware coverage.
-- Current focused Phase 11 selection passed 44 tests in 38.70 seconds, including
+- The pre-corrective focused Phase 11 selection passed 44 tests in 38.70 seconds, including
   durable queue lifecycle/race/rollback, live-worker pause/heartbeat/resume,
   replay timing, preflight drift, malformed PCAP, schema migration, Streamlit
   status, and real temporary verified-bundle E2E.
@@ -103,6 +111,15 @@ workflows, model training, activation, response, and Case creation are disabled.
   correlation-group, and hypothesis evidence from a controlled temporary PCAP,
   then verifies restart persistence and deterministic reuse. No downstream
   service is stubbed and no formal model evidence is regenerated.
+- The durable-progress corrective focused selection passed 53 tests in 37.78
+  seconds. It covers a long open flow before commit, interruption before the
+  first durable flow, mixed committed/open evidence, atomic rollback,
+  pause/resume, zeroed origin recovery with historical attempt preservation,
+  output reuse without duplication, completion gating, truthful CLI/frontend
+  labels, and repeatable v4→v5/fresh schema initialization.
+- Final corrective Ruff passed; strict mypy passed for 205 source files; all 437
+  tests passed with zero failures, skips, or xfails in 1,253.12 seconds at
+  86.20% branch-aware coverage, above the unchanged 85% gate.
 - Native `codex review --base main` could not start because the installed arm64
   executable is missing (`ENOENT`). Equivalent read-only review findings for
   job-scoped downstream counters, resume audit time, E2E completeness, signal

@@ -32,10 +32,19 @@ interruptible quanta. Existing Phase 3 parsing, aggregation, finalization, and
 EOF flush are reused.
 
 Persist each finalized-flow batch, detection, optional alert, output ledger, and
-progress update in one transaction. Progress advances only after commit. The
-ledger lets explicit recovery replay from origin while reusing byte-equivalent
-committed outputs and rejecting conflicting evidence. Correlation and hypothesis
-generation use their existing deterministic idempotent services after EOF.
+durable output-counter update in one transaction. Separately persist
+`non_durable_live_observation` packet telemetry for the current worker attempt.
+Observed telemetry may lead committed evidence, is never a checkpoint, and
+resets to zero on a new origin-recovery attempt. The principal job/attempt
+progress remains `durable_committed_evidence`; its packet position stays at the
+conservative proven lower bound (zero in this implementation) until final
+completion. It reaches 100% only in the transaction that follows EOF flow flush,
+final correlation, and final hypothesis generation.
+
+The ledger lets explicit recovery replay from origin while reusing
+byte-equivalent committed outputs and rejecting conflicting evidence. Phase 11
+does not persist an exact packet cursor or complete open-flow state and therefore
+does not claim exact resume or distributed exactly-once processing.
 
 Live capture and automatic recovery remain disabled. The execution mode is one
 local worker process family over SQLite; resource samples are bounded and an
@@ -54,8 +63,8 @@ unavailable sampler records null measurements rather than fabricated zeros.
 - Live interface capture as the primary runtime: rejected because it commonly
   requires privileges, creates target/environment coupling, and is not needed
   for the primary offline demonstration.
-- Per-packet audit events: rejected because they create unbounded noise; progress,
-  heartbeats, and resource samples have dedicated bounded records.
+- Per-packet audit events: rejected because they create unbounded noise; observed
+  progress, heartbeats, and resource samples have dedicated bounded records.
 
 ## Consequences
 
@@ -64,7 +73,8 @@ replay deterministically without overwriting prior evidence. SQLite transactions
 protect each durable output batch, but there is no distributed exactly-once
 guarantee. A stopped job may redo packet parsing and scoring from origin; the
 ledger prevents duplicate committed evidence. Only one runtime job is allowed
-per telemetry source; later work uses explicit recovery.
+per telemetry source; later work uses explicit recovery. Live observed progress
+can disappear with a worker and must never be interpreted as committed evidence.
 
 ## Risks
 

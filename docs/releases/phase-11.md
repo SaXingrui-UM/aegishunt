@@ -11,7 +11,8 @@ Status: **Implementation complete — awaiting PR review**.
 - Branch: `phase/11-runtime-replay`
 - Pull request: [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33) —
   Open, ready for review
-- CI: GitHub Actions `quality` is in progress at publication
+- CI: GitHub reports required checks against the current pushed PR Head; all
+  required checks must pass before merge
 - Merge commit: pending
 - Completion tag: pending; do not create before merge
 - Phase 12: Not started
@@ -29,6 +30,10 @@ Status: **Implementation complete — awaiting PR review**.
 - Interruptible event-time PCAP replay with speed, gap cap, out-of-order/gap
   counters, existing Phase 3 packet/flow semantics, and EOF flush.
 - Transactional flow/detection/optional-alert/ledger/progress batches.
+- Separate `non_durable_live_observation` packet telemetry from
+  `durable_committed_evidence` counters/progress. Open flows and uncommitted
+  batches never advance the durable packet position; recovery resets the new
+  attempt and retains both layers on the historical attempt.
 - Existing idempotent Phase 9 correlation and hypothesis generation after EOF.
 - Job-scoped downstream counters derived only from the current job's output
   ledger, so unrelated historical groups or hypotheses are never counted as
@@ -44,7 +49,10 @@ Status: **Implementation complete — awaiting PR review**.
 
 ADR 0020 records deterministic origin replay, single-node SQLite queue/leases,
 verified artifact snapshots, transactional output ledgers, explicit recovery,
-disabled live capture, and bounded resource observations.
+disabled live capture, bounded resource observations, and the separate observed
+versus durable progress contracts. Phase 11 intentionally uses a conservative
+zero-until-final-completion durable packet position instead of inventing an
+exact cursor without persisted open-flow state.
 
 ## Tests
 
@@ -57,9 +65,16 @@ disabled live capture, and bounded resource observations.
 - Final Ruff passed; strict mypy passed for 205 source files; all 427 tests
   passed with zero failures, skips, or xfails in 1,248.47 seconds. Branch-aware
   coverage was 86.07%, above the unchanged 85% gate.
+- Durable-progress corrective focused verification passed 53 tests in 37.78
+  seconds. The final corrective full suite passed 437 tests with zero failures,
+  skips, or xfails in 1,253.12 seconds. Branch-aware coverage was 86.20%, above
+  the unchanged 85% gate; Ruff and strict mypy for 205 source files also passed.
 - The strengthened PCAP-to-runtime E2E used a controlled temporary capture and
   verified real flow, detection, alert, correlation-group, and hypothesis
-  evidence plus restart persistence. It did not stub downstream services or
+  evidence plus restart persistence. The corrective E2E also verifies a
+  committed flow beside an in-memory open flow, pause/resume on one attempt,
+  interruption before durable evidence, origin recovery, output reuse, and the
+  final downstream completion gate. It did not stub downstream services or
   create formal experiment evidence.
 
 ## Review outcome
@@ -80,6 +95,15 @@ Commits `5789356`, `1056ad9`, `7d8eb22`, `fcdd2ca`, `ce70330`, and `720f4c3`
 closed those findings with regression coverage. The final equivalent review
 found zero Blocking, zero High, and zero unresolved correctness-related Medium
 findings. No Phase 12 functionality was introduced.
+
+A later PR review identified that periodic control updates persisted live packet
+counters before an open flow or pending batch had durable evidence. The
+corrective implementation splits observed telemetry from durable evidence,
+keeps the latter in domain-output transactions, resets recovery from origin,
+and reaches 100% only after final correlation/hypothesis completion. Its
+pre-fix regression reproduced observed packet progress with zero Flow,
+DetectionResult, SecurityAlert, and ledger rows. Corrective review and new-Head
+CI results are recorded in the PR checkpoint before merge.
 
 ## Manual verification
 
@@ -104,11 +128,15 @@ as a standard editable-install success.
 - `fcdd2ca` — `test: cover cooperative runtime signal handlers`
 - `ce70330` — `fix: reconcile stale runtime worker status`
 - `720f4c3` — `fix: complete runtime lifecycle audit context`
+- `17ca582` — `fix: separate observed and durable runtime progress`
+- `2a6ba1c` — `test: cover pre-commit runtime interruption`
 
 ## Known limitations
 
 - Runtime execution is single-node SQLite, not distributed processing.
 - Recovery restarts from packet zero; it is not exact packet-cursor resume.
+- Open-flow state is in memory only. Observed progress is live telemetry, not a
+  checkpoint; pause/resume retention applies only to the same living worker.
 - Only offline PCAP replay is enabled; live capture is safely disabled.
 - Source/artifact bundles must already exist under configured roots.
 - Resource observations are not production SLAs.

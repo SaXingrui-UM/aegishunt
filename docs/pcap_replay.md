@@ -53,7 +53,15 @@ request privileges, or connect to a target.
 
 ## Counters
 
-Jobs report captured, decoded, skipped, out-of-order, and capped-gap packets;
-created/reused flows, detections, and alerts; and created/reused groups and
-hypotheses. These are actual committed counts, not fabricated demonstration
-metrics.
+Jobs report two separate counter sets:
+
+- observed captured/decoded/skipped/out-of-order/capped-gap packet counts are
+  non-durable live telemetry for the current attempt;
+- durable created/reused flow, detection, alert, group, and hypothesis counts
+  are supported by committed evidence.
+
+The final completion transaction copies verified end-of-capture packet
+observations into final durable counters only after every output batch, final
+correlation, and final hypothesis commit succeeds. Before completion, open-flow
+packets do not advance the durable packet position. Observed progress is not an
+exact cursor, committed checkpoint, or exactly-once claim.
