@@ -49,7 +49,10 @@ def _runtime_summary(status: RuntimeStatus) -> str:
             f"stage={status.latest_jobs[0].current_stage.value}, "
             f"attempt={status.latest_jobs[0].current_attempt_number}, "
             f"progress_mode={status.latest_jobs[0].progress_mode.value}, "
-            f"progress={status.latest_jobs[0].progress:.6f}"
+            "Observed replay progress (non-durable)="
+            f"{status.latest_jobs[0].observed_progress:.6f}, "
+            "Durable committed evidence="
+            f"{status.latest_jobs[0].progress:.6f}"
         )
     )
     return (
@@ -58,6 +61,10 @@ def _runtime_summary(status: RuntimeStatus) -> str:
         f"paused={status.paused_jobs}, recovery_pending={status.recovery_pending}, "
         f"workers={workers}, resource_samples_available={available_samples}, "
         f"{latest}. "
+        "Observed replay progress is non-durable live telemetry and resets on "
+        "deterministic restart-from-origin recovery; it is not a checkpoint or "
+        "resume cursor. Durable committed evidence advances only with persisted "
+        "outputs. "
         "Models and policies are verified per job before packet replay; automatic "
         "recovery and live capture are disabled."
     )
@@ -115,6 +122,9 @@ def main() -> None:
         "artifact pinning, transactional flow/detection output ledgers, worker health, "
         "and bounded resource samples. Recovery deterministically restarts from packet "
         "zero and reuses committed evidence; it is not exact packet-cursor resume. "
+        "Observed replay progress is non-durable live telemetry; durable progress "
+        "describes committed evidence and reaches 100% only after final downstream "
+        "completion. Open-flow state remains in memory and is never a checkpoint. "
         "No live capture, external target, automatic recovery, or Phase 12 workflow is "
         "enabled."
     )

@@ -19,6 +19,14 @@ from aegishunt.runtime.errors import RuntimeStateError
 from aegishunt.runtime.job_store import RuntimeJobStore, _job
 from aegishunt.storage.models.runtime import RuntimeJobRecord
 
+_OBSERVATION_COUNTER_FIELDS = (
+    "captured_packets",
+    "decoded_packets",
+    "skipped_packets",
+    "out_of_order_packets",
+    "capped_gaps",
+)
+
 
 class RuntimeJobRepository(RuntimeJobStore):
     """Apply validated runtime lifecycle transitions."""
@@ -123,12 +131,27 @@ class RuntimeJobRepository(RuntimeJobStore):
         *,
         worker_id: str,
         counters: RuntimeCounters,
+        observed_counters: RuntimeCounters,
         now: datetime,
         actor: str,
     ) -> RuntimeJob:
         row = self._owned(job_id, worker_id)
         if row.status is not RuntimeJobStatus.RUNNING:
             raise RuntimeStateError("only a running replay can complete")
+        if (
+            row.progress_total is not None
+            and observed_counters.captured_packets != row.progress_total
+        ):
+            raise RuntimeStateError(
+                "completion requires every verified source packet to be observed"
+            )
+        if any(
+            getattr(counters, field) != getattr(observed_counters, field)
+            for field in _OBSERVATION_COUNTER_FIELDS
+        ):
+            raise RuntimeStateError(
+                "completion durable packet counters must match final observations"
+            )
         row.status = RuntimeJobStatus.COMPLETED
         row.current_stage = RuntimeStage.COMPLETION
         row.desired_action = RuntimeDesiredAction.RUN
@@ -139,6 +162,11 @@ class RuntimeJobRepository(RuntimeJobStore):
             else counters.captured_packets
         )
         row.progress = 1.0
+        row.observed_counters = observed_counters.model_dump(mode="json")
+        row.observed_progress_current = observed_counters.captured_packets
+        row.observed_progress_total = row.progress_total
+        row.observed_progress = 1.0
+        row.observed_at = now
         row.updated_at = now
         row.completed_at = now
         self._set_attempt(row, RuntimeAttemptStatus.COMPLETED, now=now, ended=True)
@@ -152,6 +180,7 @@ class RuntimeJobRepository(RuntimeJobStore):
                 "previous_status": "running",
                 "status": "completed",
                 "counters": counters.model_dump(mode="json"),
+                "observed_counters": observed_counters.model_dump(mode="json"),
             },
         )
         return _job(row)
@@ -299,12 +328,23 @@ class RuntimeJobRepository(RuntimeJobStore):
         if row.current_attempt_number >= maximum_attempts:
             raise RuntimeStateError("runtime job has reached the configured attempt limit")
         previous = row.status
+        previous_observed_progress = row.observed_progress
+        previous_observed_packet_count = RuntimeCounters.model_validate(
+            row.observed_counters
+        ).captured_packets
+        previous_durable_progress = row.progress
+        previous_durable_counters = row.counters
         row.status = RuntimeJobStatus.QUEUED
         row.desired_action = RuntimeDesiredAction.RUN
         row.current_stage = RuntimeStage.QUEUED
         row.progress = 0.0
         row.progress_current = 0
         row.counters = RuntimeCounters().model_dump(mode="json")
+        row.observed_progress = 0.0
+        row.observed_progress_current = 0
+        row.observed_progress_total = row.progress_total
+        row.observed_counters = RuntimeCounters().model_dump(mode="json")
+        row.observed_at = None
         row.current_attempt_id = None
         row.recovery_count += 1
         row.updated_at = now
@@ -320,6 +360,10 @@ class RuntimeJobRepository(RuntimeJobStore):
                 "strategy": "deterministic_restart_from_origin",
                 "reason": reason,
                 "previous_error_code": row.failure_code,
+                "previous_observed_progress": previous_observed_progress,
+                "previous_observed_packet_count": previous_observed_packet_count,
+                "previous_durable_progress": previous_durable_progress,
+                "previous_durable_counters": previous_durable_counters,
             },
         )
         return _job(row)

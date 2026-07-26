@@ -70,6 +70,32 @@ def _increment(counters: RuntimeCounters, **changes: int) -> RuntimeCounters:
     return RuntimeCounters.model_validate(payload)
 
 
+_OUTPUT_COUNTER_FIELDS = (
+    "flows_created",
+    "flows_reused",
+    "detections_created",
+    "detections_reused",
+    "alerts_created",
+    "alerts_reused",
+    "groups_created",
+    "groups_reused",
+    "hypotheses_created",
+    "hypotheses_reused",
+)
+
+
+def _completed_counters(
+    observed: RuntimeCounters,
+    durable: RuntimeCounters,
+) -> RuntimeCounters:
+    """Combine final packet observations with transaction-backed output counts."""
+
+    payload = observed.model_dump(mode="python")
+    for field in _OUTPUT_COUNTER_FIELDS:
+        payload[field] = getattr(durable, field)
+    return RuntimeCounters.model_validate(payload)
+
+
 def _output_checksum(
     flow: NetworkFlow,
     detection: DetectionResult,
@@ -196,23 +222,24 @@ class RuntimePipelineRunner:
             sleep_quantum_seconds=replay.sleep_quantum_seconds,
             clock=self._clock,
         )
-        counters = RuntimeCounters()
+        observed_counters = RuntimeCounters()
+        durable_counters = job.counters
         pending: list[NetworkFlow] = []
         total_packets = job.progress_total
         try:
             for captured in reader.packets(loaded.source_path):
                 delay = pacer.delay_for(captured.timestamp)
-                counters = _increment(
-                    counters,
+                observed_counters = _increment(
+                    observed_counters,
                     out_of_order_packets=int(delay.out_of_order),
                     capped_gaps=int(delay.capped_gap),
                 )
-                counters_at_sleep = counters
+                counters_at_sleep = observed_counters
                 progress_at_sleep = min(
                     (
                         0.0
                         if total_packets is None
-                        else counters.captured_packets / total_packets
+                        else observed_counters.captured_packets / total_packets
                     ),
                     0.999999,
                 )
@@ -227,10 +254,13 @@ class RuntimePipelineRunner:
                     ),
                 ):
                     raise ReplayInterrupted("worker shutdown requested")
-                counters = _increment(counters, captured_packets=1)
+                observed_counters = _increment(
+                    observed_counters,
+                    captured_packets=1,
+                )
                 if (
                     total_packets is not None
-                    and counters.captured_packets > total_packets
+                    and observed_counters.captured_packets > total_packets
                 ):
                     raise RuntimeReplayError(
                         "replayed packet count exceeds pinned source evidence"
@@ -241,37 +271,51 @@ class RuntimePipelineRunner:
                     link_type=captured.link_type,
                 )
                 if packet is None:
-                    counters = _increment(counters, skipped_packets=1)
+                    observed_counters = _increment(
+                        observed_counters,
+                        skipped_packets=1,
+                    )
                 else:
-                    counters = _increment(counters, decoded_packets=1)
+                    observed_counters = _increment(
+                        observed_counters,
+                        decoded_packets=1,
+                    )
                     pending.extend(
                         finalize_network_flow(item) for item in aggregator.process(packet)
                     )
                 if len(pending) >= self._runtime.policy.worker.persistence_batch_size:
-                    counters = self._persist_batch(
-                        job,
-                        loaded,
-                        pending,
-                        counters,
-                        progress=(
+                    self._control.record_observed_progress(
+                        job.job_id,
+                        observed_counters,
+                        (
                             0.0
                             if total_packets is None
                             else min(
-                                counters.captured_packets / total_packets,
+                                observed_counters.captured_packets / total_packets,
                                 0.999999,
                             )
                         ),
                     )
+                    durable_counters = self._persist_batch(
+                        job,
+                        loaded,
+                        pending,
+                        durable_counters,
+                    )
                     pending.clear()
-                    counters = self._maybe_correlate(job, loaded, counters)
+                    durable_counters = self._maybe_correlate(
+                        job,
+                        loaded,
+                        durable_counters,
+                    )
                 self._control.check(
                     job.job_id,
-                    counters,
+                    observed_counters,
                     (
                         0.0
                         if total_packets is None
                         else min(
-                            counters.captured_packets / total_packets,
+                            observed_counters.captured_packets / total_packets,
                             0.999999,
                         )
                     ),
@@ -281,25 +325,68 @@ class RuntimePipelineRunner:
             )
             if (
                 total_packets is not None
-                and counters.captured_packets != total_packets
+                and observed_counters.captured_packets != total_packets
             ):
                 raise RuntimeReplayError(
                     "replayed packet count differs from pinned source evidence"
-                )
+            )
             if pending:
-                counters = self._persist_batch(
+                self._control.record_observed_progress(
+                    job.job_id,
+                    observed_counters,
+                    (
+                        0.0
+                        if total_packets is None
+                        else min(
+                            observed_counters.captured_packets / total_packets,
+                            0.999999,
+                        )
+                    ),
+                )
+                durable_counters = self._persist_batch(
                     job,
                     loaded,
                     pending,
-                    counters,
-                    progress=0.0 if total_packets is None else 0.999999,
+                    durable_counters,
                 )
-                counters = self._maybe_correlate(job, loaded, counters)
-            counters = self._finalize_downstream(job, loaded, counters)
-            return counters
+                durable_counters = self._maybe_correlate(
+                    job,
+                    loaded,
+                    durable_counters,
+                )
+            return self._finalize_downstream(
+                job,
+                loaded,
+                observed_counters,
+                durable_counters,
+            )
         except ReplayInterrupted:
+            self._control.record_observed_progress(
+                job.job_id,
+                observed_counters,
+                (
+                    0.0
+                    if total_packets is None
+                    else min(
+                        observed_counters.captured_packets / total_packets,
+                        0.999999,
+                    )
+                ),
+            )
             raise
         except (FlowProcessingError, OSError, ValueError) as exc:
+            self._control.record_observed_progress(
+                job.job_id,
+                observed_counters,
+                (
+                    0.0
+                    if total_packets is None
+                    else min(
+                        observed_counters.captured_packets / total_packets,
+                        0.999999,
+                    )
+                ),
+            )
             raise RuntimeReplayError("stored PCAP replay failed safely") from exc
 
     def _persist_batch(
@@ -307,15 +394,13 @@ class RuntimePipelineRunner:
         job: RuntimeJob,
         loaded: object,
         flows: Sequence[NetworkFlow],
-        counters: RuntimeCounters,
-        *,
-        progress: float,
+        durable_counters: RuntimeCounters,
     ) -> RuntimeCounters:
         from aegishunt.runtime.preflight import LoadedRuntimePipeline
 
         if not isinstance(loaded, LoadedRuntimePipeline):
             raise TypeError("loaded pipeline has an invalid type")
-        updated = counters
+        updated = durable_counters
         try:
             with self._database.session() as session, session.begin():
                 audit = AuditLogRepository(session)
@@ -395,11 +480,12 @@ class RuntimePipelineRunner:
                             created_at=self._clock.now(),
                         )
                     )
-                RuntimeJobRepository(session, audit).update_progress(
+                RuntimeJobRepository(session, audit).update_durable_progress(
                     job.job_id,
                     worker_id=self._worker_id,
                     counters=updated,
-                    progress=progress,
+                    progress_current=0,
+                    progress=0.0,
                     now=self._clock.now(),
                 )
         except RuntimePersistenceError:
@@ -414,27 +500,42 @@ class RuntimePipelineRunner:
         self,
         job: RuntimeJob,
         loaded: object,
-        counters: RuntimeCounters,
+        observed_counters: RuntimeCounters,
+        durable_counters: RuntimeCounters,
     ) -> RuntimeCounters:
         from aegishunt.runtime.preflight import LoadedRuntimePipeline
 
         if not isinstance(loaded, LoadedRuntimePipeline):
             raise TypeError("loaded pipeline has an invalid type")
-        return self._run_downstream(job, loaded, counters, complete=True)
+        return self._run_downstream(
+            job,
+            loaded,
+            observed_counters,
+            durable_counters,
+            complete=True,
+        )
 
     def _maybe_correlate(
         self,
         job: RuntimeJob,
         loaded: object,
-        counters: RuntimeCounters,
+        durable_counters: RuntimeCounters,
     ) -> RuntimeCounters:
-        alert_count = counters.alerts_created + counters.alerts_reused
+        alert_count = (
+            durable_counters.alerts_created + durable_counters.alerts_reused
+        )
         if (
             alert_count - self._last_correlation_alert_count
             < self._runtime.policy.worker.correlation_alert_batch_size
         ):
-            return counters
-        updated = self._run_downstream(job, loaded, counters, complete=False)
+            return durable_counters
+        updated = self._run_downstream(
+            job,
+            loaded,
+            RuntimeCounters(),
+            durable_counters,
+            complete=False,
+        )
         self._last_correlation_alert_count = alert_count
         return updated
 
@@ -442,7 +543,8 @@ class RuntimePipelineRunner:
         self,
         job: RuntimeJob,
         loaded: object,
-        counters: RuntimeCounters,
+        observed_counters: RuntimeCounters,
+        durable_counters: RuntimeCounters,
         *,
         complete: bool,
     ) -> RuntimeCounters:
@@ -450,6 +552,9 @@ class RuntimePipelineRunner:
 
         if not isinstance(loaded, LoadedRuntimePipeline):
             raise TypeError("loaded pipeline has an invalid type")
+        committed_group_ids: set[UUID] = set()
+        committed_hypothesis_ids: set[UUID] = set()
+        updated = durable_counters
         try:
             with self._database.session() as session, session.begin():
                 groups_repository = AlertGroupRepository(session)
@@ -507,7 +612,7 @@ class RuntimePipelineRunner:
                     hypothesis_ids - self._observed_hypothesis_ids
                 )
                 updated = _increment(
-                    counters,
+                    durable_counters,
                     groups_created=len(new_group_observations - before_group_ids),
                     groups_reused=len(new_group_observations & before_group_ids),
                     hypotheses_created=len(
@@ -517,17 +622,29 @@ class RuntimePipelineRunner:
                         new_hypothesis_observations & before_hypothesis_ids
                     ),
                 )
-                self._observed_group_ids.update(group_ids)
-                self._observed_hypothesis_ids.update(hypothesis_ids)
                 if complete:
+                    completed_counters = _completed_counters(
+                        observed_counters,
+                        updated,
+                    )
                     jobs.complete(
                         job.job_id,
                         worker_id=self._worker_id,
-                        counters=updated,
+                        counters=completed_counters,
+                        observed_counters=observed_counters,
                         now=self._clock.now(),
                         actor=self._worker_id,
                     )
+                    updated = completed_counters
                 else:
+                    jobs.update_durable_progress(
+                        job.job_id,
+                        worker_id=self._worker_id,
+                        counters=updated,
+                        progress_current=0,
+                        progress=0.0,
+                        now=self._clock.now(),
+                    )
                     jobs.set_stage(
                         job.job_id,
                         worker_id=self._worker_id,
@@ -535,8 +652,12 @@ class RuntimePipelineRunner:
                         now=self._clock.now(),
                         actor=self._worker_id,
                     )
-                return updated
+                committed_group_ids = group_ids
+                committed_hypothesis_ids = hypothesis_ids
         except (IntegrityError, SQLAlchemyError) as exc:
             raise RuntimePersistenceError(
                 "runtime downstream finalization rolled back"
             ) from exc
+        self._observed_group_ids.update(committed_group_ids)
+        self._observed_hypothesis_ids.update(committed_hypothesis_ids)
+        return updated

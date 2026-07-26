@@ -55,6 +55,7 @@ class RuntimeJobRecord(Base):
     runtime_policy_version: Mapped[str] = mapped_column(String(128), nullable=False)
     runtime_policy_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
     counters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    progress_semantics: Mapped[str] = mapped_column(String(64), nullable=False)
     progress_mode: Mapped[RuntimeProgressMode] = mapped_column(
         string_enum(RuntimeProgressMode, name="runtime_progress_mode"),
         nullable=False,
@@ -62,6 +63,19 @@ class RuntimeJobRecord(Base):
     progress_current: Mapped[int] = mapped_column(nullable=False, default=0)
     progress_total: Mapped[int | None] = mapped_column(nullable=True)
     progress: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    observed_counters: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+    observed_progress_semantics: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    observed_progress_current: Mapped[int] = mapped_column(nullable=False, default=0)
+    observed_progress_total: Mapped[int | None] = mapped_column(nullable=True)
+    observed_progress: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    observed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     claimed_by: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     heartbeat_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
@@ -104,9 +118,23 @@ class RuntimeAttemptRecord(Base):
     )
     restart_from_origin: Mapped[bool] = mapped_column(nullable=False)
     counters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    progress_semantics: Mapped[str] = mapped_column(String(64), nullable=False)
     progress_current: Mapped[int] = mapped_column(nullable=False, default=0)
     progress_total: Mapped[int | None] = mapped_column(nullable=True)
     progress: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    observed_counters: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+    observed_progress_semantics: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    observed_progress_current: Mapped[int] = mapped_column(nullable=False, default=0)
+    observed_progress_total: Mapped[int | None] = mapped_column(nullable=True)
+    observed_progress: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    observed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     started_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
     paused_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     resumed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)

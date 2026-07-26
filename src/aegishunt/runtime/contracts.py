@@ -69,6 +69,10 @@ class RuntimeProgressMode(StrEnum):
     INDETERMINATE = "indeterminate"
 
 
+DurableProgressSemantics = Literal["durable_committed_evidence"]
+ObservedProgressSemantics = Literal["non_durable_live_observation"]
+
+
 class RuntimeCounters(CoreSchema):
     captured_packets: int = Field(default=0, ge=0)
     decoded_packets: int = Field(default=0, ge=0)
@@ -192,10 +196,24 @@ class RuntimeJob(CoreSchema):
     runtime_policy_version: str = ""
     runtime_policy_checksum: str = ""
     counters: RuntimeCounters = Field(default_factory=RuntimeCounters)
+    progress_semantics: DurableProgressSemantics = "durable_committed_evidence"
     progress_mode: RuntimeProgressMode = RuntimeProgressMode.INDETERMINATE
     progress_current: int = Field(default=0, ge=0)
     progress_total: int | None = Field(default=None, ge=1)
-    progress: float = Field(default=0.0, ge=0.0, le=1.0)
+    progress: float = Field(default=0.0, ge=0.0, le=1.0, allow_inf_nan=False)
+    observed_counters: RuntimeCounters = Field(default_factory=RuntimeCounters)
+    observed_progress_semantics: ObservedProgressSemantics = (
+        "non_durable_live_observation"
+    )
+    observed_progress_current: int = Field(default=0, ge=0)
+    observed_progress_total: int | None = Field(default=None, ge=1)
+    observed_progress: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        allow_inf_nan=False,
+    )
+    observed_at: datetime | None = None
     claimed_by: str | None = Field(default=None, max_length=255)
     lease_expires_at: datetime | None = None
     heartbeat_at: datetime | None = None
@@ -221,6 +239,7 @@ class RuntimeJob(CoreSchema):
         "started_at",
         "updated_at",
         "completed_at",
+        "observed_at",
     )
     @classmethod
     def validate_time(cls, value: datetime | None) -> datetime | None:
@@ -271,12 +290,37 @@ class RuntimeJob(CoreSchema):
                 raise ValueError("packet-count progress requires a verified total")
             if self.progress_current > self.progress_total:
                 raise ValueError("runtime progress cannot exceed its verified total")
+            if self.observed_progress_total is None:
+                object.__setattr__(
+                    self,
+                    "observed_progress_total",
+                    self.progress_total,
+                )
+            elif self.observed_progress_total != self.progress_total:
+                raise ValueError(
+                    "observed and durable progress totals must use one source total"
+                )
         elif self.progress_total is not None:
             raise ValueError("indeterminate progress cannot claim a total")
+        elif self.observed_progress_total is not None:
+            raise ValueError("indeterminate observed progress cannot claim a total")
+        if (
+            self.observed_progress_total is not None
+            and self.observed_progress_current > self.observed_progress_total
+        ):
+            raise ValueError("observed progress cannot exceed its verified total")
         if self.status is RuntimeJobStatus.COMPLETED and self.progress != 1.0:
             raise ValueError("completed runtime jobs require complete progress")
         if self.status is not RuntimeJobStatus.COMPLETED and self.progress == 1.0:
             raise ValueError("only completed runtime jobs may report 100 percent")
+        if (
+            self.status is RuntimeJobStatus.COMPLETED
+            and self.progress_total is not None
+            and self.observed_progress_current != self.progress_total
+        ):
+            raise ValueError(
+                "completed packet-count jobs require complete observed progress"
+            )
         if self.status is RuntimeJobStatus.COMPLETED and self.completed_at is None:
             raise ValueError("completed runtime jobs require a completion timestamp")
         if self.status is not RuntimeJobStatus.COMPLETED and self.completed_at is not None:
@@ -292,9 +336,23 @@ class RuntimeAttempt(CoreSchema):
     status: RuntimeAttemptStatus = RuntimeAttemptStatus.RUNNING
     restart_from_origin: bool = True
     counters: RuntimeCounters = Field(default_factory=RuntimeCounters)
+    progress_semantics: DurableProgressSemantics = "durable_committed_evidence"
     progress_current: int = Field(default=0, ge=0)
     progress_total: int | None = Field(default=None, ge=1)
-    progress: float = Field(default=0.0, ge=0.0, le=1.0)
+    progress: float = Field(default=0.0, ge=0.0, le=1.0, allow_inf_nan=False)
+    observed_counters: RuntimeCounters = Field(default_factory=RuntimeCounters)
+    observed_progress_semantics: ObservedProgressSemantics = (
+        "non_durable_live_observation"
+    )
+    observed_progress_current: int = Field(default=0, ge=0)
+    observed_progress_total: int | None = Field(default=None, ge=1)
+    observed_progress: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        allow_inf_nan=False,
+    )
+    observed_at: datetime | None = None
     started_at: datetime = Field(default_factory=utc_now)
     paused_at: datetime | None = None
     resumed_at: datetime | None = None
@@ -317,6 +375,7 @@ class RuntimeAttempt(CoreSchema):
         "completed_at",
         "updated_at",
         "ended_at",
+        "observed_at",
     )
     @classmethod
     def validate_time(cls, value: datetime | None) -> datetime | None:
@@ -330,6 +389,34 @@ class RuntimeAttempt(CoreSchema):
             raise ValueError("attempt end cannot precede start")
         if self.status is RuntimeAttemptStatus.COMPLETED and self.progress != 1.0:
             raise ValueError("completed runtime attempts require complete progress")
+        if self.status is not RuntimeAttemptStatus.COMPLETED and self.progress == 1.0:
+            raise ValueError("only completed runtime attempts may report 100 percent")
+        if (
+            self.progress_total is not None
+            and self.progress_current > self.progress_total
+        ):
+            raise ValueError("attempt durable progress cannot exceed its verified total")
+        if (
+            self.observed_progress_total is not None
+            and self.observed_progress_current > self.observed_progress_total
+        ):
+            raise ValueError("attempt observed progress cannot exceed its verified total")
+        if (
+            self.progress_total is not None
+            and self.observed_progress_total is not None
+            and self.progress_total != self.observed_progress_total
+        ):
+            raise ValueError(
+                "attempt observed and durable totals must use one source total"
+            )
+        if (
+            self.status is RuntimeAttemptStatus.COMPLETED
+            and self.progress_total is not None
+            and self.observed_progress_current != self.progress_total
+        ):
+            raise ValueError(
+                "completed packet-count attempts require complete observed progress"
+            )
         return self
 
 
@@ -451,3 +538,12 @@ class RuntimeStatus(CoreSchema):
     model_loading_state: Literal["verified_per_job_preflight"]
     live_capture_enabled: Literal[False]
     automatic_recovery: Literal[False]
+    recovery_strategy: Literal["deterministic_restart_from_origin"] = (
+        "deterministic_restart_from_origin"
+    )
+    observed_progress_semantics: ObservedProgressSemantics = (
+        "non_durable_live_observation"
+    )
+    durable_progress_semantics: DurableProgressSemantics = (
+        "durable_committed_evidence"
+    )

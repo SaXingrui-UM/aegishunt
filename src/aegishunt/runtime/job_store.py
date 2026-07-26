@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -34,6 +35,17 @@ def _attempt(row: RuntimeAttemptRecord) -> RuntimeAttempt:
     return RuntimeAttempt.model_validate(row)
 
 
+def _counters_decrease(
+    counters: RuntimeCounters,
+    persisted: dict[str, object],
+) -> bool:
+    previous = RuntimeCounters.model_validate(persisted)
+    return any(
+        getattr(counters, field) < getattr(previous, field)
+        for field in RuntimeCounters.model_fields
+    )
+
+
 class RuntimeJobStore:
     """Own runtime state transitions while callers own transaction boundaries."""
 
@@ -45,6 +57,7 @@ class RuntimeJobStore:
         values = job.model_dump(mode="python")
         values["snapshot"] = job.snapshot.model_dump(mode="json")
         values["counters"] = job.counters.model_dump(mode="json")
+        values["observed_counters"] = job.observed_counters.model_dump(mode="json")
         row = RuntimeJobRecord(**values)
         self._session.add(row)
         self._session.flush()
@@ -168,6 +181,7 @@ class RuntimeJobStore:
             progress_current=row.progress_current,
             progress_total=row.progress_total,
             progress=row.progress,
+            observed_progress_total=row.progress_total,
         )
         attempt_row = RuntimeAttemptRecord(**attempt.model_dump(mode="python"))
         self._session.add(attempt_row)
@@ -235,7 +249,7 @@ class RuntimeJobStore:
         self._session.flush()
         return _job(row)
 
-    def update_progress(
+    def update_observed_progress(
         self,
         job_id: UUID,
         *,
@@ -248,17 +262,90 @@ class RuntimeJobStore:
         if row.status not in {
             RuntimeJobStatus.RUNNING,
             RuntimeJobStatus.PAUSE_REQUESTED,
+            RuntimeJobStatus.PAUSED,
         }:
-            raise RuntimeStateError("progress can update only for an active replay")
-        if progress < row.progress:
-            raise RuntimeStateError("runtime progress cannot decrease within one attempt")
+            raise RuntimeStateError(
+                "observed progress can update only for a live replay attempt"
+            )
+        if not math.isfinite(progress) or not 0.0 <= progress <= 1.0:
+            raise RuntimeStateError("observed progress must be finite and within [0, 1]")
+        if progress < row.observed_progress:
+            raise RuntimeStateError(
+                "observed progress cannot decrease within one live attempt"
+            )
+        if counters.captured_packets < row.observed_progress_current:
+            raise RuntimeStateError(
+                "observed packet count cannot decrease within one live attempt"
+            )
+        if _counters_decrease(counters, row.observed_counters):
+            raise RuntimeStateError(
+                "observed counters cannot decrease within one live attempt"
+            )
+        if (
+            row.progress_total is not None
+            and counters.captured_packets > row.progress_total
+        ):
+            raise RuntimeStateError(
+                "observed packet count cannot exceed its verified source total"
+            )
+        row.observed_counters = counters.model_dump(mode="json")
+        row.observed_progress_current = counters.captured_packets
+        row.observed_progress_total = row.progress_total
+        row.observed_progress = progress
+        row.observed_at = now
+        row.updated_at = now
+        attempt = self._current_attempt(row)
+        attempt.observed_counters = counters.model_dump(mode="json")
+        attempt.observed_progress_current = row.observed_progress_current
+        attempt.observed_progress_total = row.observed_progress_total
+        attempt.observed_progress = progress
+        attempt.observed_at = now
+        attempt.updated_at = now
+        self._session.flush()
+        return _job(row)
+
+    def update_durable_progress(
+        self,
+        job_id: UUID,
+        *,
+        worker_id: str,
+        counters: RuntimeCounters,
+        progress_current: int,
+        progress: float,
+        now: datetime,
+    ) -> RuntimeJob:
+        """Persist only evidence counters committed by the caller's transaction."""
+
+        row = self._owned(job_id, worker_id)
+        if row.status is not RuntimeJobStatus.RUNNING:
+            raise RuntimeStateError(
+                "durable progress can update only for a running replay"
+            )
+        if not math.isfinite(progress) or not 0.0 <= progress <= 1.0:
+            raise RuntimeStateError("durable progress must be finite and within [0, 1]")
+        if progress == 1.0:
+            raise RuntimeStateError(
+                "durable progress reaches 100 percent only through completion"
+            )
+        if progress < row.progress or progress_current < row.progress_current:
+            raise RuntimeStateError(
+                "durable progress cannot decrease within one attempt"
+            )
+        if row.progress_total is not None and progress_current > row.progress_total:
+            raise RuntimeStateError(
+                "durable progress cannot exceed its verified source total"
+            )
+        if _counters_decrease(counters, row.counters):
+            raise RuntimeStateError(
+                "durable evidence counters cannot decrease within one attempt"
+            )
         row.counters = counters.model_dump(mode="json")
-        row.progress_current = counters.captured_packets
+        row.progress_current = progress_current
         row.progress = progress
         row.updated_at = now
         attempt = self._current_attempt(row)
         attempt.counters = counters.model_dump(mode="json")
-        attempt.progress_current = row.progress_current
+        attempt.progress_current = progress_current
         attempt.progress_total = row.progress_total
         attempt.progress = progress
         attempt.updated_at = now
@@ -363,6 +450,11 @@ class RuntimeJobStore:
         attempt.progress_current = row.progress_current
         attempt.progress_total = row.progress_total
         attempt.progress = row.progress
+        attempt.observed_counters = row.observed_counters
+        attempt.observed_progress_current = row.observed_progress_current
+        attempt.observed_progress_total = row.observed_progress_total
+        attempt.observed_progress = row.observed_progress
+        attempt.observed_at = row.observed_at
         attempt.interruption_reason = interruption_reason
         attempt.error_category = error_category
         attempt.error_code = error_code
@@ -417,6 +509,22 @@ class RuntimeJobStore:
                 "after_state": after_state,
                 "reason": details.get("reason", action),
                 "retryable": details.get("retryable"),
+                "durable_progress_semantics": row.progress_semantics,
+                "durable_progress": row.progress,
+                "durable_progress_current": row.progress_current,
+                "durable_progress_total": row.progress_total,
+                "durable_counters": row.counters,
+                "observed_progress_semantics": row.observed_progress_semantics,
+                "observed_progress": row.observed_progress,
+                "observed_progress_current": row.observed_progress_current,
+                "observed_progress_total": row.observed_progress_total,
+                "observed_packet_count": RuntimeCounters.model_validate(
+                    row.observed_counters
+                ).captured_packets,
+                "observed_at": (
+                    None if row.observed_at is None else row.observed_at.isoformat()
+                ),
+                "recovery_strategy": "deterministic_restart_from_origin",
                 **details,
             }
             self._audit.record(

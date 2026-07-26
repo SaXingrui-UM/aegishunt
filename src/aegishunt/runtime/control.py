@@ -59,6 +59,7 @@ class RuntimeControlMonitor:
         """Apply pending control actions and periodic observability updates."""
 
         if self._stop.is_set():
+            self.record_observed_progress(job_id, counters, progress)
             raise ReplayInterrupted("worker shutdown requested")
         now_mono = self._clock.monotonic()
         heartbeat_due = (
@@ -81,6 +82,22 @@ class RuntimeControlMonitor:
             current = jobs.get(job_id)
             if current is None:
                 raise RuntimeReplayError("runtime job disappeared during replay")
+            observation_due = (
+                heartbeat_due
+                or resource_due
+                or progress_due
+                or current.status is RuntimeJobStatus.PAUSE_REQUESTED
+            )
+            if observation_due:
+                current = jobs.update_observed_progress(
+                    job_id,
+                    worker_id=self._worker_id,
+                    counters=counters,
+                    progress=progress,
+                    now=self._clock.now(),
+                )
+                self._last_progress_update = now_mono
+                self._last_progress_packet_count = counters.captured_packets
             if current.status is RuntimeJobStatus.PAUSE_REQUESTED:
                 current = jobs.mark_paused(
                     job_id,
@@ -109,20 +126,26 @@ class RuntimeControlMonitor:
         current_status = self._wait_while_paused(job_id, current.status)
         if current_status is not RuntimeJobStatus.RUNNING:
             raise RuntimeReplayError("runtime job cannot continue in its current state")
-        if heartbeat_due or resource_due or progress_due:
-            with self._database.session() as session, session.begin():
-                RuntimeJobRepository(
-                    session,
-                    AuditLogRepository(session),
-                ).update_progress(
-                    job_id,
-                    worker_id=self._worker_id,
-                    counters=counters,
-                    progress=progress,
-                    now=self._clock.now(),
-                )
-            self._last_progress_update = now_mono
-            self._last_progress_packet_count = counters.captured_packets
+
+    def record_observed_progress(
+        self,
+        job_id: UUID,
+        counters: RuntimeCounters,
+        progress: float,
+    ) -> None:
+        """Persist non-durable live telemetry without changing evidence progress."""
+
+        with self._database.session() as session, session.begin():
+            RuntimeJobRepository(
+                session,
+                AuditLogRepository(session),
+            ).update_observed_progress(
+                job_id,
+                worker_id=self._worker_id,
+                counters=counters,
+                progress=progress,
+                now=self._clock.now(),
+            )
 
     def _sample_resources(
         self,

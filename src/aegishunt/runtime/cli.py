@@ -157,6 +157,13 @@ def describe_job(job_id: UUID, config: ConfigOption = None) -> None:
                     attempt.model_dump(mode="json")
                     for attempt in service.attempts(job_id)
                 ],
+                "progress_contract": {
+                    "observed": "non_durable_live_observation",
+                    "durable": "durable_committed_evidence",
+                    "recovery_strategy": "deterministic_restart_from_origin",
+                    "observed_is_checkpoint": False,
+                    "exact_cursor_resume": False,
+                },
             }
         )
     except AegisHuntError as exc:
