@@ -22,7 +22,7 @@ from aegishunt.schemas import (
     ThreatHypothesis,
 )
 from aegishunt.schemas.base import JsonObject, require_aware_utc, utc_now
-from aegishunt.schemas.enums import AnalystVerdict, HypothesisStatus
+from aegishunt.schemas.enums import AnalystVerdict, HypothesisStatus, ModelStatus, ModelType
 from aegishunt.storage.models import (
     AlertGroupRecord,
     AnalystFeedbackRecord,
@@ -90,6 +90,16 @@ class TelemetrySourceRepository(SqlAlchemyRepository[TelemetrySource, TelemetryS
         ).all()
         total = self._session.scalar(select(func.count(TelemetrySourceRecord.source_id))) or 0
         return [TelemetrySource.model_validate(row) for row in rows], total
+
+    def get_by_checksum(self, checksum: str) -> TelemetrySource | None:
+        """Return the earliest source with one exact content checksum."""
+
+        row = self._session.scalar(
+            select(TelemetrySourceRecord)
+            .where(TelemetrySourceRecord.checksum == checksum)
+            .order_by(TelemetrySourceRecord.source_id)
+        )
+        return None if row is None else TelemetrySource.model_validate(row)
 
 
 class NetworkFlowRepository(SqlAlchemyRepository[NetworkFlow, NetworkFlowRecord]):
@@ -681,3 +691,63 @@ class ModelVersionRepository(SqlAlchemyRepository[ModelVersion, ModelVersionReco
             id_attribute="model_id",
             audit_log=audit_log,
         )
+
+    def get_by_type_version(
+        self, model_type: ModelType, version: str
+    ) -> ModelVersion | None:
+        row = self._session.scalar(
+            select(ModelVersionRecord).where(
+                ModelVersionRecord.model_type == model_type,
+                ModelVersionRecord.version == version,
+            )
+        )
+        return None if row is None else ModelVersion.model_validate(row)
+
+    def list_active(self) -> list[ModelVersion]:
+        rows = self._session.scalars(
+            select(ModelVersionRecord)
+            .where(ModelVersionRecord.status == ModelStatus.ACTIVE)
+            .order_by(ModelVersionRecord.model_type, ModelVersionRecord.version)
+        ).all()
+        return [ModelVersion.model_validate(row) for row in rows]
+
+    def activate(
+        self,
+        model_id: UUID,
+        *,
+        actor: str,
+        reason: str,
+        expected_active_version: str | None,
+    ) -> ModelVersion:
+        """Activate one verified record with optimistic version protection."""
+
+        target = self._session.get(ModelVersionRecord, model_id)
+        if target is None:
+            raise RepositoryRecordNotFoundError("model version does not exist")
+        active = self._session.scalar(
+            select(ModelVersionRecord).where(
+                ModelVersionRecord.model_type == target.model_type,
+                ModelVersionRecord.status == ModelStatus.ACTIVE,
+            )
+        )
+        current_version = None if active is None else active.version
+        if current_version != expected_active_version:
+            raise RepositoryIntegrityError("active model version changed")
+        if active is not None and active.model_id != target.model_id:
+            active.status = ModelStatus.RETIRED
+        target.status = ModelStatus.ACTIVE
+        self._session.flush()
+        if self._audit_log is not None:
+            self._audit_log.record(
+                actor=actor,
+                action="activate_model",
+                object_type=ModelVersionRecord.__tablename__,
+                object_id=str(model_id),
+                details={
+                    "model_type": target.model_type.value,
+                    "version": target.version,
+                    "previous_active_version": current_version,
+                    "reason": reason,
+                },
+            )
+        return ModelVersion.model_validate(target)

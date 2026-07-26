@@ -117,6 +117,8 @@ class IngestionJobPage(CoreSchema):
     total: NonNegativeInt
     limit: int = Field(ge=1, le=100)
     offset: NonNegativeInt
+    next_offset: NonNegativeInt | None
+    has_more: bool
 
 
 class SampleDescriptor(CoreSchema):
