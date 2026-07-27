@@ -73,8 +73,7 @@ it does not overwrite formal experiments or move active model pointers.
   bound to a historical Phase 6 dataset manifest. The demo now writes its
   isolated anomaly config from the newly generated demo dataset and split
   checksums. Clean Python 3.11 verification and the final full suite execute
-  the actual Sample Demo path successfully; refreshed required CI remains
-  mandatory before merge.
+  the actual Sample Demo path successfully.
 - Both refreshed GitHub Actions jobs at head `f8a464d` passed Ruff and mypy,
   then failed two Sample Demo assertions because host-dependent operational
   tie-breaks produced a legal supervised validation winner different from the
@@ -83,7 +82,11 @@ it does not overwrite formal experiments or move active model pointers.
   algorithm-ID final tie-break, isolated `12.0.0` model identity, and derived
   fusion/risk/runtime policy identities. Phase 5 ranking and historical
   corrective evidence are unchanged. The final 458-test local run verifies the
-  corrected path; refreshed required CI remains mandatory before merge.
+  corrected path.
+- At corrective head `f98a593`, both required GitHub Actions `quality` jobs
+  passed Ruff, mypy, and all 458 tests. They reported 85.46% branch-aware
+  coverage and completed the test step in 1,378.48 and 1,223.66 seconds,
+  respectively.
 
 ## Manual verification
 
@@ -125,8 +128,7 @@ page-level and E2E coverage. The final equivalent review found one additional
 Medium: acknowledged alerts were omitted from the Overview active-alert count.
 It now counts both open and acknowledged states with a direct regression.
 Final findings are zero Blocking, zero High, and zero unresolved
-correctness-related Medium. Refreshed required CI remains mandatory before
-merge.
+correctness-related Medium.
 
 The final native review attempt after the portable-demo correction failed with
 the same arm64 executable `ENOENT`. Equivalent read-only review of

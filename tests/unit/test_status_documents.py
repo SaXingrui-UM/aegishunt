@@ -83,6 +83,7 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     )
     normalized_progress_current = " ".join(progress_current.split())
     normalized_release_current = " ".join(release_current.split())
+    normalized_release = " ".join(release.split())
 
     for content in (progress_current, release_current):
         assert "Implementation complete — awaiting PR review" in content
@@ -103,13 +104,12 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     )
     assert "PR [#35]" in normalized_progress_current
     assert "pull/35" in normalized_progress_current
-    assert "Refreshed required CI" in normalized_progress_current
+    assert "refreshed required CI passing" in normalized_progress_current
     assert "PR #35 heads `4226ccb` and `f8a464d` exposed" in (
         normalized_progress_current
     )
-    assert "requires refreshed GitHub Actions success before merge" in (
-        normalized_progress_current
-    )
+    assert "both required GitHub Actions `quality` jobs passed" in progress_current
+    assert "all 458 tests at 85.46% branch-aware coverage" in progress_current
     assert "phase-11-complete" in progress_current
     assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in progress_current
 
@@ -126,6 +126,9 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     assert "85.40%" in release
     assert "HTTP 422" in release
     assert "`f8a464d`" in release
+    assert "`f98a593`" in release
+    assert "all 458 tests" in release
+    assert "85.46% branch-aware coverage" in normalized_release
     assert "portable selection policy" in release
     assert "isolated `12.0.0` model identity" in release
     assert "shared previous/next pagination" in release

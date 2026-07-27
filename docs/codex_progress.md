@@ -13,8 +13,8 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
-| Current activity | Phase 12 acceptance corrections are complete on `phase/12-api-frontend`; PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) remains open. Refreshed required CI and user review are required before merge. Phase 13 has not started |
-| Verification status | The clean-evidence demo correction, usable frontend pagination, complete analyst drill-down, overview KPIs, related alert context, and explicit worker run-once control pass focused and repository-wide local verification |
+| Current activity | Phase 12 acceptance corrections are complete on `phase/12-api-frontend`; PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) remains open with refreshed required CI passing. User review and Squash and merge are required. Phase 13 has not started |
+| Verification status | The clean-evidence demo correction, portable demo selection, usable frontend pagination, complete analyst drill-down, overview KPIs, related alert context, and explicit worker run-once control pass focused, repository-wide, and clean-Linux CI verification |
 | Stable branch checkpoint | PR #33 was squash-merged to `main` as `8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated Tag `phase-11-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -27,7 +27,7 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | PR #35 heads `4226ccb` and `f8a464d` exposed clean-Linux Sample Demo defects after Ruff and mypy passed. Both root causes are corrected; the current head passes all local required checks and requires refreshed GitHub Actions success before merge |
+| CI status | PR #35 heads `4226ccb` and `f8a464d` exposed clean-Linux Sample Demo defects after Ruff and mypy passed. Both root causes are corrected; at corrective head `f98a593`, both required GitHub Actions `quality` jobs passed Ruff, mypy, and all 458 tests at 85.46% branch-aware coverage |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -51,7 +51,7 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 13 status | Not started |
 | Current branch | `phase/12-api-frontend` |
 | Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Push the reviewed acceptance corrections, require refreshed PR #35 CI, then wait for user review and Squash and merge; do not start Phase 13 |
+| Next action | Wait for user review of PR #35 and Squash and merge; do not start Phase 13 |
 
 Phase 0 through Phase 11 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
@@ -142,6 +142,11 @@ training/activation, or response actions.
   while retaining them as evidence, applies a stable algorithm-ID final tie,
   and derives all downstream policy identities from its isolated `12.0.0`
   bundle. It does not change Phase 5 selection or historical evidence.
+- Both required GitHub Actions `quality` jobs at corrective head `f98a593`
+  passed Ruff, mypy, and all 458 tests. They reported 85.46% branch-aware
+  coverage and completed the test step in 1,378.48 and 1,223.66 seconds,
+  respectively. The clean-Linux Sample Demo therefore verifies the portable
+  selection and isolated downstream identity bindings.
 - Manual FastAPI verification returned HTTP 200 for health, docs, and OpenAPI;
   the schema contained 57 paths and 61 unique operations. The real controlled
   demo produced two flows, two alerts, one group, one hypothesis, and an
