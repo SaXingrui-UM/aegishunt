@@ -13,6 +13,7 @@ from aegishunt.ml.supervised.errors import TrainingError
 
 CONFIG_SCHEMA_VERSION = "1.0.0"
 CORRECTIVE_CONFIG_SCHEMA_VERSION = "1.1.0"
+PORTABLE_DEMO_SELECTION_POLICY_VERSION = "phase12-portable-demo-1.0.0"
 Algorithm = Literal[
     "dummy",
     "logistic_regression",

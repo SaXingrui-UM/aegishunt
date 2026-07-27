@@ -14,3 +14,10 @@ samples:
     checksum: b941140c30f4d7f823626d9861498998089bb5c993d12e6490350d9d6dcfd08a
     description: Two deterministic synthetic canonical flow rows for CSV ingestion.
     synthetic: true
+  - sample_id: phase12-demo-pcap
+    filename: phase12-demo.pcap
+    source_type: pcap
+    content_type: application/vnd.tcpdump.pcap
+    checksum: 5275d1cd350072883d046cf5b4fe4a438d8ded69375241bbd94b90a21e8c4226
+    description: Deterministic two-flow PCAP for the explicit Phase 12 offline demonstration.
+    synthetic: true

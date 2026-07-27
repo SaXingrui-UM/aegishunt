@@ -80,7 +80,15 @@ def test_configuration_to_ingestion_persistence_and_application_restart(tmp_path
             ("/ingestion/json-events", "events.json", json_payload, "application/json", 2),
         )
         for endpoint, filename, payload, content_type, records in requests:
-            response = client.post(endpoint, files={"file": (filename, payload, content_type)})
+            response = client.post(
+                endpoint,
+                files={"file": (filename, payload, content_type)},
+                data={
+                    "actor": "integration-test",
+                    "reason": "cross-phase ingestion regression",
+                    "confirm": "true",
+                },
+            )
             assert response.status_code == 201
             job = response.json()
             _assert_completed(

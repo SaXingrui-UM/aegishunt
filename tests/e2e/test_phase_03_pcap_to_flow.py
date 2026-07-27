@@ -44,6 +44,7 @@ def test_api_pcap_to_flow_survives_application_restart(tmp_path: Path) -> None:
         response = client.post(
             "/ingestion/pcap",
             files={"file": ("phase3.pcap", payload, "application/vnd.tcpdump.pcap")},
+            data={"actor": "phase3-test", "reason": "flow regression", "confirm": "true"},
         )
         assert response.status_code == 201
         job = response.json()

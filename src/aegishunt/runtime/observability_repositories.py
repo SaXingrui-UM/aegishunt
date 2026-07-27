@@ -47,6 +47,14 @@ class RuntimeWorkerRepository:
         ).all()
         return [RuntimeWorker.model_validate(row) for row in rows]
 
+    def count(self) -> int:
+        """Return the exact number of registered workers for pagination metadata."""
+
+        return int(
+            self._session.scalar(select(func.count()).select_from(RuntimeWorkerRecord))
+            or 0
+        )
+
     def reconcile_stale(
         self,
         *,

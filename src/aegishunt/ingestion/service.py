@@ -306,4 +306,8 @@ class IngestionService:
             total=total,
             limit=limit,
             offset=offset,
+            next_offset=(
+                offset + len(sources) if offset + len(sources) < total else None
+            ),
+            has_more=offset + len(sources) < total,
         )

@@ -15,6 +15,8 @@ import uvicorn
 from sqlalchemy import make_url, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from aegishunt.api.contracts import DemoRequest
+from aegishunt.api.demo_service import SampleDemoService
 from aegishunt.cases.cli import cases_app
 from aegishunt.config import DatabaseSettings, load_settings
 from aegishunt.datasets.cli import dataset_app
@@ -35,6 +37,11 @@ app = typer.Typer(
     help=f"{APPLICATION_NAME}: {APPLICATION_DESCRIPTION}",
     no_args_is_help=True,
 )
+demo_app = typer.Typer(
+    name="demo",
+    help="Inspect or explicitly run the local controlled sample demonstration.",
+    no_args_is_help=True,
+)
 app.add_typer(ingest_app)
 app.add_typer(dataset_app)
 app.add_typer(model_app)
@@ -47,6 +54,7 @@ app.add_typer(hunt_app)
 app.add_typer(cases_app)
 app.add_typer(feedback_app)
 app.add_typer(runtime_app)
+app.add_typer(demo_app)
 
 REQUIRED_DIRECTORIES = ("configs", "data", "artifacts", "reports")
 
@@ -240,16 +248,27 @@ def init_db(
 
 @app.command()
 def api(
-    host: Annotated[str, typer.Option(help="Interface on which the API listens.")] = "127.0.0.1",
-    port: Annotated[int, typer.Option(min=1, max=65535, help="API TCP port.")] = 8000,
+    host: Annotated[
+        str | None,
+        typer.Option(help="Loopback interface; defaults to validated web configuration."),
+    ] = None,
+    port: Annotated[
+        int | None,
+        typer.Option(min=1, max=65535, help="API port; defaults to web configuration."),
+    ] = None,
     reload: Annotated[
         bool,
         typer.Option("--reload/--no-reload", help="Reload when source files change."),
     ] = False,
 ) -> None:
-    """Start the minimal FastAPI application."""
+    """Start the local FastAPI application."""
 
-    run_api(host=host, port=port, reload=reload)
+    settings = load_settings()
+    run_api(
+        host=host or settings.web.api_host,
+        port=port or settings.web.api_port,
+        reload=reload,
+    )
 
 
 @app.command()
@@ -269,6 +288,55 @@ def frontend(
     exit_code = run_frontend(address=address, port=port, headless=headless)
     if exit_code != 0:
         raise typer.Exit(code=exit_code)
+
+
+@demo_app.command("status")
+def demo_status(
+    config: Annotated[Path | None, typer.Option("--config", dir_okay=False)] = None,
+) -> None:
+    """Report packaged sample-demo readiness without triggering work."""
+
+    settings = load_settings(config)
+    database = Database(settings.database)
+    try:
+        database.initialize()
+        status = SampleDemoService(database, settings).status()
+        typer.echo(status.model_dump_json(indent=2))
+    finally:
+        database.dispose()
+
+
+@demo_app.command("run")
+def demo_run(
+    sample_id: Annotated[str, typer.Option("--sample-id")],
+    actor: Annotated[str, typer.Option("--actor")],
+    reason: Annotated[str, typer.Option("--reason")],
+    confirm: Annotated[
+        bool,
+        typer.Option("--confirm", help="Confirm explicit controlled sample ingestion."),
+    ] = False,
+    config: Annotated[Path | None, typer.Option("--config", dir_okay=False)] = None,
+) -> None:
+    """Run one idempotent packaged-sample demonstration."""
+
+    if not confirm:
+        typer.echo("Demo was not run: --confirm is required.", err=True)
+        raise typer.Exit(code=2)
+    settings = load_settings(config)
+    database = Database(settings.database)
+    try:
+        database.initialize()
+        result = SampleDemoService(database, settings).run(
+            DemoRequest(
+                actor=actor,
+                reason=reason,
+                confirm=True,
+                sample_id=sample_id,
+            )
+        )
+        typer.echo(result.model_dump_json(indent=2))
+    finally:
+        database.dispose()
 
 
 if __name__ == "__main__":

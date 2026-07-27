@@ -21,8 +21,10 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 Phases 0–11 are complete and their annotated checkpoints remain immutable.
 Phase 11 PR [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33) is merged as
 `8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated
-`phase-11-complete` peels to that canonical merge commit. Phase 12 is **Not
-started**. The Phase 11 boundary is offline, rootless PCAP replay on a single
+`phase-11-complete` peels to that canonical merge commit. Phase 12 is
+**Implementation complete — awaiting PR review** on
+`phase/12-api-frontend`; Phase 13 is **Not started**. The Phase 11 boundary is
+offline, rootless PCAP replay on a single
 SQLite node with durable jobs, leases, explicit recovery, verified artifact
 pinning, transactional output ledgers, separate non-durable observed replay
 telemetry and durable committed evidence progress, and bounded worker/resource
@@ -151,6 +153,8 @@ aegishunt runtime jobs describe <runtime-job-id>
 aegishunt runtime worker run --once
 aegishunt runtime workers list
 aegishunt runtime status
+aegishunt demo --help
+aegishunt demo run --sample-id phase12-demo-pcap --actor analyst --reason "controlled demonstration" --confirm
 aegishunt api
 aegishunt frontend
 ```
@@ -330,12 +334,20 @@ Interactive OpenAPI documentation is available at
 aegishunt frontend --address 127.0.0.1 --port 8501
 ```
 
-The Phase 11 page reads bounded persisted queue, worker, and resource state and
-reports unavailability rather than inventing zeros. When a job exists it labels
-observed replay progress as non-durable and separately reports durable committed
-evidence. It retains the controlled-evidence caveats and does not display
-fabricated detections, alerts, hypotheses, cases, metrics, or resource
-measurements. Complete interactive workflows remain Phase 12 scope.
+The Phase 12 Streamlit application exposes nine API-backed pages: Overview,
+Data Ingestion, Traffic Explorer, Alerts, Threat Hunts, Cases, Model Lab,
+Evaluation, and System Health. It uses a typed HTTP client and never opens the
+database, repository, or model files directly. Empty and unavailable values are
+shown explicitly rather than replaced with fabricated zeros. Mutations require
+an explicit form, actor/reason attribution, and confirmation where applicable.
+
+With the API running, the packaged `phase12-demo-pcap` asset can be launched
+explicitly from Data Ingestion or the CLI. It uses isolated, checksummed
+demo-only artifacts, existing production services, no external network, no
+root privileges, and no live capture. Its synthetic results verify the local
+pipeline only; they are not a public benchmark, production validation, or an
+attack-probability claim. See
+[`docs/api_frontend.md`](docs/api_frontend.md).
 
 ## Quality checks
 
@@ -356,7 +368,7 @@ The test command produces terminal coverage output and `coverage.xml`.
 | 5-7 | Supervised, anomaly, and fusion experiments |
 | 8-10 | Explainable alerts, correlation, hypotheses, cases, and feedback |
 | 11 | Durable offline runtime replay, workers, recovery, and resource status |
-| 12 | Complete API and frontend demonstration workflows |
+| 12 | Complete API and frontend demonstration workflows (implementation awaiting PR review) |
 | 13-14 | Hardening, performance, deployment, documentation, and final delivery |
 
 Only one declared phase is developed at a time. Progress is tracked in
