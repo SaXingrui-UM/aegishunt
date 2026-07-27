@@ -27,7 +27,12 @@ Status: **Implementation complete — awaiting PR review**.
 - Explicit audited runtime, verdict, hypothesis, case, feedback, training, and
   activation mutations. GET and auto-refresh paths remain read-only.
 - Typed HTTP frontend client and nine modular Streamlit pages with truthful
-  empty/error/unavailable states and bounded GET-only refresh.
+  empty/error/unavailable states, shared previous/next pagination, and bounded
+  GET-only refresh.
+- Complete analyst-facing Overview KPIs and activity state; Traffic Explorer
+  flow/detail/feature/detection/alert linkage; Alert score/threshold, reason,
+  entity, group, hypothesis, and limitation context; and a confirmed audited
+  worker run-once action that claims at most one queued job.
 - Allowlisted deterministic `phase12-demo-pcap`, isolated versioned demo
   artifacts, actual Phase 2–11 service execution, stable persisted outputs, and
   optional explicit case creation.
@@ -45,20 +50,26 @@ it does not overwrite formal experiments or move active model pointers.
 
 - `ruff check .`: passed.
 - `mypy src`: passed for 234 source files.
-- Final repository-wide `pytest`: 452 passed, 0 failed, 0 skipped, 0 xfailed
-  in 1,466.61 seconds.
-- Branch-aware coverage: 85.28%, above the unchanged 85% gate.
-- Phase 12 API/client/frontend/demo and CLI selection: 31 passed in 7.64
-  seconds without collecting global coverage.
-- Configuration and ingestion regression selection: 35 passed in 6.79 seconds
+- Final corrective-head repository-wide `pytest`: 456 passed, 0 failed,
+  0 skipped, 0 xfailed in 1,604.82 seconds.
+- Branch-aware coverage: 85.40%, above the unchanged 85% gate.
+- Phase 12 E2E/API/client/frontend selection: 21 passed in 73.40 seconds
   without collecting global coverage.
-- Final OpenAPI/config/pagination selection: 7 passed in 3.97 seconds,
-  including exact worker totals beyond 100 records.
+- Focused OpenAPI/client/frontend selection: 17 passed in 38.92 seconds
+  without collecting global coverage.
 - The first complete run exposed one stale exact-set assertion after adding the
   Phase 12 sample (449 passed, 1 failed) and insufficient new-path coverage
   (82.55%). The assertion was corrected and a real populated nine-page
   API/frontend interaction regression was added; no test was deleted, skipped,
   weakened, or excluded and the coverage gate was not changed.
+- The first GitHub Actions execution at head `4226ccb` failed two Sample Demo
+  tests with sanitized HTTP 422 responses and consequently reported only 82%
+  coverage. The clean environment exposed an anomaly-config checksum still
+  bound to a historical Phase 6 dataset manifest. The demo now writes its
+  isolated anomaly config from the newly generated demo dataset and split
+  checksums. Clean Python 3.11 verification and the final full suite execute
+  the actual Sample Demo path successfully; refreshed required CI remains
+  mandatory before merge.
 
 ## Manual verification
 
@@ -87,12 +98,17 @@ streaming, path containment, sanitized errors, explicit actor/audit semantics,
 GET side effects, rerun safety, model operations, demo evidence isolation,
 research claims, generated files, and Phase 13 scope.
 
-The review found one correctness-related Medium issue: runtime-worker
-pagination reported at most 100 total records. The repository now performs an
-exact count, and a 101-worker regression test verifies the response. It also
-tightened the local-origin validator so path-bearing values are rejected.
-Retesting passed. Final findings are zero Blocking, zero High, and zero
-unresolved correctness-related Medium.
+The earlier review found one correctness-related Medium issue:
+runtime-worker pagination reported at most 100 total records. The repository
+now performs an exact count, and a 101-worker regression test verifies the
+response. It also tightened the local-origin validator so path-bearing values
+are rejected.
+
+The acceptance review additionally identified failed required CI, missing
+frontend pagination, incomplete Traffic Explorer and Overview workflows, and
+partial Alerts/worker controls. The corrections described above now have
+page-level and E2E coverage. A final branch review and refreshed required CI are
+still required before declaring zero unresolved merge-blocking findings.
 
 ## Known limitations
 

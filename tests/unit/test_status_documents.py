@@ -98,11 +98,16 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
         normalized_progress_current
     )
     assert "Phase 13 status | Not started" in normalized_progress_current
-    assert "Phase 12 implementation is complete" in normalized_progress_current
+    assert "Phase 12 acceptance corrections are complete" in (
+        normalized_progress_current
+    )
     assert "PR [#35]" in normalized_progress_current
     assert "pull/35" in normalized_progress_current
-    assert "open and ready for review" in normalized_progress_current
-    assert "PR #35 `quality` check is in progress" in normalized_progress_current
+    assert "Refreshed required CI" in normalized_progress_current
+    assert "previous PR #35 head `4226ccb` failed" in normalized_progress_current
+    assert "requires refreshed GitHub Actions success before merge" in (
+        normalized_progress_current
+    )
     assert "phase-11-complete" in progress_current
     assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in progress_current
 
@@ -115,6 +120,11 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
 
     assert "ADR 0021" in release
     assert "API-only frontend boundary" in release
+    assert "456 passed, 0 failed" in release
+    assert "85.40%" in release
+    assert "HTTP 422" in release
+    assert "shared previous/next pagination" in release
+    assert "worker run-once" in release
     assert "Phase 13 performance" in release
 
     for current in (progress_current, release_current):

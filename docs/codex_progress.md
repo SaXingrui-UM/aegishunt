@@ -1,6 +1,6 @@
 # Codex Progress
 
-Last updated: 2026-07-26 (Asia/Shanghai)
+Last updated: 2026-07-27 (Asia/Shanghai)
 
 ## Current state
 
@@ -13,8 +13,8 @@ Last updated: 2026-07-26 (Asia/Shanghai)
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
-| Current activity | Phase 12 implementation is complete on `phase/12-api-frontend`; PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) is open and ready for review. Phase 13 has not started |
-| Verification status | Phase 12 focused API/client/frontend/demo tests pass; final repository-wide Ruff, strict mypy, pytest/coverage, manual browser verification, and review results are recorded below |
+| Current activity | Phase 12 acceptance corrections are complete on `phase/12-api-frontend`; PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) remains open. Refreshed required CI and user review are required before merge. Phase 13 has not started |
+| Verification status | The clean-evidence demo correction, usable frontend pagination, complete analyst drill-down, overview KPIs, related alert context, and explicit worker run-once control pass focused and repository-wide local verification |
 | Stable branch checkpoint | PR #33 was squash-merged to `main` as `8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated Tag `phase-11-complete` peels to that merged commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -27,7 +27,7 @@ Last updated: 2026-07-26 (Asia/Shanghai)
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Phase 12 PR #35 `quality` check is in progress; local required checks passed and are recorded below |
+| CI status | The previous PR #35 head `4226ccb` failed both Linux `quality` jobs in the Sample Demo path. The corrective head passes all local required checks and requires refreshed GitHub Actions success before merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -51,7 +51,7 @@ Last updated: 2026-07-26 (Asia/Shanghai)
 | Phase 13 status | Not started |
 | Current branch | `phase/12-api-frontend` |
 | Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Wait for PR #35 CI, user review, and Squash and merge; do not start Phase 13 |
+| Next action | Push the acceptance corrections, require refreshed PR #35 CI, then wait for user review and Squash and merge; do not start Phase 13 |
 
 Phase 0 through Phase 11 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
@@ -77,6 +77,17 @@ training/activation, or response actions.
   production frontend module imports storage, repositories, SQLAlchemy, or
   artifact readers. Empty, unavailable, error, and controlled-evidence states
   remain explicit.
+- Added shared session-state pagination with bounded previous/next navigation
+  for every primary list workflow. Traffic Explorer now links selected flow
+  detail to ordered behavioral features, directional distributions,
+  DetectionResult thresholds/reasons, and its related SecurityAlert.
+- Completed Overview with server-derived flow, alert, hypothesis, case, model,
+  fusion-policy, ingestion, queue, worker, and recent-activity state. Missing
+  P95 latency remains explicitly Unavailable rather than inferred.
+- Completed Alerts with score-versus-threshold evidence, structured reasons,
+  involved entities, related groups/hypotheses, limitations, and analyst
+  action. Data Ingestion now exposes one confirmed, audited, bounded worker
+  cycle that claims at most one queued job and stops.
 - Added `phase12-demo-pcap`, a deterministic 350-byte controlled capture with
   UDP and TCP exchanges over documentation addresses, plus a reproducible
   generator and manifest checksum.
@@ -94,19 +105,28 @@ training/activation, or response actions.
 
 ## Phase 12 verification checkpoint
 
-- Final Ruff passed. Strict mypy passed for 234 source files. The final complete
-  pytest run passed all 452 tests with zero failures, skips, or xfails in
-  1,466.61 seconds at 85.28% branch-aware coverage, above the unchanged 85%
-  gate.
-- The Phase 12 API/client/frontend/demo and CLI selection passed 31 tests in
-  7.64 seconds. Configuration and ingestion regression coverage passed 35 tests
-  in 6.79 seconds. The final OpenAPI/config/pagination selection passed 7 tests
-  in 3.97 seconds, including exact pagination metadata with 101 workers.
+- Final corrective-head Ruff passed. Strict mypy passed for 234 source files.
+  The final complete pytest run passed all 456 tests with zero failures, skips,
+  or xfails in 1,604.82 seconds at 85.40% branch-aware coverage, above the
+  unchanged 85% gate.
+- The final Phase 12 E2E/API/client/frontend selection passed all 21 tests in
+  73.40 seconds without collecting global coverage. The focused OpenAPI,
+  client, and page selection passed all 17 tests in 38.92 seconds. These cover
+  pagination state transitions, server totals, KPI truthfulness, flow-to-alert
+  drill-down, related investigation context, and the explicit bounded worker
+  operation.
 - The first full run exposed one stale exact-set sample-registry assertion (449
   passed, 1 failed) and 82.55% coverage for the newly exposed paths. The sample
   assertion was corrected and a populated nine-page API/frontend regression
   now exercises real reads and explicit mutations. No test was removed,
   skipped, weakened, or excluded, and the coverage threshold remains 85%.
+- The first GitHub Actions run at `4226ccb` then exposed a clean-Linux evidence
+  binding defect: two Sample Demo tests received sanitized HTTP 422 responses
+  because the demo anomaly config still referenced a historical dataset
+  manifest checksum. The demo now derives its isolated anomaly config from the
+  freshly generated demo dataset and split manifests, preserving validation-only
+  model policy and evidence identities. A clean Python 3.11 environment and the
+  final full suite both execute the real Sample Demo successfully.
 - Manual FastAPI verification returned HTTP 200 for health, docs, and OpenAPI;
   the schema contained 57 paths and 61 unique operations. The real controlled
   demo produced two flows, two alerts, one group, one hypothesis, and an
