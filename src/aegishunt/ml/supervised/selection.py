@@ -117,3 +117,37 @@ def select_main_candidate(candidates: tuple[FittedCandidate, ...]) -> FittedCand
     if not candidates:
         raise TrainingError("model selection requires validation candidates")
     return max(candidates, key=selection_rank)
+
+
+def portable_demo_selection_rank(
+    candidate: FittedCandidate,
+) -> tuple[float, float, float, float, float, float, str]:
+    """Rank controlled-demo candidates without host-dependent operational ties.
+
+    Latency and serialized size remain measured evidence, but they are unsuitable
+    tie-breakers for a sample workflow that must select the same candidate across
+    supported operating systems and CPU architectures.
+    """
+
+    result = candidate.result
+    metrics = result.validation_metrics
+    fold_variance = result.cv_std_metrics.get("macro_f1")
+    return (
+        metrics.macro_f1,
+        maximize_optional_metric(metrics.pr_auc, name="validation PR-AUC"),
+        metrics.recall,
+        -metrics.false_positive_rate,
+        -minimize_optional_metric(metrics.brier_score, name="validation Brier score"),
+        -minimize_optional_metric(fold_variance, name="CV Macro F1 variance"),
+        result.algorithm,
+    )
+
+
+def select_portable_demo_candidate(
+    candidates: tuple[FittedCandidate, ...],
+) -> FittedCandidate:
+    """Select a validation-qualified candidate using the Phase 12 demo policy."""
+
+    if not candidates:
+        raise TrainingError("portable demo selection requires validation candidates")
+    return max(candidates, key=portable_demo_selection_rank)

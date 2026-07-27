@@ -8,6 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 import sklearn
 
@@ -25,7 +26,10 @@ from aegishunt.ml.supervised.bundle import (
     trusted_types,
 )
 from aegishunt.ml.supervised.candidates import PREPROCESSING_VERSION
-from aegishunt.ml.supervised.config import SupervisedTrainingConfig
+from aegishunt.ml.supervised.config import (
+    PORTABLE_DEMO_SELECTION_POLICY_VERSION,
+    SupervisedTrainingConfig,
+)
 from aegishunt.ml.supervised.contracts import (
     BundleManifest,
     CorrectiveEvidence,
@@ -43,6 +47,7 @@ from aegishunt.ml.supervised.selection import (
     FittedCandidate,
     evaluate_candidates,
     select_main_candidate,
+    select_portable_demo_candidate,
 )
 
 
@@ -118,6 +123,7 @@ class SupervisedTrainingService:
         model_payload: bytes,
         pipeline_verification_only: bool,
         corrective_code_commit: str | None,
+        selection_rationale: tuple[str, ...],
     ) -> ModelSelectionRecord:
         evidence = gate.evidence
         result = selected.result
@@ -145,11 +151,7 @@ class SupervisedTrainingService:
             calibration_method=result.calibration_method,
             threshold=result.threshold,
             selection_policy_version=config.selection_policy_version,
-            selection_rationale=(
-                "validation Macro F1 was the primary objective",
-                "PR-AUC, recall, FPR, Brier score, fold stability, latency, and size broke ties",
-                "Accuracy and frozen-test evidence were not selection keys",
-            ),
+            selection_rationale=selection_rationale,
             dataset_id=evidence.dataset_manifest.dataset_id,
             dataset_version=evidence.dataset_manifest.dataset_version,
             dataset_manifest_checksum=evidence.dataset_manifest_checksum,
@@ -173,7 +175,12 @@ class SupervisedTrainingService:
             created_at=datetime.now(UTC),
         )
 
-    def train(self, *, allow_controlled_demo: bool = False) -> TrainingRunResult:
+    def train(
+        self,
+        *,
+        allow_controlled_demo: bool = False,
+        selection_profile: Literal["registered", "portable_demo"] = "registered",
+    ) -> TrainingRunResult:
         """Create a validation-frozen selection record without opening test rows."""
 
         config = self._config()
@@ -186,7 +193,38 @@ class SupervisedTrainingService:
         )
         data = gate.load_training_validation(cv_folds=config.cv_folds)
         candidates = evaluate_candidates(data, config)
-        selected = select_main_candidate(candidates)
+        selection_rationale: tuple[str, ...]
+        if selection_profile == "portable_demo":
+            if (
+                not pipeline_only
+                or config.selection_policy_version
+                != PORTABLE_DEMO_SELECTION_POLICY_VERSION
+            ):
+                raise ArtifactError(
+                    "portable demo selection requires its controlled-demo policy"
+                )
+            selected = select_portable_demo_candidate(candidates)
+            selection_rationale = (
+                "validation Macro F1 was the primary objective",
+                "PR-AUC, recall, FPR, Brier score, and fold stability broke ties",
+                "host-dependent latency and size were measured but not selection keys",
+                "stable algorithm ID resolved any remaining exact validation tie",
+                "Accuracy and frozen-test evidence were not selection keys",
+            )
+        else:
+            if (
+                config.selection_policy_version
+                == PORTABLE_DEMO_SELECTION_POLICY_VERSION
+            ):
+                raise ArtifactError(
+                    "portable demo policy requires the portable selection profile"
+                )
+            selected = select_main_candidate(candidates)
+            selection_rationale = (
+                "validation Macro F1 was the primary objective",
+                "PR-AUC, recall, FPR, Brier score, fold stability, latency, and size broke ties",
+                "Accuracy and frozen-test evidence were not selection keys",
+            )
         model_payload = candidate_bytes(selected)
         corrective_code_commit = self._git_commit() if config.corrective_run is not None else None
         if config.corrective_run is not None and corrective_code_commit is None:
@@ -199,6 +237,7 @@ class SupervisedTrainingService:
             model_payload=model_payload,
             pipeline_verification_only=pipeline_only,
             corrective_code_commit=corrective_code_commit,
+            selection_rationale=selection_rationale,
         )
         store = ExperimentStore.create(self._reports_root, config.experiment_id)
         write_training_artifacts(store, config, candidates, selection, model_payload)

@@ -215,7 +215,7 @@ class WebSettings(BaseModel):
         pattern=r"^[a-z0-9][a-z0-9-]{2,63}$",
     )
     demo_operation_version: str = Field(
-        default="1.0.0",
+        default="1.1.0",
         pattern=r"^[0-9]+\.[0-9]+\.[0-9]+$",
     )
     demo_worker_id: str = Field(

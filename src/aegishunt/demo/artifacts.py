@@ -45,14 +45,16 @@ from aegishunt.ml.fusion.artifacts import (
     load_policy,
     sha256_file,
 )
+from aegishunt.ml.fusion.config import FusionExperimentConfig
 from aegishunt.ml.fusion.service import FusionEvaluationService
 from aegishunt.ml.supervised.bundle import load_bundle as load_supervised_bundle
+from aegishunt.ml.supervised.config import PORTABLE_DEMO_SELECTION_POLICY_VERSION
 from aegishunt.ml.supervised.data import SupervisedDatasetGate
-from aegishunt.ml.supervised.service import SupervisedTrainingService
+from aegishunt.ml.supervised.service import SupervisedTrainingService, TrainingRunResult
 from aegishunt.runtime.config import load_runtime_policy
 
 _ARTIFACT_LOCK = threading.Lock()
-_SUPERVISED_VERSION = "1.0.1"
+_SUPERVISED_VERSION = "12.0.0"
 _ANOMALY_VERSION = "1.1.0-candidate"
 _FUSION_VERSION = "1.0.0"
 _EXPLANATION_VERSION = "1.0.0"
@@ -185,10 +187,7 @@ class DemoArtifactManager:
                     demo_seed=self._settings.datasets.demo_seed,
                 ),
                 "supervised": SupervisedSettings(
-                    training_config_path=(
-                        self._project_root
-                        / "configs/models/supervised-corrective-pm-def-001.yaml"
-                    ),
+                    training_config_path=paths.configs / "supervised.yaml",
                     artifact_root=paths.supervised_models,
                     reports_root=paths.supervised_reports,
                 ),
@@ -209,7 +208,7 @@ class DemoArtifactManager:
                     policy_path=paths.configs / "correlation.yaml"
                 ),
                 "runtime": RuntimeSettings(
-                    policy_path=self._project_root / "configs/runtime.yaml",
+                    policy_path=paths.configs / "runtime.yaml",
                     fusion_policy_root=paths.fusion_models,
                 ),
             }
@@ -231,13 +230,25 @@ class DemoArtifactManager:
             artifact_root=paths.supervised_models,
             reports_root=paths.supervised_reports,
         )
-        supervised_run = supervised.train(allow_controlled_demo=True)
+        supervised_run = supervised.train(
+            allow_controlled_demo=True,
+            selection_profile="portable_demo",
+        )
+        self._write_demo_fusion_config(paths, supervised_run)
+        fusion_config = FusionExperimentConfig.load(paths.configs / "fusion.yaml")
         if (
             supervised_run.model_version != _SUPERVISED_VERSION
-            or supervised_run.selected_algorithm != "random_forest"
-            or supervised_run.selection.calibration_method != "isotonic"
+            or supervised_run.model_id != fusion_config.supervised_model_id
+            or supervised_run.selected_algorithm
+            != fusion_config.supervised_algorithm
+            or supervised_run.selection.hyperparameters
+            != fusion_config.supervised_hyperparameters
+            or supervised_run.selection.calibration_method
+            != fusion_config.supervised_calibration
         ):
-            raise DataArtifactError("demo supervised selection differs from approved policy")
+            raise DataArtifactError(
+                "portable demo selection differs from its fusion contract"
+            )
         supervised.evaluate_test(allow_controlled_demo=True)
 
         anomaly = AnomalyTrainingService(
@@ -255,7 +266,7 @@ class DemoArtifactManager:
             raise DataArtifactError("demo anomaly selection differs from approved policy")
 
         fusion_run = FusionEvaluationService(
-            fusion_config_path=self._project_root / "configs/models/fusion.yaml",
+            fusion_config_path=paths.configs / "fusion.yaml",
             supervised_config_path=settings.supervised.training_config_path,
             anomaly_config_path=settings.anomaly.training_config_path,
             label_mapping_path=(
@@ -268,7 +279,16 @@ class DemoArtifactManager:
         fusion_checksum = sha256_file(
             fusion_run.policy_directory / POLICY_MANIFEST_FILENAME
         )
-        self._write_policies(paths, fusion_checksum)
+        self._write_policies(
+            paths,
+            supervised_model_id=supervised_run.model_id,
+            supervised_model_version=supervised_run.model_version,
+            anomaly_model_id=anomaly_run.model_id,
+            anomaly_model_version=anomaly_run.model_version,
+            fusion_policy_id=fusion_run.policy.policy_id,
+            fusion_policy_version=fusion_run.policy.policy_version,
+            fusion_checksum=fusion_checksum,
+        )
         self._write_explanation(paths)
 
     def _bind_demo_dataset_evidence(self, paths: _DemoPaths) -> None:
@@ -300,6 +320,23 @@ class DemoArtifactManager:
         ):
             raise DataArtifactError("demo dataset identity or split validation differs")
 
+        supervised = _read_yaml(
+            self._project_root
+            / "configs/models/supervised-corrective-pm-def-001.yaml"
+        )
+        supervised.update(
+            {
+                "config_schema_version": "1.0.0",
+                "experiment_id": "phase-12-controlled-demo-supervised",
+                "model_version": _SUPERVISED_VERSION,
+                "selection_policy_version": (
+                    PORTABLE_DEMO_SELECTION_POLICY_VERSION
+                ),
+            }
+        )
+        supervised.pop("corrective_run", None)
+        _write_yaml(paths.configs / "supervised.yaml", supervised)
+
         anomaly = _read_yaml(
             self._project_root
             / "configs/models/anomaly-lof-production-candidate.yaml"
@@ -311,6 +348,24 @@ class DemoArtifactManager:
         protocol["split_manifest_checksum"] = sha256_file(split_path)
         _write_yaml(paths.configs / "anomaly.yaml", anomaly)
 
+    def _write_demo_fusion_config(
+        self,
+        paths: _DemoPaths,
+        supervised: TrainingRunResult,
+    ) -> None:
+        """Bind a fresh controlled fusion experiment to the demo model identity."""
+
+        fusion = _read_yaml(self._project_root / "configs/models/fusion.yaml")
+        fusion.update(
+            {
+                "experiment_id": "phase-12-controlled-demo-fusion",
+                "policy_id": f"{self._settings.web.demo_namespace}-fusion",
+                "supervised_model_id": supervised.model_id,
+                "supervised_model_version": supervised.model_version,
+            }
+        )
+        _write_yaml(paths.configs / "fusion.yaml", fusion)
+
     def _verify_dataset_version(self, paths: _DemoPaths) -> None:
         """Require the configured demo contract to match registered evidence."""
 
@@ -321,11 +376,28 @@ class DemoArtifactManager:
         ):
             raise DataArtifactError("demo dataset version differs from configuration")
 
-    def _write_policies(self, paths: _DemoPaths, fusion_checksum: str) -> None:
+    def _write_policies(
+        self,
+        paths: _DemoPaths,
+        *,
+        supervised_model_id: str,
+        supervised_model_version: str,
+        anomaly_model_id: str,
+        anomaly_model_version: str,
+        fusion_policy_id: str,
+        fusion_policy_version: str,
+        fusion_checksum: str,
+    ) -> None:
         risk = _read_yaml(self._project_root / "configs/models/detection.yaml")
         risk.update(
             {
                 "policy_id": f"{self._settings.web.demo_namespace}-risk",
+                "required_supervised_model_id": supervised_model_id,
+                "required_supervised_model_version": supervised_model_version,
+                "required_anomaly_model_id": anomaly_model_id,
+                "required_anomaly_model_version": anomaly_model_version,
+                "required_fusion_policy_id": fusion_policy_id,
+                "required_fusion_policy_version": fusion_policy_version,
                 "required_fusion_policy_checksum": fusion_checksum,
                 "alert_threshold": 0.0,
                 "created_at": "2026-07-26T00:00:00Z",
@@ -343,6 +415,17 @@ class DemoArtifactManager:
         )
         _write_yaml(paths.configs / "correlation.yaml", correlation)
 
+        runtime = _read_yaml(self._project_root / "configs/runtime.yaml")
+        runtime.update(
+            {
+                "policy_id": f"{self._settings.web.demo_namespace}-runtime",
+                "supervised_model_version": supervised_model_version,
+                "anomaly_model_version": anomaly_model_version,
+                "fusion_policy_version": fusion_policy_version,
+            }
+        )
+        _write_yaml(paths.configs / "runtime.yaml", runtime)
+
     def _write_explanation(self, paths: _DemoPaths) -> None:
         supervised = load_supervised_bundle(
             paths.supervised_models / _SUPERVISED_VERSION,
@@ -351,10 +434,7 @@ class DemoArtifactManager:
         anomaly = AnomalyTrainingService(
             data_root=paths.data,
             dataset_report_root=paths.dataset_reports,
-            training_config_path=(
-                self._project_root
-                / "configs/models/anomaly-lof-production-candidate.yaml"
-            ),
+            training_config_path=paths.configs / "anomaly.yaml",
             artifact_root=paths.anomaly_models,
             reports_root=paths.anomaly_reports,
         ).verify(_ANOMALY_VERSION)

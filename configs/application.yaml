@@ -99,6 +99,6 @@ web:
   demo_replay_speed: 1.0
   demo_artifact_root: artifacts/demo/phase12
   demo_namespace: phase12-controlled-demo
-  demo_operation_version: 1.0.0
+  demo_operation_version: 1.1.0
   demo_worker_id: phase12-demo-worker
   web_worker_id_prefix: phase12-web-worker
