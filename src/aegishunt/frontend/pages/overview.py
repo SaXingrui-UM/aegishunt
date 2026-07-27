@@ -25,6 +25,13 @@ def _open_hypothesis_count(client: AegisHuntApiClient) -> int:
     )
 
 
+def _active_alert_count(client: AegisHuntApiClient) -> int:
+    return sum(
+        client.alerts(limit=1, alert_status=status).total
+        for status in ("open", "acknowledged")
+    )
+
+
 def _open_case_count(client: AegisHuntApiClient) -> int:
     return sum(
         client.cases(limit=1, case_status=status).total
@@ -42,7 +49,7 @@ def render(client: AegisHuntApiClient) -> None:
         runtime = client.runtime_status()
         flows = client.flow_summary()
         recent_alerts = client.alerts(limit=5)
-        active_alerts = client.alerts(limit=1, alert_status="open").total
+        active_alerts = _active_alert_count(client)
         critical_alerts = client.alerts(limit=1, severity="critical").total
         open_hypotheses = _open_hypothesis_count(client)
         open_cases = _open_case_count(client)

@@ -5,7 +5,8 @@ from __future__ import annotations
 import inspect
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+from unittest.mock import Mock, call
 
 import httpx
 import pytest
@@ -18,6 +19,7 @@ from aegishunt.config import CaseFeedbackSettings
 from aegishunt.frontend import app
 from aegishunt.frontend.client import AegisHuntApiClient
 from aegishunt.frontend.components import markdown_table
+from aegishunt.frontend.pages.overview import _active_alert_count
 from aegishunt.storage import Database
 from tests.e2e.test_phase_12_api_frontend import _settings
 
@@ -152,6 +154,17 @@ paginated_table(
     assert "Page 2 of 2" in test_app.caption[0].value
     previous = [item for item in test_app.button if item.label == "Previous"][0]
     assert not previous.disabled
+
+
+def test_overview_active_alerts_include_open_and_acknowledged() -> None:
+    client = Mock(spec=AegisHuntApiClient)
+    client.alerts.side_effect = (Mock(total=2), Mock(total=3))
+
+    assert _active_alert_count(cast(AegisHuntApiClient, client)) == 5
+    assert client.alerts.call_args_list == [
+        call(limit=1, alert_status="open"),
+        call(limit=1, alert_status="acknowledged"),
+    ]
 
 
 def test_frontend_starts_with_truthful_api_unavailable_state(
