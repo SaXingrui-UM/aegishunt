@@ -51,7 +51,7 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 13 status | Not started |
 | Current branch | `phase/12-api-frontend` |
 | Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Push the acceptance corrections, require refreshed PR #35 CI, then wait for user review and Squash and merge; do not start Phase 13 |
+| Next action | Push the reviewed acceptance corrections, require refreshed PR #35 CI, then wait for user review and Squash and merge; do not start Phase 13 |
 
 Phase 0 through Phase 11 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
@@ -106,8 +106,8 @@ training/activation, or response actions.
 ## Phase 12 verification checkpoint
 
 - Final corrective-head Ruff passed. Strict mypy passed for 234 source files.
-  The final complete pytest run passed all 456 tests with zero failures, skips,
-  or xfails in 1,604.82 seconds at 85.40% branch-aware coverage, above the
+  The final complete pytest run passed all 457 tests with zero failures, skips,
+  or xfails in 1,633.32 seconds at 85.40% branch-aware coverage, above the
   unchanged 85% gate.
 - The final Phase 12 E2E/API/client/frontend selection passed all 21 tests in
   73.40 seconds without collecting global coverage. The focused OpenAPI,
@@ -147,7 +147,10 @@ training/activation, or response actions.
 - That review found one correctness-related Medium: runtime-worker pagination
   counted only the first 100 records. Exact repository counting plus a
   101-worker regression corrected it; local origins also reject path-bearing
-  values. Final retesting passed with zero Blocking, zero High, and zero
+  values. The acceptance-correction review found one additional Medium:
+  Overview counted only `open` alerts as active and omitted `acknowledged`
+  alerts. The active set now includes both states with direct regression
+  coverage. Final retesting passed with zero Blocking, zero High, and zero
   unresolved correctness-related Medium findings.
 
 ## Phase 11 implementation checkpoint

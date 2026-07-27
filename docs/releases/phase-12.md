@@ -50,8 +50,8 @@ it does not overwrite formal experiments or move active model pointers.
 
 - `ruff check .`: passed.
 - `mypy src`: passed for 234 source files.
-- Final corrective-head repository-wide `pytest`: 456 passed, 0 failed,
-  0 skipped, 0 xfailed in 1,604.82 seconds.
+- Final corrective-head repository-wide `pytest`: 457 passed, 0 failed,
+  0 skipped, 0 xfailed in 1,633.32 seconds.
 - Branch-aware coverage: 85.40%, above the unchanged 85% gate.
 - Phase 12 E2E/API/client/frontend selection: 21 passed in 73.40 seconds
   without collecting global coverage.
@@ -107,8 +107,12 @@ are rejected.
 The acceptance review additionally identified failed required CI, missing
 frontend pagination, incomplete Traffic Explorer and Overview workflows, and
 partial Alerts/worker controls. The corrections described above now have
-page-level and E2E coverage. A final branch review and refreshed required CI are
-still required before declaring zero unresolved merge-blocking findings.
+page-level and E2E coverage. The final equivalent review found one additional
+Medium: acknowledged alerts were omitted from the Overview active-alert count.
+It now counts both open and acknowledged states with a direct regression.
+Final findings are zero Blocking, zero High, and zero unresolved
+correctness-related Medium. Refreshed required CI remains mandatory before
+merge.
 
 ## Known limitations
 

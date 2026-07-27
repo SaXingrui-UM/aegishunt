@@ -120,7 +120,7 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
 
     assert "ADR 0021" in release
     assert "API-only frontend boundary" in release
-    assert "456 passed, 0 failed" in release
+    assert "457 passed, 0 failed" in release
     assert "85.40%" in release
     assert "HTTP 422" in release
     assert "shared previous/next pagination" in release
