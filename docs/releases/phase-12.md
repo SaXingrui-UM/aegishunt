@@ -6,13 +6,13 @@ Expose the completed Phase 0–11 local research workflows through a complete
 FastAPI contract, typed API-only Streamlit interface, and controlled offline
 sample demonstration.
 
-Status: **Implementation complete — awaiting PR review**.
+Status: **Phase complete**.
 
-- Branch: `phase/12-api-frontend`
+- Historical implementation branch: `phase/12-api-frontend`
 - Pull request: [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35),
-  `[Phase 12] FastAPI and Streamlit demonstration`, open and ready for review
-- Merge commit: pending
-- Completion tag: pending; do not create before merge
+  `[Phase 12] FastAPI and Streamlit demonstration`, merged
+- Merge commit: `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`
+- Completion tag: annotated `phase-12-complete`, peeled to the merge commit
 - Phase 13: Not started
 
 ## Completed scope
@@ -51,8 +51,43 @@ namespace. Streamlit never reaches storage or artifacts directly. The demo uses
 production writers/services and verifies its isolated evidence before reuse;
 it does not overwrite formal experiments or move active model pointers.
 
+## Historical implementation commits
+
+- `268b2db` — `build: configure phase 12 web surface`
+- `d52e7a6` — `feat: add complete phase 12 API and controlled demo`
+- `f01cdcf` — `feat: add API-only Streamlit demonstration interface`
+- `4e846be` — `test: verify phase 12 API frontend and demo workflows`
+- `78c5b8b` — `docs: document phase 12 API and frontend contract`
+- `4226ccb` — `docs: record phase 12 pull request checkpoint`
+- `549a424` — `fix: bind sample demo to generated evidence`
+- `84c7cb9` — `feat: complete phase 12 analyst workflows`
+- `42f28ef` — `test: cover phase 12 acceptance gaps`
+- `45b4ac8` — `docs: record phase 12 acceptance corrections`
+- `6b23e3a` — `fix: count acknowledged alerts as active`
+- `f8a464d` — `docs: record phase 12 corrective review`
+- `dd8c448` — `fix: make phase 12 demo selection portable`
+- `17cf065` — `test: cover portable demo evidence binding`
+- `3797b1a` — `docs: record portable demo correction`
+- `f98a593` — `docs: record portable demo review`
+- `47e0ccb` — `docs: record phase 12 refreshed CI result`
+
+These commits are the historical Phase 12 branch record. The canonical stable
+checkpoint is the separate Squash and merge commit
+`baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`.
+
 ## Tests
 
+- Initial synchronized-main repository-wide `pytest`: 458 passed, 0 failed, 0
+  skipped, 0 xfailed in 1,580.01 seconds at 85.46% branch-aware coverage; the
+  initial Phase 12/API/security selection passed 58 tests in 77.82 seconds.
+- Final post-merge-checkpoint `ruff check .`: passed.
+- Final post-merge-checkpoint `mypy src`: passed for 234 source files.
+- Final post-merge-checkpoint repository-wide `pytest`: 460 passed, 0 failed,
+  0 skipped, 0 xfailed in 1,594.52 seconds.
+- Final post-merge-checkpoint branch-aware coverage: 85.40%, above the unchanged
+  85% gate.
+- Expanded Phase 12/API/security/status selection: 60 passed in 77.98 seconds
+  without collecting global coverage.
 - `ruff check .`: passed.
 - `mypy src`: passed for 234 source files.
 - Final corrective-head repository-wide `pytest`: 458 passed, 0 failed,
@@ -91,7 +126,7 @@ it does not overwrite formal experiments or move active model pointers.
 ## Manual verification
 
 - FastAPI `/health`, `/docs`, and `/openapi.json` returned HTTP 200. The
-  generated schema contained 57 paths and 61 unique operations.
+  post-merge generated schema contained 58 paths and 62 unique operations.
 - The controlled sample completed against a temporary database and produced two
   real flows, two alerts, one alert group, one hypothesis, and an explicitly
   created case. Repetition reused the same persisted evidence without
@@ -105,6 +140,11 @@ it does not overwrite formal experiments or move active model pointers.
   this desktop runtime and failed with `ModuleNotFoundError`. The recorded
   `PYTHONPATH=src` workaround completed the same real demo successfully; this
   workaround is not claimed as clean-install success.
+- Post-merge verification used a clean local clone outside the repository.
+  Two CLI Demo runs completed with the same source/job IDs, two flows, two
+  alerts, one group, and one hypothesis. The second run reused verified
+  artifacts and persisted identities; its expected reuse limitation text was
+  the only result difference.
 
 ## Review
 
@@ -157,5 +197,5 @@ findings.
 ## Next phase
 
 Phase 13 — Hardening, performance, robustness, and security validation, planned
-branch `phase/13-hardening`. It is **Not started** and requires Phase 12 merge,
-checkpoint closure, and explicit user authorization.
+branch `phase/13-hardening`. It is **Not started** and requires the Phase 13
+startup invariant plus explicit user authorization.

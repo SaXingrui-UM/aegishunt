@@ -1,4 +1,4 @@
-"""Regression tests for the Phase 12 implementation checkpoint."""
+"""Regression tests for the stable Phase 12 post-merge checkpoint."""
 
 from pathlib import Path
 
@@ -15,14 +15,14 @@ def test_readme_records_phase_twelve_without_starting_phase_thirteen() -> None:
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
-    assert "Phases 0–11 are complete" in current
-    assert "Phase 11 PR [#33]" in current
+    assert "Phases 0–12 are complete" in current
+    assert "Phase 12 PR [#35]" in current
     assert "is merged as" in normalized
-    assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in current
-    assert "phase-11-complete" in current
-    assert "Implementation complete — awaiting PR review" in normalized
-    assert "phase/12-api-frontend" in normalized
+    assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in current
+    assert "phase-12-complete" in current
     assert "Phase 13 is **Not started**" in normalized
+    assert "phase/13-hardening" in normalized
+    assert "has not been created" in normalized
     assert "offline, rootless PCAP replay" in normalized
     assert "durable jobs" in normalized
     assert "verified artifact pinning" in normalized
@@ -43,6 +43,7 @@ def test_readme_records_phase_twelve_without_starting_phase_thirteen() -> None:
     assert "public benchmark" in current and "production validation" in current
     assert "proof of zero-day detection" in current
     for transient in (
+        "Implementation complete — awaiting PR review",
         "live capture is enabled",
         "automatic recovery is enabled",
         "Phase 13 is **In progress**",
@@ -50,6 +51,19 @@ def test_readme_records_phase_twelve_without_starting_phase_thirteen() -> None:
         assert transient not in current
     assert "No operation trains, activates, or replaces a model" in normalized
     assert "retraining_candidate" in normalized
+
+
+def test_frontend_records_completed_phase_twelve_checkpoint() -> None:
+    source = (
+        PROJECT_ROOT / "src/aegishunt/frontend/app.py"
+    ).read_text(encoding="utf-8")
+
+    assert "Phase 12 complete" in source
+    assert "PR #35 merged" in source
+    assert "phase-12-complete verified" in source
+    assert "Phase 13: Not started" in source
+    assert "awaiting PR review" not in source
+    assert "Phase 13: In progress" not in source
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -86,38 +100,33 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     normalized_release = " ".join(release.split())
 
     for content in (progress_current, release_current):
-        assert "Implementation complete — awaiting PR review" in content
+        assert "Phase complete" in content
+        assert "Implementation complete — awaiting PR review" not in content
         assert "Phase 13" in content and "not started" in content.lower()
 
     assert "Current phase | Phase 12" in normalized_progress_current
-    assert "Status | Implementation complete — awaiting PR review" in (
-        normalized_progress_current
-    )
+    assert "Status | Phase complete" in normalized_progress_current
     assert "Phase 10 status | Phase complete" in normalized_progress_current
     assert "Phase 11 status | Phase complete" in normalized_progress_current
-    assert "Phase 12 status | Implementation complete — awaiting PR review" in (
-        normalized_progress_current
-    )
+    assert "Phase 12 status | Phase complete" in normalized_progress_current
     assert "Phase 13 status | Not started" in normalized_progress_current
-    assert "Phase 12 acceptance corrections are complete" in (
-        normalized_progress_current
-    )
+    assert "Phase 12 PR [#35]" in normalized_progress_current
     assert "PR [#35]" in normalized_progress_current
     assert "pull/35" in normalized_progress_current
-    assert "refreshed required CI passing" in normalized_progress_current
-    assert "PR #35 heads `4226ccb` and `f8a464d` exposed" in (
-        normalized_progress_current
-    )
-    assert "both required GitHub Actions `quality` jobs passed" in progress_current
-    assert "all 458 tests at 85.46% branch-aware coverage" in progress_current
-    assert "phase-11-complete" in progress_current
-    assert "8f85949406e3db7d2fa2b3c48d04e832e84f3559" in progress_current
+    assert "was Squash and merge merged into `main`" in normalized_progress_current
+    assert "both `quality` jobs completed successfully" in progress_current
+    assert "460 repository tests at 85.40% branch-aware coverage" in progress_current
+    assert "phase-12-complete" in progress_current
+    assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in progress_current
 
-    assert "Status: **Implementation complete — awaiting PR review**" in release_current
+    assert "Status: **Phase complete**" in release_current
     assert "Pull request: [#35]" in normalized_release_current
     assert "pull/35" in normalized_release_current
-    assert "open and ready for review" in normalized_release_current
-    assert "Completion tag: pending" in normalized_release_current
+    assert "merged" in normalized_release_current
+    assert "Completion tag: annotated `phase-12-complete`" in (
+        normalized_release_current
+    )
+    assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in release_current
     assert "Phase 13: Not started" in normalized_release_current
 
     assert "ADR 0021" in release
@@ -134,6 +143,9 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     assert "shared previous/next pagination" in release
     assert "worker run-once" in release
     assert "Phase 13 performance" in release
+    assert "Expanded Phase 12/API/security/status selection: 60 passed" in release
+    assert "Final post-merge-checkpoint repository-wide `pytest`: 460 passed" in release
+    assert "58 paths and 62 unique operations" in release
 
     for current in (progress_current, release_current):
         for transient in (
@@ -174,8 +186,8 @@ def test_phase_twelve_gate_records_stable_phase_eleven_ancestor_invariant() -> N
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
     startup_gate = _section(
         progress,
-        "## Phase 12 startup invariant",
-        "## Phase 10 implementation checkpoint",
+        "## Phase 12 startup invariant (satisfied)",
+        "## Phase 13 startup invariant",
     )
     normalized = " ".join(startup_gate.split())
 
@@ -195,3 +207,31 @@ def test_phase_twelve_gate_records_stable_phase_eleven_ancestor_invariant() -> N
     assert "`phase/12-api-frontend` branch must not already exist" in normalized
     assert "required baseline tests must pass" in normalized
     assert "explicit user authorization" in normalized
+
+
+def test_phase_thirteen_gate_records_stable_phase_twelve_ancestor_invariant() -> None:
+    progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
+    startup_gate = _section(
+        progress,
+        "## Phase 13 startup invariant",
+        "## Phase 10 implementation checkpoint",
+    )
+    normalized = " ".join(startup_gate.split())
+
+    assert "PR #35 merge commit" in normalized
+    assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in startup_gate
+    assert "annotated `phase-12-complete` Tag" in normalized
+    assert "Later documentation-only commits may be descendants" in normalized
+    assert "git merge-base --is-ancestor" in startup_gate
+    assert (
+        "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17 main" in startup_gate
+    )
+    assert "does not require the Tag to equal" in normalized
+    assert "does not require permanent documents to hard-code the live `main` HEAD" in (
+        normalized
+    )
+    assert "does not require another final-status or closure PR" in normalized
+    assert "`phase/13-hardening` branch must not already exist" in normalized
+    assert "required baseline Ruff, mypy, pytest" in normalized
+    assert "explicit user authorization" in normalized
+    assert "future merge SHA" not in startup_gate

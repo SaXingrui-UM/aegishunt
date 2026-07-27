@@ -7,15 +7,15 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 12 - FastAPI and Streamlit Complete Demonstration |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
-| Current activity | Phase 12 acceptance corrections are complete on `phase/12-api-frontend`; PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) remains open with refreshed required CI passing. User review and Squash and merge are required. Phase 13 has not started |
-| Verification status | The clean-evidence demo correction, portable demo selection, usable frontend pagination, complete analyst drill-down, overview KPIs, related alert context, and explicit worker run-once control pass focused, repository-wide, and clean-Linux CI verification |
-| Stable branch checkpoint | PR #33 was squash-merged to `main` as `8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated Tag `phase-11-complete` peels to that merged commit |
+| Current activity | Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) was Squash and merge merged into `main`; the post-merge checkpoint verifies that canonical merge and records annotated Tag `phase-12-complete`. Phase 13 has not started |
+| Verification status | The post-merge checkpoint branch passed Ruff, mypy for 234 source files, 460 repository tests at 85.40% branch-aware coverage, 60 focused Phase 12/API/security/status tests, live loopback API and Streamlit checks, and two idempotent controlled Demo runs |
+| Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
 | Corrective Phase 5 merge | `76f79972dff778f5d30d550bc6da78583e338fa1` (PR #14) |
@@ -23,11 +23,11 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, and Phase 11 PR #33 are merged; Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) is open |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, and Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) are merged |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | PR #35 heads `4226ccb` and `f8a464d` exposed clean-Linux Sample Demo defects after Ruff and mypy passed. Both root causes are corrected; at corrective head `f98a593`, both required GitHub Actions `quality` jobs passed Ruff, mypy, and all 458 tests at 85.46% branch-aware coverage |
+| CI status | PR #35 required GitHub Actions passed: both `quality` jobs completed successfully, including Ruff, mypy, and 458 tests at 85.46% branch-aware coverage |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -40,20 +40,21 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 9 tag | Annotated `phase-09-complete` (`e5b39861c23e15f887cf9d4a586d0dcda5d93d1e`) is pushed and locally/remotely verified at merged `main` `ffdd7639b60d944b19d70096e1ff38de0d8761f8` |
 | Phase 10 tag | Annotated `phase-10-complete` peels to the PR #31 merge commit `ba40211a374aa8e4efa62702a83d063f9eb88039` and is pushed for remote verification |
 | Phase 11 tag | Annotated `phase-11-complete` peels to the PR #33 merge commit `8f85949406e3db7d2fa2b3c48d04e832e84f3559` and is pushed for remote verification |
-| Stable branch | The canonical Phase 11 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 11 Tag |
-| Working tree | Phase 12 branch changes are limited to the declared API/frontend/demo scope; generated databases, uploads, demo model binaries, evaluation artifacts, secrets, and formal evidence remain untracked |
+| Phase 12 tag | Annotated `phase-12-complete` peels to the PR #35 merge commit `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17` and is pushed for remote verification |
+| Stable branch | The canonical Phase 12 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 12 Tag |
+| Working tree | Phase 12 post-merge metadata is isolated from implementation; generated databases, uploads, demo model binaries, evaluation artifacts, secrets, and formal evidence remain untracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
 | Phase 10 status | Phase complete |
 | Phase 11 status | Phase complete |
-| Phase 12 status | Implementation complete — awaiting PR review |
+| Phase 12 status | Phase complete |
 | Phase 13 status | Not started |
-| Current branch | `phase/12-api-frontend` |
+| Current branch | Canonical completed state is on `main`; documentation-only descendants are permitted by the stable-ancestor invariant |
 | Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Wait for user review of PR #35 and Squash and merge; do not start Phase 13 |
+| Next action | Wait for explicit user authorization, then re-run the Phase 13 startup invariant before creating `phase/13-hardening` |
 
-Phase 0 through Phase 11 are checkpointed and their Tags remain unchanged. Phase
+Phase 0 through Phase 12 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
 without changing its scientific claims: a risk or fusion score is not attack
 probability, an alert is not confirmation, and a hypothesis is not fact.
@@ -110,6 +111,16 @@ training/activation, or response actions.
 
 ## Phase 12 verification checkpoint
 
+- Initial post-merge verification on synchronized `main`
+  `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17` passed all 458 repository tests
+  with zero failures, skips, or xfails in 1,580.01 seconds at 85.46%
+  branch-aware coverage; the required Phase 12/API/security selection passed
+  58 tests in 77.82 seconds.
+- After the metadata and status regressions were updated, Ruff passed; strict
+  mypy passed for 234 source files; all 460 tests passed with zero failures,
+  skips, or xfails in 1,594.52 seconds at 85.40% branch-aware coverage; and the
+  expanded Phase 12/API/security/status selection passed 60 tests in 77.98
+  seconds.
 - Final corrective-head Ruff passed. Strict mypy passed for 234 source files.
   The final complete pytest run passed all 458 tests with zero failures, skips,
   or xfails in 1,641.38 seconds at 85.40% branch-aware coverage, above the
@@ -147,10 +158,15 @@ training/activation, or response actions.
   coverage and completed the test step in 1,378.48 and 1,223.66 seconds,
   respectively. The clean-Linux Sample Demo therefore verifies the portable
   selection and isolated downstream identity bindings.
-- Manual FastAPI verification returned HTTP 200 for health, docs, and OpenAPI;
-  the schema contained 57 paths and 61 unique operations. The real controlled
-  demo produced two flows, two alerts, one group, one hypothesis, and an
-  explicitly created case, then reused those identities idempotently.
+- Post-merge live FastAPI verification returned HTTP 200 for health, docs, and
+  OpenAPI; the schema contained 58 paths and 62 unique operations. Headless
+  Streamlit health and root both returned HTTP 200, and both processes stopped
+  cleanly.
+- A clean local clone outside the repository ran the CLI controlled Demo twice
+  against an isolated database. Both runs completed with the same source and
+  runtime-job IDs, two flows, two alerts, one group, and one hypothesis. The
+  second run reused verified artifacts and persisted identities; no formal
+  evidence root or model bundle was modified.
 - Headless Streamlit health and root returned HTTP 200. Browser verification
   covered all nine populated pages, explicit forms, empty/error semantics, and
   truthful research limitations. The API's missing-object response was
@@ -282,7 +298,7 @@ to equal a future documentation-only `main` HEAD. It does not require documents
 to hard-code the live `main` HEAD or any later status-only PR merge SHA. Once the
 invariant passes, no additional final-status or closure PR is required.
 
-## Phase 12 startup invariant
+## Phase 12 startup invariant (satisfied)
 
 The canonical Phase 11 checkpoint is PR #33 merge commit
 `8f85949406e3db7d2fa2b3c48d04e832e84f3559` plus the annotated
@@ -305,6 +321,31 @@ This invariant does not require the Tag to equal a later documentation-only
 `main` HEAD, does not require permanent documents to hard-code the live
 `main` HEAD, and does not require another final-status or closure PR after this
 checkpoint is recorded. Once the live invariant passes, Phase 12 may start on
+its declared branch without a self-referential status-update loop.
+
+## Phase 13 startup invariant
+
+The canonical Phase 12 checkpoint is PR #35 merge commit
+`baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17` plus the annotated
+`phase-12-complete` Tag whose local and remote peeled targets are that commit.
+Later documentation-only commits may be descendants of this checkpoint and
+must not move the Tag.
+
+Before Phase 13 starts, live Git and GitHub state must confirm a clean working
+tree; a local `main` synchronized with `origin/main` by
+`git pull --ff-only`; merged PR #35 with successful required checks; annotated
+local and remote `phase-12-complete` Tags peeled to the canonical commit; and
+successful ancestor containment through
+`git merge-base --is-ancestor baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17 main`.
+The status documents must show Phase 12 complete and Phase 13 not started, the
+`phase/13-hardening` branch must not already exist locally or remotely, and the
+required baseline Ruff, mypy, pytest, and Phase 12 smoke tests must pass. Phase
+13 also requires explicit user authorization.
+
+This invariant does not require the Tag to equal a later documentation-only
+`main` HEAD, does not require permanent documents to hard-code the live
+`main` HEAD, and does not require another final-status or closure PR after this
+checkpoint is recorded. Once the live invariant passes, Phase 13 may start on
 its declared branch without a self-referential status-update loop.
 
 ## Phase 10 implementation checkpoint

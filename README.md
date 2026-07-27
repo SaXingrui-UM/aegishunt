@@ -18,13 +18,12 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–11 are complete and their annotated checkpoints remain immutable.
-Phase 11 PR [#33](https://github.com/SaXingrui-UM/aegishunt/pull/33) is merged as
-`8f85949406e3db7d2fa2b3c48d04e832e84f3559`; annotated
-`phase-11-complete` peels to that canonical merge commit. Phase 12 is
-**Implementation complete — awaiting PR review** on
-`phase/12-api-frontend`; Phase 13 is **Not started**. The Phase 11 boundary is
-offline, rootless PCAP replay on a single
+Phases 0–12 are complete and their annotated checkpoints remain immutable.
+Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) is merged as
+`baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated
+`phase-12-complete` peels to that canonical merge commit. Phase 13 is **Not
+started** and branch `phase/13-hardening` has not been created. Phase 11
+provides offline, rootless PCAP replay on a single
 SQLite node with durable jobs, leases, explicit recovery, verified artifact
 pinning, transactional output ledgers, separate non-durable observed replay
 telemetry and durable committed evidence progress, and bounded worker/resource
@@ -368,7 +367,7 @@ The test command produces terminal coverage output and `coverage.xml`.
 | 5-7 | Supervised, anomaly, and fusion experiments |
 | 8-10 | Explainable alerts, correlation, hypotheses, cases, and feedback |
 | 11 | Durable offline runtime replay, workers, recovery, and resource status |
-| 12 | Complete API and frontend demonstration workflows (implementation awaiting PR review) |
+| 12 | Complete API, Streamlit, and controlled demonstration workflows |
 | 13-14 | Hardening, performance, deployment, documentation, and final delivery |
 
 Only one declared phase is developed at a time. Progress is tracked in
