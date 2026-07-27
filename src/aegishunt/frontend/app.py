@@ -88,7 +88,8 @@ def main() -> None:
         st.rerun()
     st.sidebar.divider()
     st.sidebar.caption(
-        "Phase 12 implementation branch. Phase 13: Not started. "
+        "Phase 12 complete · PR #35 merged · phase-12-complete verified. "
+        "Phase 13: Not started. "
         "FastAPI is the only business interface."
     )
     st.sidebar.caption(APPLICATION_DESCRIPTION)
