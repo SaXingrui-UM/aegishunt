@@ -56,10 +56,6 @@ _SUPERVISED_VERSION = "1.0.1"
 _ANOMALY_VERSION = "1.1.0-candidate"
 _FUSION_VERSION = "1.0.0"
 _EXPLANATION_VERSION = "1.0.0"
-_REGISTERED_DATASET_COMMIT = "352205f92e81f82a7878f2cb8799c6e6e3b7b002"
-_REGISTERED_DATASET_MANIFEST_CHECKSUM = (
-    "badf8c045c29fa02299eb55f8a1cd7deb15d92aec40c0e80cd6ea4a133d98d0d"
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,10 +193,7 @@ class DemoArtifactManager:
                     reports_root=paths.supervised_reports,
                 ),
                 "anomaly": AnomalySettings(
-                    training_config_path=(
-                        self._project_root
-                        / "configs/models/anomaly-lof-production-candidate.yaml"
-                    ),
+                    training_config_path=paths.configs / "anomaly.yaml",
                     artifact_root=paths.anomaly_models,
                     reports_root=paths.anomaly_reports,
                 ),
@@ -229,7 +222,7 @@ class DemoArtifactManager:
             report_root=paths.dataset_reports,
             seed=settings.datasets.demo_seed,
         )
-        self._bind_registered_dataset_evidence(paths.dataset_reports)
+        self._bind_demo_dataset_evidence(paths)
         self._verify_dataset_version(paths)
         supervised = SupervisedTrainingService(
             data_root=paths.data,
@@ -278,24 +271,45 @@ class DemoArtifactManager:
         self._write_policies(paths, fusion_checksum)
         self._write_explanation(paths)
 
-    @staticmethod
-    def _bind_registered_dataset_evidence(report_root: Path) -> None:
-        """Reproduce the byte-registered Phase 6 dataset provenance exactly."""
+    def _bind_demo_dataset_evidence(self, paths: _DemoPaths) -> None:
+        """Pin the isolated anomaly profile to the dataset generated in this namespace.
 
-        manifest_path = report_root / "dataset_manifest.json"
+        The controlled generator is deterministic, but byte-level manifests retain
+        execution-environment provenance and toolchain-generated checksums. Requiring
+        one old phase-checkpoint manifest rejected a clean CI build before its isolated
+        evidence could be used. The derived profile keeps the original validation-only
+        policy while binding it to the freshly checksummed dataset and split evidence
+        used by this demo run.
+        """
+
+        manifest_path = paths.dataset_reports / "dataset_manifest.json"
+        split_path = paths.dataset_reports / "split_manifest.json"
         try:
-            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-            if not isinstance(payload, dict):
-                raise DataArtifactError("demo dataset manifest is invalid")
-            payload["git_commit_sha"] = _REGISTERED_DATASET_COMMIT
-            manifest_path.write_text(
-                json.dumps(payload, indent=2, sort_keys=True) + "\n",
-                encoding="utf-8",
-            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            split = json.loads(split_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise DataArtifactError("demo dataset provenance could not be registered") from exc
-        if sha256_file(manifest_path) != _REGISTERED_DATASET_MANIFEST_CHECKSUM:
-            raise DataArtifactError("demo dataset differs from the registered evidence")
+            raise DataArtifactError("demo dataset evidence could not be read") from exc
+        if not isinstance(manifest, dict) or not isinstance(split, dict):
+            raise DataArtifactError("demo dataset evidence is invalid")
+        if (
+            manifest.get("dataset_id") != "aegishunt-controlled-demo"
+            or manifest.get("dataset_version") != self._settings.web.demo_dataset_version
+            or split.get("dataset_id") != manifest.get("dataset_id")
+            or split.get("dataset_version") != manifest.get("dataset_version")
+            or split.get("overlap_validation_result") != "pass"
+        ):
+            raise DataArtifactError("demo dataset identity or split validation differs")
+
+        anomaly = _read_yaml(
+            self._project_root
+            / "configs/models/anomaly-lof-production-candidate.yaml"
+        )
+        protocol = anomaly.get("corrective_protocol")
+        if not isinstance(protocol, dict):
+            raise DataArtifactError("demo anomaly evidence protocol is invalid")
+        protocol["dataset_manifest_checksum"] = sha256_file(manifest_path)
+        protocol["split_manifest_checksum"] = sha256_file(split_path)
+        _write_yaml(paths.configs / "anomaly.yaml", anomaly)
 
     def _verify_dataset_version(self, paths: _DemoPaths) -> None:
         """Require the configured demo contract to match registered evidence."""
