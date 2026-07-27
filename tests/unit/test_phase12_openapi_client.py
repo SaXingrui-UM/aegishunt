@@ -14,6 +14,7 @@ from aegishunt.config import ApplicationSettings, DatabaseSettings, WebSettings
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
 from aegishunt.runtime.contracts import RuntimeWorker
 from aegishunt.runtime.repositories import RuntimeWorkerRepository
+from aegishunt.storage.repositories import AuditLogRepository
 
 REQUIRED_ROUTES = {
     "/health",
@@ -22,6 +23,7 @@ REQUIRED_ROUTES = {
     "/runtime/jobs",
     "/runtime/jobs/{job_id}",
     "/runtime/workers",
+    "/runtime/workers/run-once",
     "/runtime/workers/{worker_id}",
     "/runtime/jobs/{job_id}/pause",
     "/runtime/jobs/{job_id}/resume",
@@ -148,6 +150,43 @@ def test_runtime_worker_page_reports_exact_total_beyond_one_hundred(
     assert response.json()["has_more"] is False
 
 
+def test_runtime_worker_run_once_is_explicit_bounded_and_audited(
+    tmp_path: Path,
+) -> None:
+    settings = ApplicationSettings(
+        database=DatabaseSettings(url=f"sqlite:///{tmp_path / 'run-once.db'}"),
+        web=WebSettings(web_worker_id_prefix="phase12-test-worker"),
+    )
+    app = create_app(settings)
+    with TestClient(app) as client:
+        response = client.post(
+            "/runtime/workers/run-once",
+            headers={"X-Request-ID": "bounded-cycle"},
+            json={
+                "actor": "phase12-test",
+                "reason": "explicit empty-queue bounded cycle",
+                "confirm": True,
+            },
+        )
+        with app.state.database.session() as session:
+            audit = [
+                item
+                for item in AuditLogRepository(session).list()
+                if item.action == "run_runtime_worker_once"
+            ]
+
+    assert response.status_code == 200
+    assert response.json()["claimed_job"] is False
+    assert response.json()["execution_semantics"] == "claim_at_most_one_then_stop"
+    assert response.json()["worker"]["worker_id"] == (
+        "phase12-test-worker-bounded-cycle"
+    )
+    assert response.json()["worker"]["status"] == "stopped"
+    assert len(audit) == 1
+    assert audit[0].actor == "phase12-test"
+    assert audit[0].details["claimed_job"] is False
+
+
 def test_web_configuration_rejects_unsafe_or_incoherent_values() -> None:
     invalid_values = (
         {"api_host": "0.0.0.0"},
@@ -246,6 +285,47 @@ def test_typed_client_parses_success_and_sanitized_failure() -> None:
         else:
             raise AssertionError("expected typed API failure")
     assert calls[1].url.params["protocol"] == "tcp"
+
+
+def test_typed_client_forwards_offsets_for_every_list_contract() -> None:
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "items": [],
+                "total": 0,
+                "limit": 7,
+                "offset": 14,
+                "next_offset": None,
+                "has_more": False,
+            },
+        )
+
+    with AegisHuntApiClient(
+        "http://127.0.0.1:8000",
+        page_size=7,
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        client.runtime_jobs(offset=14)
+        client.runtime_workers(offset=14)
+        client.ingestion_jobs(offset=14)
+        client.telemetry_sources(offset=14)
+        client.flows(offset=14)
+        client.detections(offset=14)
+        client.alerts(offset=14)
+        client.groups(offset=14)
+        client.hypotheses(offset=14)
+        client.cases(offset=14)
+        client.feedback(offset=14)
+        client.models(offset=14)
+        client.evaluations(offset=14)
+
+    assert len(calls) == 13
+    assert all(request.url.params["limit"] == "7" for request in calls)
+    assert all(request.url.params["offset"] == "14" for request in calls)
 
 
 def test_client_rejects_non_allowlisted_actions_without_http_request() -> None:

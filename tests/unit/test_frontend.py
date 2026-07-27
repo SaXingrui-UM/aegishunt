@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 import shutil
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -31,6 +32,12 @@ EXPECTED_PAGES = {
     "Evaluation",
     "System Health",
 }
+
+
+def _button(test_app: AppTest, label: str) -> Any:
+    matches = [item for item in test_app.button if item.label == label]
+    assert len(matches) == 1, f"expected one button labelled {label!r}"
+    return matches[0]
 
 
 def test_frontend_exposes_nine_api_backed_pages() -> None:
@@ -95,6 +102,56 @@ def test_frontend_page_modules_do_not_open_database_or_artifact_paths() -> None:
     assert "public benchmark" in content
     assert "not a fact" in content
     assert "non-causal" in content
+
+
+def test_all_primary_list_pages_use_bounded_pagination_controls() -> None:
+    pages_root = Path(app.__file__).with_name("pages")
+    for name in (
+        "alerts.py",
+        "cases.py",
+        "evaluation.py",
+        "hunts.py",
+        "ingestion.py",
+        "models.py",
+        "system.py",
+        "traffic.py",
+    ):
+        content = (pages_root / name).read_text(encoding="utf-8")
+        assert "pagination_offset(" in content, name
+        assert "paginated_table(" in content, name
+
+
+def test_pagination_controls_move_between_bounded_pages() -> None:
+    script = """
+import streamlit as st
+from aegishunt.api.contracts import Page
+from aegishunt.frontend.components import paginated_table, pagination_offset
+
+offset = pagination_offset("component-test")
+page = Page[int](
+    items=[offset],
+    total=3,
+    limit=2,
+    offset=offset,
+    next_offset=2 if offset == 0 else None,
+)
+paginated_table(
+    page,
+    ({"offset": offset},),
+    key="component-test",
+    empty_message="empty",
+)
+"""
+    test_app = AppTest.from_string(script)
+    test_app.run()
+    assert not test_app.exception
+    assert "Page 1 of 2" in test_app.caption[0].value
+    next_button = [item for item in test_app.button if item.label == "Next"][0]
+    next_button.click().run()
+    assert not test_app.exception
+    assert "Page 2 of 2" in test_app.caption[0].value
+    previous = [item for item in test_app.button if item.label == "Previous"][0]
+    assert not previous.disabled
 
 
 def test_frontend_starts_with_truthful_api_unavailable_state(
@@ -179,7 +236,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
                 "create_case": True,
             },
         )
-        assert demo.status_code == 200
+        assert demo.status_code == 200, demo.text
         demo_payload = demo.json()
 
         class ApiTransport(httpx.BaseTransport):
@@ -214,10 +271,16 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app = AppTest.from_file(app.__file__, default_timeout=10.0)
         test_app.run(timeout=20.0)
         assert not test_app.exception
+        overview_metrics = {item.label: item.value for item in test_app.metric}
+        assert overview_metrics["Processed flows"] == "2"
+        assert overview_metrics["Active alerts"] == "2"
+        assert overview_metrics["Open hypotheses"] == "1"
+        assert overview_metrics["Open cases"] == "1"
+        assert overview_metrics["P95 pipeline latency"] == "Unavailable"
 
         test_app.text_area[0].set_value("explicit idempotent demo rerun")
         test_app.checkbox[1].check()
-        test_app.button[0].click().run(timeout=20.0)
+        _button(test_app, "Run controlled demo").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
@@ -225,24 +288,38 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.selectbox[1].set_value("phase2-benign-pcap")
         test_app.text_area[1].set_value("explicit packaged sample ingestion")
         test_app.checkbox[1].check()
-        test_app.button[1].click().run(timeout=20.0)
+        _button(test_app, "Ingest sample").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
+        assert any(item.label == "Run one worker" for item in test_app.button)
 
         test_app.radio[0].set_value("Traffic Explorer").run(timeout=20.0)
         assert not test_app.exception
+        traffic_tabs = {item.label for item in test_app.tabs}
+        assert {
+            "Flow detail",
+            "Behavioral features",
+            "Traffic distribution",
+            "Detection",
+            "Alert",
+        } <= traffic_tabs
+        assert any("Page 1 of 1" in item.value for item in test_app.caption)
 
         test_app.radio[0].set_value("Alerts").run(timeout=20.0)
+        alert_tabs = {item.label for item in test_app.tabs}
+        assert "Related investigations" in alert_tabs
+        assert "Reasons and entities" in alert_tabs
+        assert "Limitations" in alert_tabs
         test_app.text_area[0].set_value("explicit analyst verdict")
         test_app.checkbox[0].check()
-        test_app.button[0].click().run(timeout=20.0)
+        _button(test_app, "Update verdict").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
         test_app.radio[0].set_value("Threat Hunts").run(timeout=20.0)
         test_app.text_area[0].set_value("explicit hypothesis review")
         test_app.checkbox[0].check()
-        test_app.button[0].click().run(timeout=20.0)
+        _button(test_app, "Apply").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
@@ -250,14 +327,14 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_input[0].set_value("investigating")
         test_app.text_area[0].set_value("explicit case status update")
         test_app.checkbox[0].check()
-        test_app.button[0].click().run(timeout=20.0)
+        _button(test_app, "Update case").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
         test_app.text_area[1].set_value("Reviewed the controlled flow evidence.")
         test_app.text_area[2].set_value("append analyst note")
         test_app.checkbox[1].check()
-        test_app.button[1].click().run(timeout=20.0)
+        _button(test_app, "Add note").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
@@ -265,7 +342,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_area[3].set_value("Controlled sample NetworkFlow reference.")
         test_app.text_area[4].set_value("append immutable evidence reference")
         test_app.checkbox[2].check()
-        test_app.button[2].click().run(timeout=20.0)
+        _button(test_app, "Add evidence reference").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
@@ -273,7 +350,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_input[0].set_value("true_positive")
         test_app.text_area[0].set_value("record explicit case verdict")
         test_app.checkbox[0].check()
-        test_app.button[0].click().run(timeout=20.0)
+        _button(test_app, "Update case").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
@@ -281,21 +358,21 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_area[6].set_value("record analyst feedback")
         test_app.slider[0].set_value(0.9)
         test_app.checkbox[3].check()
-        test_app.button[3].click().run(timeout=20.0)
+        _button(test_app, "Record feedback").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success, [item.value for item in test_app.error]
 
         test_app.text_area[7].set_value("Controlled case review completed.")
         test_app.text_area[8].set_value("explicit case closure")
         test_app.checkbox[4].check()
-        test_app.button[4].click().run(timeout=20.0)
+        _button(test_app, "Close case").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
         test_app.text_input[7].set_value("1.0.0")
         test_app.text_area[9].set_value("generate versioned case report")
         test_app.checkbox[5].check()
-        test_app.button[5].click().run(timeout=20.0)
+        _button(test_app, "Generate verified report").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
         assert test_app.get("download_button")
@@ -303,7 +380,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_input[9].set_value("1.0.0")
         test_app.text_area[10].set_value("create reviewed feedback export")
         test_app.checkbox[6].check()
-        test_app.button[6].click().run(timeout=20.0)
+        _button(test_app, "Create data-only artifact").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
@@ -312,7 +389,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_input[1].set_value("unapproved:9.9.9")
         test_app.text_area[0].set_value("verify approved dataset gate")
         test_app.checkbox[0].check()
-        test_app.button[0].click().run(timeout=20.0)
+        _button(test_app, "Train verified candidate").click().run(timeout=20.0)
         assert not test_app.exception
         assert any("approved" in item.value for item in test_app.error)
 

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import shutil
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 from fastapi.testclient import TestClient
@@ -59,7 +60,7 @@ def _settings(tmp_path: Path, *, pcap_limit: int = 52_428_800) -> ApplicationSet
         ),
         web=WebSettings(
             maximum_pcap_upload_bytes=pcap_limit,
-            demo_artifact_root=Path("tmp") / f"phase12-demo-{tmp_path.name}",
+            demo_artifact_root=Path("tmp") / f"phase12-demo-{uuid4().hex}",
         ),
     )
 
@@ -214,7 +215,8 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         }
         first = client.post("/demo/sample", json=payload)
         second = client.post("/demo/sample", json=payload)
-        assert first.status_code == second.status_code == 200
+        assert first.status_code == 200, first.text
+        assert second.status_code == 200, second.text
         assert first.json()["source_id"] == second.json()["source_id"]
         assert first.json()["flow_ids"] == second.json()["flow_ids"]
         assert first.json()["runtime_job_id"] == second.json()["runtime_job_id"]
@@ -235,6 +237,12 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
             == "completed"
         )
         assert client.get("/detections").json()["total"] == 2
+        flow_detection = client.get(
+            "/detections",
+            params={"flow_id": first.json()["flow_ids"][0]},
+        ).json()
+        assert flow_detection["total"] == 1
+        assert flow_detection["items"][0]["flow_id"] == first.json()["flow_ids"][0]
         assert client.get("/alerts").json()["total"] == 2
         assert client.get("/alert-groups").json()["total"] >= 1
         assert client.get("/hypotheses").json()["total"] >= 1
@@ -282,6 +290,8 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
     assert not settings.supervised.artifact_root.exists()
     assert not settings.anomaly.artifact_root.exists()
     database.dispose()
+    if demo_root.is_dir() and not demo_root.is_symlink():
+        shutil.rmtree(demo_root)
 
 
 def test_upload_limit_validation_error_and_request_id_are_sanitized(
