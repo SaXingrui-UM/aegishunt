@@ -39,6 +39,7 @@ DatabaseDependency = Annotated[Database, Depends(get_database)]
 def list_detections(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    flow_id: UUID | None = None,
     supervised_label: str | None = None,
     minimum_risk: Annotated[float | None, Query(ge=0.0, le=1.0)] = None,
     minimum_anomaly_score: Annotated[float | None, Query(ge=0.0, le=1.0)] = None,
@@ -47,6 +48,7 @@ def list_detections(
         items, total = ApiReadRepository(session).list_detections(
             limit=pagination.limit,
             offset=pagination.offset,
+            flow_id=flow_id,
             supervised_label=supervised_label,
             minimum_risk=minimum_risk,
             minimum_anomaly_score=minimum_anomaly_score,

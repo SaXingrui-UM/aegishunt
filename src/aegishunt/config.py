@@ -222,6 +222,10 @@ class WebSettings(BaseModel):
         default="phase12-demo-worker",
         pattern=r"^[a-z0-9][a-z0-9-]{2,63}$",
     )
+    web_worker_id_prefix: str = Field(
+        default="phase12-web-worker",
+        pattern=r"^[a-z0-9][a-z0-9-]{2,63}$",
+    )
 
     @field_validator("api_base_url")
     @classmethod

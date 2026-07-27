@@ -32,6 +32,7 @@ from aegishunt.api.contracts import (
     RuntimeJobDetail,
     RuntimeJobPage,
     RuntimeOverview,
+    RuntimeRunOnceResult,
     RuntimeWorkerPage,
     SecurityAlertPage,
     SystemStatus,
@@ -45,6 +46,7 @@ from aegishunt.schemas import (
     CaseEvidenceReference,
     CaseNote,
     InvestigationCase,
+    NetworkFlow,
     SecurityAlert,
     ThreatHypothesis,
 )
@@ -188,11 +190,13 @@ class AegisHuntApiClient:
     def runtime_job(self, job_id: str) -> RuntimeJobDetail:
         return self._get(f"/runtime/jobs/{job_id}", RuntimeJobDetail)
 
-    def runtime_workers(self) -> RuntimeWorkerPage:
+    def runtime_workers(
+        self, *, limit: int | None = None, offset: int = 0
+    ) -> RuntimeWorkerPage:
         return self._get(
             "/runtime/workers",
             RuntimeWorkerPage,
-            {"limit": self._page_size},
+            {"limit": limit or self._page_size, "offset": offset},
         )
 
     def runtime_action(
@@ -212,18 +216,39 @@ class AegisHuntApiClient:
             json={"actor": actor, "reason": reason},
         )
 
-    def ingestion_jobs(self) -> IngestionJobPage:
+    def run_runtime_worker_once(
+        self,
+        *,
+        actor: str,
+        reason: str,
+    ) -> RuntimeRunOnceResult:
+        return self._request(
+            "POST",
+            "/runtime/workers/run-once",
+            RuntimeRunOnceResult,
+            json={
+                "actor": actor,
+                "reason": reason,
+                "confirm": True,
+            },
+        )
+
+    def ingestion_jobs(
+        self, *, limit: int | None = None, offset: int = 0
+    ) -> IngestionJobPage:
         return self._get(
             "/ingestion/jobs",
             IngestionJobPage,
-            {"limit": self._page_size},
+            {"limit": limit or self._page_size, "offset": offset},
         )
 
-    def telemetry_sources(self) -> TelemetrySourcePage:
+    def telemetry_sources(
+        self, *, limit: int | None = None, offset: int = 0
+    ) -> TelemetrySourcePage:
         return self._get(
             "/ingestion/sources",
             TelemetrySourcePage,
-            {"limit": self._page_size},
+            {"limit": limit or self._page_size, "offset": offset},
         )
 
     def samples(self) -> list[SampleDescriptor]:
@@ -297,6 +322,9 @@ class AegisHuntApiClient:
         filters.setdefault("limit", self._page_size)
         return self._get("/flows", NetworkFlowPage, filters)
 
+    def flow(self, flow_id: str) -> NetworkFlow:
+        return self._get(f"/flows/{flow_id}", NetworkFlow)
+
     def flow_summary(self) -> FlowSummary:
         return self._get("/flows/summary", FlowSummary)
 
@@ -333,21 +361,27 @@ class AegisHuntApiClient:
             },
         )
 
-    def groups(self) -> AlertGroupPage:
+    def groups(
+        self, *, limit: int | None = None, offset: int = 0, **filters: object
+    ) -> AlertGroupPage:
+        filters.update({"limit": limit or self._page_size, "offset": offset})
         return self._get(
             "/alert-groups",
             AlertGroupPage,
-            {"limit": self._page_size},
+            filters,
         )
 
     def group(self, group_id: str) -> AlertGroupDetail:
         return self._get(f"/alert-groups/{group_id}", AlertGroupDetail)
 
-    def hypotheses(self) -> ThreatHypothesisPage:
+    def hypotheses(
+        self, *, limit: int | None = None, offset: int = 0, **filters: object
+    ) -> ThreatHypothesisPage:
+        filters.update({"limit": limit or self._page_size, "offset": offset})
         return self._get(
             "/hypotheses",
             ThreatHypothesisPage,
-            {"limit": self._page_size},
+            filters,
         )
 
     def hypothesis(self, hypothesis_id: str) -> HypothesisDetail:
@@ -382,11 +416,14 @@ class AegisHuntApiClient:
             json={"actor": actor, "reason": reason, "confirm": True},
         )
 
-    def cases(self) -> InvestigationCasePage:
+    def cases(
+        self, *, limit: int | None = None, offset: int = 0, **filters: object
+    ) -> InvestigationCasePage:
+        filters.update({"limit": limit or self._page_size, "offset": offset})
         return self._get(
             "/cases",
             InvestigationCasePage,
-            {"limit": self._page_size},
+            filters,
         )
 
     def case(self, case_id: str) -> CaseDetail:
@@ -450,11 +487,13 @@ class AegisHuntApiClient:
             },
         )
 
-    def feedback(self) -> AnalystFeedbackPage:
+    def feedback(
+        self, *, limit: int | None = None, offset: int = 0
+    ) -> AnalystFeedbackPage:
         return self._get(
             "/feedback",
             AnalystFeedbackPage,
-            {"limit": self._page_size},
+            {"limit": limit or self._page_size, "offset": offset},
         )
 
     def close_case(
@@ -573,8 +612,12 @@ class AegisHuntApiClient:
             },
         )
 
-    def models(self) -> ModelPage:
-        return self._get("/models", ModelPage, {"limit": self._page_size})
+    def models(self, *, limit: int | None = None, offset: int = 0) -> ModelPage:
+        return self._get(
+            "/models",
+            ModelPage,
+            {"limit": limit or self._page_size, "offset": offset},
+        )
 
     def model(self, model_id: str) -> ModelDescriptor:
         return self._get(f"/models/{model_id}", ModelDescriptor)
@@ -627,11 +670,13 @@ class AegisHuntApiClient:
             },
         )
 
-    def evaluations(self) -> EvaluationPage:
+    def evaluations(
+        self, *, limit: int | None = None, offset: int = 0
+    ) -> EvaluationPage:
         return self._get(
             "/evaluation",
             EvaluationPage,
-            {"limit": self._page_size},
+            {"limit": limit or self._page_size, "offset": offset},
         )
 
     def evaluation(self, run_id: str) -> EvaluationDescriptor:

@@ -5,17 +5,26 @@ from __future__ import annotations
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
-from aegishunt.frontend.components import api_error, empty, page_header, table
+from aegishunt.frontend.components import (
+    api_error,
+    empty,
+    page_header,
+    paginated_table,
+    pagination_offset,
+)
 
 
 def render(client: AegisHuntApiClient) -> None:
     page_header("Evaluation", "Verified read-only research evidence")
     try:
-        evaluations = client.evaluations()
+        evaluations = client.evaluations(
+            offset=pagination_offset("evaluation-records")
+        )
     except ApiClientError as error:
         api_error(error)
         return
-    table(
+    paginated_table(
+        evaluations,
         (
             {
                 "run_id": item.run_id,
@@ -26,6 +35,7 @@ def render(client: AegisHuntApiClient) -> None:
             }
             for item in evaluations.items
         ),
+        key="evaluation-records",
         empty_message="No verified evaluation evidence is available.",
     )
     if not evaluations.items:

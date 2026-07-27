@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
@@ -12,6 +13,8 @@ from aegishunt.api.contracts import (
     RuntimeJobPage,
     RuntimeMutationRequest,
     RuntimeOverview,
+    RuntimeRunOnceRequest,
+    RuntimeRunOnceResult,
     RuntimeWorkerPage,
     SystemStatus,
 )
@@ -19,18 +22,24 @@ from aegishunt.api.dependencies import (
     PaginationDependency,
     get_database,
     get_runtime_service,
+    get_settings,
 )
 from aegishunt.api.errors import not_found
+from aegishunt.config import ApplicationSettings
 from aegishunt.metadata import APPLICATION_NAME, __version__
+from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.runtime.contracts import RuntimeJob, RuntimeJobStatus, RuntimeWorker
 from aegishunt.runtime.repositories import RuntimeWorkerRepository
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.runtime.status import RuntimeStatusReader
+from aegishunt.runtime.worker import RuntimeWorkerProcess
 from aegishunt.storage import Database
+from aegishunt.storage.repositories import AuditLogRepository
 
 router = APIRouter(tags=["system", "runtime"])
 DatabaseDependency = Annotated[Database, Depends(get_database)]
 RuntimeDependency = Annotated[RuntimeJobService, Depends(get_runtime_service)]
+SettingsDependency = Annotated[ApplicationSettings, Depends(get_settings)]
 
 
 @router.get(
@@ -134,6 +143,48 @@ def list_runtime_workers(
             else None
         ),
     )
+
+
+@router.post(
+    "/runtime/workers/run-once",
+    response_model=RuntimeRunOnceResult,
+    operation_id="run_runtime_worker_once",
+    summary="Claim and execute at most one queued replay job",
+)
+def run_runtime_worker_once(
+    request: Request,
+    payload: RuntimeRunOnceRequest,
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> RuntimeRunOnceResult:
+    """Execute one explicit bounded local worker cycle and then stop."""
+
+    request_id = str(request.state.request_id).lower()
+    worker_id = f"{settings.web.web_worker_id_prefix}-{request_id[:24]}"
+    process = RuntimeWorkerProcess(
+        database,
+        settings=settings,
+        runtime_policy=load_runtime_policy(settings.runtime.policy_path),
+        project_root=Path.cwd(),
+        worker_id=worker_id,
+    )
+    claimed = process.run_one_and_stop()
+    with database.session() as session, session.begin():
+        worker = RuntimeWorkerRepository(session).get(worker_id)
+        if worker is None:
+            not_found("runtime worker")
+        AuditLogRepository(session).record(
+            actor=payload.actor,
+            action="run_runtime_worker_once",
+            object_type="runtime_workers",
+            object_id=worker_id,
+            details={
+                "reason": payload.reason,
+                "claimed_job": claimed,
+                "execution_semantics": "claim_at_most_one_then_stop",
+            },
+        )
+    return RuntimeRunOnceResult(claimed_job=claimed, worker=worker)
 
 
 @router.get(

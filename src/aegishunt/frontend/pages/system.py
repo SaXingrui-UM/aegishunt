@@ -5,7 +5,15 @@ from __future__ import annotations
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
-from aegishunt.frontend.components import actor_input, api_error, metrics, page_header, table
+from aegishunt.frontend.components import (
+    actor_input,
+    api_error,
+    metrics,
+    page_header,
+    paginated_table,
+    pagination_offset,
+    table,
+)
 
 
 def render(client: AegisHuntApiClient) -> None:
@@ -13,8 +21,10 @@ def render(client: AegisHuntApiClient) -> None:
     try:
         system = client.system_status()
         runtime = client.runtime_status()
-        workers = client.runtime_workers()
-        jobs = client.runtime_jobs()
+        workers = client.runtime_workers(
+            offset=pagination_offset("system-workers")
+        )
+        jobs = client.runtime_jobs(offset=pagination_offset("system-jobs"))
     except ApiClientError as error:
         api_error(error)
         return
@@ -43,7 +53,8 @@ def render(client: AegisHuntApiClient) -> None:
             ),
         }
     )
-    table(
+    paginated_table(
+        workers,
         (
             {
                 "worker_id": item.worker_id,
@@ -57,9 +68,11 @@ def render(client: AegisHuntApiClient) -> None:
             }
             for item in workers.items
         ),
+        key="system-workers",
         empty_message="No worker process is registered; resource metrics are unavailable.",
     )
-    table(
+    paginated_table(
+        jobs,
         (
             {
                 "job_id": str(item.job_id),
@@ -73,6 +86,7 @@ def render(client: AegisHuntApiClient) -> None:
             }
             for item in jobs.items
         ),
+        key="system-jobs",
         empty_message="No runtime jobs are registered.",
     )
     st.caption(

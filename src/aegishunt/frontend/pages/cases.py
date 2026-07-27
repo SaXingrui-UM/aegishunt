@@ -5,17 +5,25 @@ from __future__ import annotations
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
-from aegishunt.frontend.components import actor_input, api_error, page_header, table
+from aegishunt.frontend.components import (
+    actor_input,
+    api_error,
+    page_header,
+    paginated_table,
+    pagination_offset,
+    table,
+)
 
 
 def render(client: AegisHuntApiClient) -> None:
     page_header("Cases", "Analyst-controlled investigations, evidence, notes, and feedback")
     try:
-        cases = client.cases()
+        cases = client.cases(offset=pagination_offset("cases-records"))
     except ApiClientError as error:
         api_error(error)
         return
-    table(
+    paginated_table(
+        cases,
         (
             {
                 "case_id": str(item.case_id),
@@ -27,6 +35,7 @@ def render(client: AegisHuntApiClient) -> None:
             }
             for item in cases.items
         ),
+        key="cases-records",
         empty_message="No investigation cases are available.",
     )
     if not cases.items:

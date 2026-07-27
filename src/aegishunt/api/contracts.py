@@ -127,6 +127,20 @@ class RuntimeMutationRequest(MutationRequest):
     """Pause, resume, or recover one existing runtime job."""
 
 
+class RuntimeRunOnceRequest(ConfirmedMutationRequest):
+    """Claim and execute at most one queued local replay job."""
+
+
+class RuntimeRunOnceResult(ApiContract):
+    """Bounded worker result without implying that a job was available."""
+
+    claimed_job: bool
+    worker: RuntimeWorker
+    execution_semantics: Literal["claim_at_most_one_then_stop"] = (
+        "claim_at_most_one_then_stop"
+    )
+
+
 class RuntimeJobDetail(ApiContract):
     """Runtime job with its durable attempt history."""
 

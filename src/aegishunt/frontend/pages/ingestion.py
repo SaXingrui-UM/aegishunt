@@ -5,7 +5,14 @@ from __future__ import annotations
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
-from aegishunt.frontend.components import actor_input, api_error, empty, page_header, table
+from aegishunt.frontend.components import (
+    actor_input,
+    api_error,
+    empty,
+    page_header,
+    paginated_table,
+    pagination_offset,
+)
 
 
 def render(client: AegisHuntApiClient) -> None:
@@ -76,11 +83,31 @@ def render(client: AegisHuntApiClient) -> None:
             empty("No packaged sample is available.")
     with replay_tab:
         try:
-            sources = client.telemetry_sources().items
+            source_page = client.telemetry_sources(
+                offset=pagination_offset("ingestion-sources")
+            )
+            sources = source_page.items
         except ApiClientError as error:
             api_error(error)
             sources = []
+            source_page = None
         if sources:
+            assert source_page is not None
+            paginated_table(
+                source_page,
+                (
+                    {
+                        "source_id": str(item.source_id),
+                        "type": item.source_type.value,
+                        "status": item.status.value,
+                        "filename": item.filename_or_interface,
+                        "records": item.records_processed,
+                    }
+                    for item in sources
+                ),
+                key="ingestion-sources",
+                empty_message="No stored telemetry sources are available.",
+            )
             with st.form("replay-create"):
                 source_id = st.selectbox("Stored source", [str(item.source_id) for item in sources])
                 speed = st.number_input("Replay speed", min_value=0.01, value=1.0)
@@ -105,9 +132,14 @@ def render(client: AegisHuntApiClient) -> None:
             empty("No stored source can be replayed.")
     with jobs_tab:
         try:
-            jobs = client.ingestion_jobs()
-            runtime_jobs = client.runtime_jobs()
-            table(
+            jobs = client.ingestion_jobs(
+                offset=pagination_offset("ingestion-jobs")
+            )
+            runtime_jobs = client.runtime_jobs(
+                offset=pagination_offset("ingestion-runtime-jobs")
+            )
+            paginated_table(
+                jobs,
                 (
                     {
                         "job_id": str(item.job_id),
@@ -119,10 +151,12 @@ def render(client: AegisHuntApiClient) -> None:
                     }
                     for item in jobs.items
                 ),
+                key="ingestion-jobs",
                 empty_message="No ingestion jobs are present.",
             )
             st.subheader("Replay runtime jobs")
-            table(
+            paginated_table(
+                runtime_jobs,
                 (
                     {
                         "job_id": str(item.job_id),
@@ -133,8 +167,37 @@ def render(client: AegisHuntApiClient) -> None:
                     }
                     for item in runtime_jobs.items
                 ),
+                key="ingestion-runtime-jobs",
                 empty_message="No runtime replay jobs are present.",
             )
+            with st.form("runtime-run-once"):
+                worker_actor = actor_input(key="runtime-worker-actor")
+                worker_reason = st.text_area(
+                    "Reason",
+                    key="runtime-worker-reason",
+                )
+                worker_confirm = st.checkbox(
+                    "Confirm one bounded worker cycle; it will claim at most one job"
+                )
+                worker_submitted = st.form_submit_button("Run one worker")
+            if worker_submitted and worker_confirm:
+                try:
+                    worker_result = client.run_runtime_worker_once(
+                        actor=worker_actor,
+                        reason=worker_reason,
+                    )
+                    if worker_result.claimed_job:
+                        st.success(
+                            f"Worker {worker_result.worker.worker_id} claimed at most one job "
+                            "and stopped."
+                        )
+                    else:
+                        st.info(
+                            f"Worker {worker_result.worker.worker_id} found no queued job and "
+                            "stopped."
+                        )
+                except ApiClientError as error:
+                    api_error(error)
             if runtime_jobs.items:
                 with st.form("runtime-control"):
                     selected_job = st.selectbox(

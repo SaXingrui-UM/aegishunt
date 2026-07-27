@@ -5,7 +5,14 @@ from __future__ import annotations
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
-from aegishunt.frontend.components import actor_input, api_error, empty, page_header, table
+from aegishunt.frontend.components import (
+    actor_input,
+    api_error,
+    empty,
+    page_header,
+    paginated_table,
+    pagination_offset,
+)
 
 
 def render(client: AegisHuntApiClient) -> None:
@@ -18,8 +25,9 @@ def render(client: AegisHuntApiClient) -> None:
     groups_tab, hypotheses_tab = st.tabs(("Alert groups", "Hypotheses"))
     with groups_tab:
         try:
-            groups = client.groups()
-            table(
+            groups = client.groups(offset=pagination_offset("hunts-groups"))
+            paginated_table(
+                groups,
                 (
                     {
                         "group_id": str(item.group_id),
@@ -30,6 +38,7 @@ def render(client: AegisHuntApiClient) -> None:
                     }
                     for item in groups.items
                 ),
+                key="hunts-groups",
                 empty_message="No correlated groups are available.",
             )
             st.caption("Correlation score is a non-probabilistic triage score.")
@@ -37,11 +46,14 @@ def render(client: AegisHuntApiClient) -> None:
             api_error(error)
     with hypotheses_tab:
         try:
-            hypotheses = client.hypotheses()
+            hypotheses = client.hypotheses(
+                offset=pagination_offset("hunts-hypotheses")
+            )
         except ApiClientError as error:
             api_error(error)
             return
-        table(
+        paginated_table(
+            hypotheses,
             (
                 {
                     "hypothesis_id": str(item.hypothesis_id),
@@ -52,6 +64,7 @@ def render(client: AegisHuntApiClient) -> None:
                 }
                 for item in hypotheses.items
             ),
+            key="hunts-hypotheses",
             empty_message="No hypotheses have been generated.",
         )
         if not hypotheses.items:

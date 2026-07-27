@@ -228,6 +228,7 @@ class ApiReadRepository:
         *,
         limit: int,
         offset: int,
+        flow_id: UUID | None = None,
         supervised_label: str | None = None,
         minimum_risk: float | None = None,
         minimum_anomaly_score: float | None = None,
@@ -237,6 +238,8 @@ class ApiReadRepository:
         query = select(DetectionResultRecord)
         count_query = select(func.count(DetectionResultRecord.detection_id))
         conditions: list[ColumnElement[bool]] = []
+        if flow_id is not None:
+            conditions.append(DetectionResultRecord.flow_id == flow_id)
         if supervised_label is not None:
             conditions.append(DetectionResultRecord.supervised_label == supervised_label)
         if minimum_risk is not None:

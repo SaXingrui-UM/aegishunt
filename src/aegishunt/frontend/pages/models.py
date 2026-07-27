@@ -5,17 +5,25 @@ from __future__ import annotations
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
-from aegishunt.frontend.components import actor_input, api_error, page_header, table
+from aegishunt.frontend.components import (
+    actor_input,
+    api_error,
+    page_header,
+    paginated_table,
+    pagination_offset,
+    table,
+)
 
 
 def render(client: AegisHuntApiClient) -> None:
     page_header("Model Lab", "Verified bundles and explicit activation")
     try:
-        models = client.models()
+        models = client.models(offset=pagination_offset("models-registry"))
     except ApiClientError as error:
         api_error(error)
         return
-    table(
+    paginated_table(
+        models,
         (
             {
                 "model_id": item.model_id,
@@ -27,6 +35,7 @@ def render(client: AegisHuntApiClient) -> None:
             }
             for item in models.items
         ),
+        key="models-registry",
         empty_message="No verified model bundles are available.",
     )
     st.info(
