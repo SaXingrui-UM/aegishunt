@@ -36,6 +36,11 @@ Status: **Implementation complete — awaiting PR review**.
 - Allowlisted deterministic `phase12-demo-pcap`, isolated versioned demo
   artifacts, actual Phase 2–11 service execution, stable persisted outputs, and
   optional explicit case creation.
+- Phase 12-only supervised model `12.0.0` with a portable validation tie-break
+  that excludes host-dependent latency/size from selection while retaining both
+  as measured evidence, plus derived fusion/risk/runtime identities bound to
+  that isolated bundle. Formal Phase 5 model/evidence identities remain
+  untouched.
 - API, upload-security, client, frontend-boundary, regression, and full
   fresh-database sample E2E coverage.
 
@@ -50,12 +55,12 @@ it does not overwrite formal experiments or move active model pointers.
 
 - `ruff check .`: passed.
 - `mypy src`: passed for 234 source files.
-- Final corrective-head repository-wide `pytest`: 457 passed, 0 failed,
-  0 skipped, 0 xfailed in 1,633.32 seconds.
+- Final corrective-head repository-wide `pytest`: 458 passed, 0 failed,
+  0 skipped, 0 xfailed in 1,641.38 seconds.
 - Branch-aware coverage: 85.40%, above the unchanged 85% gate.
-- Phase 12 E2E/API/client/frontend selection: 21 passed in 73.40 seconds
+- Phase 12 E2E/API/client/frontend selection: 22 passed in 76.70 seconds
   without collecting global coverage.
-- Focused OpenAPI/client/frontend selection: 17 passed in 38.92 seconds
+- Portable selection plus full Sample Demo E2E: 4 passed in 54.09 seconds
   without collecting global coverage.
 - The first complete run exposed one stale exact-set assertion after adding the
   Phase 12 sample (449 passed, 1 failed) and insufficient new-path coverage
@@ -70,6 +75,15 @@ it does not overwrite formal experiments or move active model pointers.
   checksums. Clean Python 3.11 verification and the final full suite execute
   the actual Sample Demo path successfully; refreshed required CI remains
   mandatory before merge.
+- Both refreshed GitHub Actions jobs at head `f8a464d` passed Ruff and mypy,
+  then failed two Sample Demo assertions because host-dependent operational
+  tie-breaks produced a legal supervised validation winner different from the
+  hard-coded demo expectation (455 tests passed before the two failures).
+  Phase 12 now has a separately versioned portable selection policy, stable
+  algorithm-ID final tie-break, isolated `12.0.0` model identity, and derived
+  fusion/risk/runtime policy identities. Phase 5 ranking and historical
+  corrective evidence are unchanged. The final 458-test local run verifies the
+  corrected path; refreshed required CI remains mandatory before merge.
 
 ## Manual verification
 

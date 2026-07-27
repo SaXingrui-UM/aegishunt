@@ -27,7 +27,7 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | The previous PR #35 head `4226ccb` failed both Linux `quality` jobs in the Sample Demo path. The corrective head passes all local required checks and requires refreshed GitHub Actions success before merge |
+| CI status | PR #35 heads `4226ccb` and `f8a464d` exposed clean-Linux Sample Demo defects after Ruff and mypy passed. Both root causes are corrected; the current head passes all local required checks and requires refreshed GitHub Actions success before merge |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -96,6 +96,11 @@ training/activation, or response actions.
   correlation, hypothesis, and case services. Explicit preparation is atomic;
   reuse verifies checksums and inventory; formal Phase 5–11 roots and active
   model pointers are not overwritten.
+- Added a Phase 12-only supervised model identity (`12.0.0`) and portable
+  validation tie-break policy. Host-dependent latency and serialized size remain
+  measured evidence but cannot change the demo winner; the derived fusion,
+  risk, runtime, and explanation identities are bound to the actual isolated
+  bundle rather than impersonating formal Phase 5 corrective evidence.
 - Added a fresh-database full E2E that produces actual flows, detections, alerts,
   a group, a hypothesis, and an optional case, verifies typed client retrieval,
   repeats idempotently, and confirms formal artifact roots remain untouched.
@@ -106,15 +111,16 @@ training/activation, or response actions.
 ## Phase 12 verification checkpoint
 
 - Final corrective-head Ruff passed. Strict mypy passed for 234 source files.
-  The final complete pytest run passed all 457 tests with zero failures, skips,
-  or xfails in 1,633.32 seconds at 85.40% branch-aware coverage, above the
+  The final complete pytest run passed all 458 tests with zero failures, skips,
+  or xfails in 1,641.38 seconds at 85.40% branch-aware coverage, above the
   unchanged 85% gate.
-- The final Phase 12 E2E/API/client/frontend selection passed all 21 tests in
-  73.40 seconds without collecting global coverage. The focused OpenAPI,
-  client, and page selection passed all 17 tests in 38.92 seconds. These cover
+- The final Phase 12 E2E/API/client/frontend selection passed all 22 tests in
+  76.70 seconds without collecting global coverage. The portable-selection and
+  Sample Demo selection passed all 4 tests in 54.09 seconds. These cover
   pagination state transitions, server totals, KPI truthfulness, flow-to-alert
   drill-down, related investigation context, and the explicit bounded worker
-  operation.
+  operation, plus host-independent model selection and derived policy identity
+  alignment.
 - The first full run exposed one stale exact-set sample-registry assertion (449
   passed, 1 failed) and 82.55% coverage for the newly exposed paths. The sample
   assertion was corrected and a populated nine-page API/frontend regression
@@ -127,6 +133,15 @@ training/activation, or response actions.
   freshly generated demo dataset and split manifests, preserving validation-only
   model policy and evidence identities. A clean Python 3.11 environment and the
   final full suite both execute the real Sample Demo successfully.
+- Refreshed GitHub Actions at `f8a464d` exposed a second cross-platform
+  correctness issue: both Linux jobs passed Ruff and mypy but the demo rejected
+  the legal validation winner because the orchestrator hard-coded Random Forest
+  and isotonic while the registered Phase 5 ranking includes host-dependent
+  operational ties. The Phase 12 demo now uses a separately versioned portable
+  selection policy that excludes host-dependent latency and size from selection
+  while retaining them as evidence, applies a stable algorithm-ID final tie,
+  and derives all downstream policy identities from its isolated `12.0.0`
+  bundle. It does not change Phase 5 selection or historical evidence.
 - Manual FastAPI verification returned HTTP 200 for health, docs, and OpenAPI;
   the schema contained 57 paths and 61 unique operations. The real controlled
   demo produced two flows, two alerts, one group, one hypothesis, and an
