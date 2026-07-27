@@ -23,7 +23,15 @@ from aegishunt.config import (
     SupervisedSettings,
     WebSettings,
 )
+from aegishunt.detection.config import load_risk_policy
 from aegishunt.frontend.client import AegisHuntApiClient
+from aegishunt.ml.fusion.config import FusionExperimentConfig
+from aegishunt.ml.supervised.config import (
+    PORTABLE_DEMO_SELECTION_POLICY_VERSION,
+    SupervisedTrainingConfig,
+)
+from aegishunt.ml.supervised.contracts import ModelSelectionRecord
+from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.schemas.enums import AnalystVerdict
 from aegishunt.storage import Database
 from tests.fixtures.cases import seed_reviewable_hypothesis
@@ -289,6 +297,42 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
     assert demo_root.is_dir()
     assert not settings.supervised.artifact_root.exists()
     assert not settings.anomaly.artifact_root.exists()
+    supervised_config = SupervisedTrainingConfig.load(
+        demo_root / "configs/supervised.yaml"
+    )
+    selection = ModelSelectionRecord.model_validate_json(
+        (
+            demo_root
+            / "reports/supervised/phase-12-controlled-demo-supervised"
+            / "model_selection.json"
+        ).read_text(encoding="utf-8")
+    )
+    fusion_config = FusionExperimentConfig.load(demo_root / "configs/fusion.yaml")
+    risk = load_risk_policy(demo_root / "configs/detection.yaml").policy
+    runtime = load_runtime_policy(demo_root / "configs/runtime.yaml").policy
+    assert supervised_config.model_version == "12.0.0"
+    assert (
+        supervised_config.selection_policy_version
+        == PORTABLE_DEMO_SELECTION_POLICY_VERSION
+    )
+    assert supervised_config.corrective_run is None
+    assert selection.experiment_id == "phase-12-controlled-demo-supervised"
+    assert selection.model_version == "12.0.0"
+    assert selection.selection_policy_version == PORTABLE_DEMO_SELECTION_POLICY_VERSION
+    assert selection.corrective_evidence is None
+    assert selection.test_data_accessed is False
+    assert selection.pipeline_verification_only is True
+    assert selection.algorithm == fusion_config.supervised_algorithm
+    assert selection.hyperparameters == fusion_config.supervised_hyperparameters
+    assert selection.calibration_method == fusion_config.supervised_calibration
+    assert selection.model_id == fusion_config.supervised_model_id
+    assert selection.model_version == fusion_config.supervised_model_version
+    assert risk.required_supervised_model_id == selection.model_id
+    assert risk.required_supervised_model_version == selection.model_version
+    assert risk.required_fusion_policy_id == fusion_config.policy_id
+    assert risk.required_fusion_policy_version == fusion_config.policy_version
+    assert runtime.supervised_model_version == selection.model_version
+    assert runtime.fusion_policy_version == fusion_config.policy_version
     database.dispose()
     if demo_root.is_dir() and not demo_root.is_symlink():
         shutil.rmtree(demo_root)
