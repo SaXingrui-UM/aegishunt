@@ -167,6 +167,13 @@ training/activation, or response actions.
   alerts. The active set now includes both states with direct regression
   coverage. Final retesting passed with zero Blocking, zero High, and zero
   unresolved correctness-related Medium findings.
+- The final native review attempt after the portable-demo correction failed
+  with the same arm64 executable `ENOENT`. Its equivalent read-only review
+  compared `f8a464d...HEAD`, confirmed the isolated model and downstream policy
+  identities, portable selection/test boundary, formal-evidence preservation,
+  generated-artifact exclusion, secret hygiene, and Phase 13 absence, and found
+  zero Blocking, zero High, and zero unresolved correctness-related Medium
+  findings.
 
 ## Phase 11 implementation checkpoint
 

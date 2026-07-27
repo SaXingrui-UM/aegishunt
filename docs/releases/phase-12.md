@@ -128,6 +128,14 @@ Final findings are zero Blocking, zero High, and zero unresolved
 correctness-related Medium. Refreshed required CI remains mandatory before
 merge.
 
+The final native review attempt after the portable-demo correction failed with
+the same arm64 executable `ENOENT`. Equivalent read-only review of
+`f8a464d...HEAD` verified the isolated model and downstream policy identities,
+portable selection/test boundary, preservation of formal Phase 5 evidence,
+absence of generated binaries/secrets, and no Phase 13 scope creep. It found
+zero Blocking, zero High, and zero unresolved correctness-related Medium
+findings.
+
 ## Known limitations
 
 - Local single-user prototype; no production authentication or RBAC.
