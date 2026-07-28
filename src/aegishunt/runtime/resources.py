@@ -17,6 +17,16 @@ class ProcessResourceSampler:
 
     def __init__(self, process_factory: Callable[[], object] | None = None) -> None:
         self._process_factory = process_factory
+        self._process: object | None = None
+
+    def _process_instance(self) -> object:
+        if self._process is None:
+            self._process = (
+                self._process_factory()
+                if self._process_factory is not None
+                else psutil.Process()
+            )
+        return self._process
 
     def sample(
         self,
@@ -31,11 +41,10 @@ class ProcessResourceSampler:
         ] = "not_loaded",
     ) -> RuntimeResourceSample:
         try:
+            process = self._process_instance()
             if self._process_factory is not None:
-                process = self._process_factory()
                 memory_percent = None
             else:
-                process = psutil.Process()
                 memory_percent = float(psutil.virtual_memory().percent)
             cpu_percent = float(process.cpu_percent(interval=None))  # type: ignore[attr-defined]
             rss_bytes = int(process.memory_info().rss)  # type: ignore[attr-defined]

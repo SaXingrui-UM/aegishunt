@@ -147,6 +147,17 @@ class RuntimeControlMonitor:
                 now=self._clock.now(),
             )
 
+    def capture_resource_sample(self, job_id: UUID) -> None:
+        """Persist one explicit point-in-time sample for short runtime jobs."""
+
+        with self._database.session() as session, session.begin():
+            self._sample_resources(
+                session,
+                RuntimeJobRepository(session, AuditLogRepository(session)),
+                job_id,
+            )
+        self._last_resource_sample = self._clock.monotonic()
+
     def _sample_resources(
         self,
         session: Session,

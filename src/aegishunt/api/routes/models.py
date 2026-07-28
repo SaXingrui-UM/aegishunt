@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from aegishunt.api.contracts import (
+    EffectiveModelState,
     ModelActivateRequest,
     ModelDescriptor,
     ModelImportance,
@@ -15,6 +16,7 @@ from aegishunt.api.contracts import (
 )
 from aegishunt.api.dependencies import PaginationDependency, get_database, get_settings
 from aegishunt.api.model_service import ModelRegistryService
+from aegishunt.api.runtime_model_service import EffectiveRuntimeModelService
 from aegishunt.config import ApplicationSettings
 from aegishunt.storage import Database
 
@@ -57,6 +59,20 @@ def list_active_models(
     settings: SettingsDependency,
 ) -> list[ModelDescriptor]:
     return _service(database, settings).active()
+
+
+@router.get(
+    "/effective",
+    response_model=EffectiveModelState,
+    operation_id="get_effective_runtime_models",
+)
+def get_effective_runtime_models(
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> EffectiveModelState:
+    """Separate immutable job-pinned artifacts from global active pointers."""
+
+    return EffectiveRuntimeModelService(database, settings).read()
 
 
 @router.get(

@@ -47,8 +47,8 @@ def render(client: AegisHuntApiClient) -> None:
     except ApiClientError as error:
         api_error(error)
         return
-    overview, notes_tab, evidence_tab, feedback_tab, report_tab = st.tabs(
-        ("Overview", "Notes", "Evidence", "Feedback", "Close & report")
+    overview, notes_tab, evidence_tab, feedback_tab, audit_tab, report_tab = st.tabs(
+        ("Overview", "Notes", "Evidence", "Feedback", "Audit History", "Close & report")
     )
     with overview:
         st.json(detail.case.model_dump(mode="json"))
@@ -213,6 +213,65 @@ def render(client: AegisHuntApiClient) -> None:
                 st.success(f"Feedback {feedback.feedback_id} recorded.")
             except ApiClientError as error:
                 api_error(error)
+    with audit_tab:
+        st.caption(
+            "Read-only, append-only audit history from the same persisted audit records "
+            "used by case, note, feedback, and report services."
+        )
+        action_filter = st.text_input(
+            "Action filter (exact)",
+            key="case-audit-action",
+        )
+        actor_filter = st.text_input(
+            "Actor filter (exact)",
+            key="case-audit-actor",
+        )
+        order = st.selectbox(
+            "Order",
+            ("desc", "asc"),
+            key="case-audit-order",
+        )
+        audit_page_number = int(
+            st.number_input(
+                "Audit page",
+                min_value=1,
+                value=1,
+                step=1,
+                key="case-audit-page",
+            )
+        )
+        try:
+            audit = client.case_audit_events(
+                selected,
+                page=audit_page_number,
+                action=action_filter or None,
+                actor=actor_filter or None,
+                order=order,
+            )
+        except ApiClientError as error:
+            api_error(error)
+        else:
+            table(
+                (
+                    {
+                        "timestamp": item.timestamp,
+                        "action": item.action,
+                        "actor": item.actor,
+                        "reason": item.reason,
+                        "object_type": item.object_type,
+                        "object_id": item.object_id,
+                        "before_summary": item.before_summary,
+                        "after_summary": item.after_summary,
+                        "metadata_summary": item.metadata_summary,
+                    }
+                    for item in audit.items
+                ),
+                empty_message="No audit events match the selected fixed filters.",
+            )
+            st.caption(
+                f"Page {audit.page} of {max(audit.total_pages, 1)} · "
+                f"{audit.total} event(s) · page size {audit.page_size}"
+            )
     with report_tab:
         with st.form("case-close"):
             closure_note = st.text_area("Closure note")

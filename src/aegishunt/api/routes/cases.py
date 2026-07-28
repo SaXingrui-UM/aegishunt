@@ -4,17 +4,19 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi import Path as ApiPath
 from fastapi.responses import FileResponse
 
+from aegishunt.api.audit_service import list_case_audit_events
 from aegishunt.api.contracts import (
     AnalystFeedbackPage,
     ArtifactRequest,
     ArtifactResult,
+    CaseAuditEventPage,
     CaseCloseRequest,
     CaseCreateRequest,
     CaseDetail,
@@ -42,7 +44,7 @@ from aegishunt.schemas import (
     CaseNote,
     InvestigationCase,
 )
-from aegishunt.schemas.base import JsonObject
+from aegishunt.schemas.base import JsonObject, require_aware_utc
 from aegishunt.schemas.enums import (
     AnalystVerdict,
     CasePriority,
@@ -52,6 +54,7 @@ from aegishunt.schemas.enums import (
 from aegishunt.storage import Database
 from aegishunt.storage.repositories import (
     AnalystFeedbackRepository,
+    AuditLogRepository,
     CaseEvidenceReferenceRepository,
     CaseNoteRepository,
     InvestigationCaseRepository,
@@ -121,6 +124,90 @@ def get_case(case_id: UUID, database: DatabaseDependency) -> CaseDetail:
         notes=notes,
         evidence=evidence,
         feedback=feedback,
+    )
+
+
+@router.get(
+    "/cases/{case_id}/audit-events",
+    response_model=CaseAuditEventPage,
+    operation_id="list_case_audit_events",
+)
+def get_case_audit_events(
+    case_id: UUID,
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 50,
+    action: Annotated[str | None, Query(max_length=255)] = None,
+    actor: Annotated[str | None, Query(max_length=255)] = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    order: Literal["asc", "desc"] = "desc",
+) -> CaseAuditEventPage:
+    """Read immutable case-related audit records through fixed filters."""
+
+    if page_size > settings.web.maximum_page_size:
+        raise ApiError(
+            "page size exceeds the configured maximum",
+            code="page_limit_exceeded",
+            status_code=422,
+            details={"maximum_page_size": settings.web.maximum_page_size},
+        )
+    if created_from is not None:
+        try:
+            created_from = require_aware_utc(created_from)
+        except ValueError as exc:
+            raise ApiError(
+                "audit start time must be timezone-aware UTC",
+                code="invalid_time_range",
+                status_code=422,
+            ) from exc
+    if created_to is not None:
+        try:
+            created_to = require_aware_utc(created_to)
+        except ValueError as exc:
+            raise ApiError(
+                "audit end time must be timezone-aware UTC",
+                code="invalid_time_range",
+                status_code=422,
+            ) from exc
+    if (
+        created_from is not None
+        and created_to is not None
+        and created_from > created_to
+    ):
+        raise ApiError(
+            "audit time range is invalid",
+            code="invalid_time_range",
+            status_code=422,
+        )
+    normalized_action = action.strip() if action is not None else None
+    normalized_actor = actor.strip() if actor is not None else None
+    offset = (page - 1) * page_size
+    with database.session() as session:
+        if InvestigationCaseRepository(session).get(case_id) is None:
+            not_found("investigation case")
+        items, total = list_case_audit_events(
+            AuditLogRepository(session),
+            case_id,
+            limit=page_size,
+            offset=offset,
+            action=normalized_action or None,
+            actor=normalized_actor or None,
+            created_from=created_from,
+            created_to=created_to,
+            descending=order == "desc",
+        )
+    total_pages = (total + page_size - 1) // page_size
+    return CaseAuditEventPage(
+        items=items,
+        total=total,
+        limit=page_size,
+        offset=offset,
+        next_offset=offset + len(items) if offset + len(items) < total else None,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
     )
 
 

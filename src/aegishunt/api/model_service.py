@@ -93,6 +93,7 @@ class ModelRegistryService:
                     ),
                     checksum=verified_supervised.artifact_checksum,
                     artifact_available=True,
+                    activation_eligible=True,
                     limitations=(
                         "controlled synthetic pipeline verification only",
                         "not a public benchmark or production validation",
@@ -119,6 +120,15 @@ class ModelRegistryService:
                     ),
                     checksum=verified_anomaly.artifact_checksum,
                     artifact_available=True,
+                    activation_eligible=(
+                        verified_anomaly.status != "validation_qualified"
+                    ),
+                    activation_ineligibility_reason=(
+                        "validation-qualified LOF requires an untouched independent "
+                        "holdout before activation"
+                        if verified_anomaly.status == "validation_qualified"
+                        else None
+                    ),
                     limitations=(
                         "LOF is validation-qualified only"
                         if verified_anomaly.status == "validation_qualified"
@@ -127,21 +137,6 @@ class ModelRegistryService:
                     ),
                 )
             )
-        items.append(
-            ModelDescriptor(
-                model_id=str(model_identity("fusion", "configured-policy")),
-                engine="fusion",
-                version="configured-policy",
-                state="unavailable",
-                active=False,
-                checksum=None,
-                artifact_available=False,
-                limitations=(
-                    "fusion recommendation is inconclusive",
-                    "fusion was not shown to outperform the strongest single engine",
-                ),
-            )
-        )
         return sorted(items, key=lambda item: (item.engine, item.version))
 
     def get(self, model_id: str) -> ModelDescriptor:
@@ -281,11 +276,16 @@ class ModelRegistryService:
         """Verify exact bundle inventory before one optimistic activation."""
 
         descriptor = self.get(model_id)
-        if descriptor.engine == "fusion" or not descriptor.artifact_available:
+        if not descriptor.artifact_available or not descriptor.activation_eligible:
             raise ApiError(
-                "model artifact is unavailable for activation",
-                code="model_unavailable",
-                status_code=503,
+                descriptor.activation_ineligibility_reason
+                or "model artifact is unavailable for activation",
+                code=(
+                    "model_activation_ineligible"
+                    if descriptor.artifact_available
+                    else "model_unavailable"
+                ),
+                status_code=409 if descriptor.artifact_available else 503,
             )
         model_type = ModelType(descriptor.engine)
         if model_type is ModelType.SUPERVISED:

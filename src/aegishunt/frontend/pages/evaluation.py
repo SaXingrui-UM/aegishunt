@@ -20,9 +20,43 @@ def render(client: AegisHuntApiClient) -> None:
         evaluations = client.evaluations(
             offset=pagination_offset("evaluation-records")
         )
+        fusion = client.fusion_evaluation_status()
     except ApiClientError as error:
         api_error(error)
         return
+    st.subheader("Phase 7 Fusion Evaluation Discovery")
+    st.json(
+        {
+            "status": fusion.status,
+            "experiment_id": fusion.experiment_id,
+            "run_id": fusion.run_id,
+            "recommendation": fusion.recommendation,
+            "metrics_available": fusion.metrics_available,
+            "artifact_hash": fusion.artifact_hash,
+            "dataset_reference": fusion.dataset_reference,
+            "split_reference": fusion.split_reference,
+            "invalid_reason": fusion.invalid_reason,
+        }
+    )
+    if fusion.status == "unavailable":
+        st.info(
+            "The registered Phase 7 machine-readable artifact is unavailable. "
+            "The retained research conclusion is inconclusive; no metric row is fabricated."
+        )
+        st.code("\n".join(fusion.missing_artifacts))
+    elif fusion.status == "invalid":
+        st.error(
+            fusion.invalid_reason
+            or "The registered Phase 7 artifact failed integrity or schema verification."
+        )
+    else:
+        st.success(
+            "The verified Phase 7 run is present below, including known/unseen-family "
+            "comparisons and stored confidence intervals."
+        )
+    for item in fusion.limitations:
+        st.caption(f"• {item}")
+    st.subheader("Verified Evaluation Runs")
     paginated_table(
         evaluations,
         (

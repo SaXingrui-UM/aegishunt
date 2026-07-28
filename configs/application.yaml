@@ -63,6 +63,8 @@ case_feedback:
 runtime:
   policy_path: configs/runtime.yaml
   fusion_policy_root: artifacts/models/fusion
+  fusion_evaluation_root: reports/models/fusion
+  fusion_evaluation_experiment_id: phase-07-controlled-fusion-001
 
 web:
   api_host: 127.0.0.1

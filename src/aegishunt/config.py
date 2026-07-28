@@ -165,6 +165,11 @@ class RuntimeSettings(BaseModel):
 
     policy_path: Path = Path("configs/runtime.yaml")
     fusion_policy_root: Path = Path("artifacts/models/fusion")
+    fusion_evaluation_root: Path = Path("reports/models/fusion")
+    fusion_evaluation_experiment_id: str = Field(
+        default="phase-07-controlled-fusion-001",
+        pattern=r"^[a-z0-9][a-z0-9-]{2,127}$",
+    )
 
 
 class WebSettings(BaseModel):

@@ -42,16 +42,32 @@ def render(client: AegisHuntApiClient) -> None:
         "explicit deterministic restart from origin · Model loading: "
         f"{runtime.status.model_loading_state}"
     )
-    sample = runtime.status.latest_samples[0] if runtime.status.latest_samples else None
+    resource = runtime.resource
     metrics(
         {
-            "Process CPU %": None if sample is None else sample.process_cpu_percent,
-            "Process RSS bytes": None if sample is None else sample.process_rss_bytes,
-            "Threads": None if sample is None else sample.thread_count,
-            "Heartbeat age (s)": (
-                None if sample is None else sample.worker_heartbeat_age_seconds
-            ),
+            "PID": resource.process_id,
+            "Process CPU %": resource.process_cpu_percent,
+            "Process RSS bytes": resource.process_rss_bytes,
+            "Active threads": resource.active_thread_count,
+            "Captured at": resource.captured_at,
         }
+    )
+    if resource.status == "unavailable":
+        st.info(resource.unavailable_reason or "Process resource observation is unavailable.")
+    st.caption(f"{resource.metric_source} · {resource.limitation}")
+    metrics(
+        {
+            "Observed job p50 (ms)": runtime.latency.p50_ms,
+            "Observed job p95 (ms)": runtime.latency.p95_ms,
+            "Observations (n)": runtime.latency.observation_count,
+            "Calculated at": runtime.latency.calculated_at,
+        }
+    )
+    if runtime.latency.status == "unavailable":
+        st.info(runtime.latency.unavailable_reason or "Runtime latency is unavailable.")
+    st.caption(
+        f"{runtime.latency.metric_name} · {runtime.latency.source} · "
+        f"{runtime.latency.limitation}"
     )
     paginated_table(
         workers,
