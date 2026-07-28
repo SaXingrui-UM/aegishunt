@@ -55,7 +55,14 @@ def test_upload_status_failure_and_sample_end_to_end(tmp_path: Path) -> None:
 
         samples = client.get("/ingestion/samples")
         assert samples.status_code == 200
-        assert len(samples.json()) == 3
+        assert {
+            item["sample_id"] for item in samples.json()
+        } == {
+            "phase2-benign-pcap",
+            "phase2-flow-csv",
+            "phase12-demo-pcap",
+            "phase12-presentation-demo-pcap",
+        }
         sample_job = client.post("/ingestion/samples/phase2-flow-csv")
         assert sample_job.status_code == 201
         assert sample_job.json()["source_type"] == "sample"

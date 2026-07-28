@@ -1,0 +1,59 @@
+{
+  "address_inventory": [
+    "192.0.2.10",
+    "192.0.2.20",
+    "192.0.2.30",
+    "192.0.2.40",
+    "198.51.100.40",
+    "198.51.100.53",
+    "2001:db8::10",
+    "2001:db8::20",
+    "2001:db8::40",
+    "2001:db8::41",
+    "2001:db8::53",
+    "2001:db8::80",
+    "203.0.113.80",
+    "203.0.113.81"
+  ],
+  "filename": "phase12-presentation-demo.pcap",
+  "generator": "scripts/generate_phase12_presentation_pcap.py",
+  "ip_version_inventory": {
+    "4": 18,
+    "6": 14
+  },
+  "limitations": [
+    "synthetic controlled presentation telemetry",
+    "not a performance benchmark",
+    "not evidence of attack or model quality",
+    "protocol names describe packet construction, not application validation"
+  ],
+  "packet_count": 32,
+  "profile_inventory": {
+    "asymmetric-transfer-like": 6,
+    "dns-like": 2,
+    "icmp-echo": 2,
+    "icmpv6-echo": 2,
+    "periodic-small": 6,
+    "repeated-short": 9,
+    "web-like": 5
+  },
+  "protocol_inventory": {
+    "icmp": 2,
+    "icmpv6": 2,
+    "tcp": 20,
+    "udp": 8
+  },
+  "safety": {
+    "contains_credentials": false,
+    "contains_exploit_payload": false,
+    "contains_malware": false,
+    "contains_unrestricted_flood": false,
+    "documentation_addresses_only": true,
+    "offline": true,
+    "synthetic": true
+  },
+  "sample_id": "phase12-presentation-demo-pcap",
+  "schema_version": "1.0.0",
+  "sha256": "0d272ac98660eb119cded8be194a513c2db82b475d4cce982a120eb210a8ab51",
+  "size_bytes": 3580
+}

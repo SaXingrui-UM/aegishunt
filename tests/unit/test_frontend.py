@@ -289,7 +289,8 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert overview_metrics["Active alerts"] == "2"
         assert overview_metrics["Open hypotheses"] == "1"
         assert overview_metrics["Open cases"] == "1"
-        assert overview_metrics["P95 pipeline latency"] == "Unavailable"
+        assert float(overview_metrics["Observed runtime p95 (ms)"]) >= 0
+        assert overview_metrics["Latency observations (n)"] == "1"
 
         test_app.text_area[0].set_value("explicit idempotent demo rerun")
         test_app.checkbox[1].check()
@@ -337,6 +338,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert test_app.success
 
         test_app.radio[0].set_value("Cases").run(timeout=20.0)
+        assert "Audit History" in {item.label for item in test_app.tabs}
         test_app.text_input[0].set_value("investigating")
         test_app.text_area[0].set_value("explicit case status update")
         test_app.checkbox[0].check()
@@ -382,7 +384,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert not test_app.exception
         assert test_app.success
 
-        test_app.text_input[7].set_value("1.0.0")
+        test_app.text_input[9].set_value("1.0.0")
         test_app.text_area[9].set_value("generate versioned case report")
         test_app.checkbox[5].check()
         _button(test_app, "Generate verified report").click().run(timeout=20.0)
@@ -390,7 +392,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert test_app.success
         assert test_app.get("download_button")
 
-        test_app.text_input[9].set_value("1.0.0")
+        test_app.text_input[11].set_value("1.0.0")
         test_app.text_area[10].set_value("create reviewed feedback export")
         test_app.checkbox[6].check()
         _button(test_app, "Create data-only artifact").click().run(timeout=20.0)
@@ -425,7 +427,11 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert "System Health" in visible
         assert "Live capture: disabled" in visible
         assert "Automatic recovery: disabled" in visible
-        assert any(item.value == "Unavailable" for item in test_app.metric)
+        health_metrics = {item.label: item.value for item in test_app.metric}
+        assert int(health_metrics["PID"]) > 0
+        assert int(health_metrics["Process RSS bytes"]) > 0
+        assert int(health_metrics["Active threads"]) > 0
+        assert health_metrics["Observations (n)"] == "1"
     finally:
         api.__exit__(None, None, None)
         database.dispose()
