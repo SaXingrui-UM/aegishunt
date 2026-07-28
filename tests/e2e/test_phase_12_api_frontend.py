@@ -254,7 +254,33 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         assert client.get("/alerts").json()["total"] == 2
         assert client.get("/alert-groups").json()["total"] >= 1
         assert client.get("/hypotheses").json()["total"] >= 1
-        assert client.get(f"/cases/{first.json()['case_id']}").status_code == 200
+        case_id = first.json()["case_id"]
+        assert case_id is not None
+        assert client.get(f"/cases/{case_id}").status_code == 200
+        verdict = client.patch(
+            f"/cases/{case_id}",
+            json={
+                "actor": "demo-user",
+                "reason": "record bounded demo judgment",
+                "verdict": "needs_more_information",
+                "verdict_confidence": 0.6,
+            },
+        )
+        assert verdict.status_code == 200
+        feedback = client.post(
+            f"/feedback/cases/{case_id}",
+            json={
+                "actor": "demo-user",
+                "reason": "explicit controlled demo feedback",
+                "verdict": "needs_more_information",
+                "confidence": 0.6,
+                "notes": "Controlled synthetic evidence requires more information.",
+            },
+        )
+        assert feedback.status_code == 200
+        case_detail = client.get(f"/cases/{case_id}").json()
+        assert case_detail["case"]["verdict"] == "needs_more_information"
+        assert len(case_detail["feedback"]) == 2
         assert "controlled synthetic pipeline verification only" in first.json()["limitations"]
 
         def api_transport(request: httpx.Request) -> httpx.Response:
@@ -286,6 +312,8 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
             assert frontend.groups().total >= 1
             assert frontend.hypotheses().total >= 1
             assert frontend.cases().total == 1
+            assert frontend.case(case_id).case.verdict == "needs_more_information"
+            assert frontend.feedback().total == 2
             assert frontend.models().items[0].engine == "fusion"
             assert frontend.evaluations().items[0].engine == "fusion"
             assert frontend.demo_status().previous_run is not None
