@@ -71,6 +71,7 @@ reports/cases/*
 # Generated PR bodies and local scratch files
 .github/generated/
 tmp/
+.tmp/
 
 # Editors and operating systems
 .DS_Store
