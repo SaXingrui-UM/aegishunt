@@ -554,6 +554,14 @@ Logs:
 - `.tmp/demo-validation/20260728T062327Z/logs/final-mypy.log`
 - `.tmp/demo-validation/20260728T062327Z/logs/final-pytest.log`
 
+`codex review --base main` was attempted but could not start because the locally
+installed Codex package was missing its native executable (`ENOENT`). A complete
+manual `main...HEAD` diff review was therefore performed for correctness,
+requirement scope, tests, secrets, generated/oversized files, data leakage, and
+model-evaluation integrity. It found no blocking issue: the diff contains only
+`.gitignore`, the connected E2E regression, and this report; no run database,
+logs, model binary, PCAP, secret, deleted test, or Phase 13 work is included.
+
 ## 21. Defects Found
 
 Status: **Verified**.
