@@ -19,6 +19,7 @@ def render(client: AegisHuntApiClient) -> None:
     page_header("Model Lab", "Verified bundles and explicit activation")
     try:
         models = client.models(offset=pagination_offset("models-registry"))
+        effective = client.effective_models()
     except ApiClientError as error:
         api_error(error)
         return
@@ -32,6 +33,8 @@ def render(client: AegisHuntApiClient) -> None:
                 "state": item.state,
                 "active": item.active,
                 "artifact": item.artifact_available,
+                "activation_eligible": item.activation_eligible,
+                "activation_limitation": item.activation_ineligibility_reason,
             }
             for item in models.items
         ),
@@ -45,6 +48,79 @@ def render(client: AegisHuntApiClient) -> None:
     st.warning(
         "Fusion recommendation remains inconclusive. Feature importance is non-causal, "
         "and missing verified importance evidence is shown as unavailable."
+    )
+    st.subheader("Global Active Models")
+    active = [item for item in effective.global_active_models if item.active]
+    table(
+        (
+            {
+                "engine": item.engine,
+                "version": item.version,
+                "state": item.state,
+                "artifact_hash": item.checksum,
+                "source": "global_active",
+            }
+            for item in active
+        ),
+        empty_message="None. Runtime execution does not silently activate global pointers.",
+    )
+    st.subheader("Effective Models for Latest Demo/Runtime Job")
+    table(
+        (
+            {
+                "engine": item.engine_type,
+                "algorithm": item.algorithm,
+                "version": item.version,
+                "registry_status": item.registry_status,
+                "source": item.source,
+                "runtime_job_id": str(item.runtime_job_id),
+                "feature_schema": item.feature_schema_version,
+                "artifact_hash": item.artifact_hash,
+                "threshold": item.threshold,
+                "global_pointer_active": item.global_pointer_active,
+                "qualification": item.qualification,
+                "limitations": "; ".join(item.limitations),
+            }
+            for item in effective.effective_models
+        ),
+        empty_message=effective.unavailable_reason
+        or "No completed runtime job has an effective model snapshot.",
+    )
+    st.subheader("Fusion Policy")
+    policies = [
+        policy
+        for policy in (
+            effective.configured_fusion_policy,
+            effective.effective_fusion_policy,
+        )
+        if policy is not None
+    ]
+    table(
+        (
+            {
+                "source": policy.source,
+                "policy_version": policy.policy_version,
+                "status": policy.status,
+                "artifact_source": policy.artifact_source,
+                "artifact_hash": policy.artifact_hash,
+                "supervised_weight": policy.supervised_weight,
+                "anomaly_weight": policy.anomaly_weight,
+                "rule_weight": policy.rule_weight,
+                "context_weight": policy.context_weight,
+                "fusion_threshold": policy.fusion_threshold,
+                "feature_schema": policy.feature_schema_version,
+                "evaluation_source": policy.evaluation_source,
+                "recommendation": policy.recommendation,
+                "configured_for_new_jobs": policy.configured_for_new_jobs,
+                "effective_for_latest_job": policy.effective_for_latest_job,
+                "limitations": "; ".join(policy.limitations),
+            }
+            for policy in policies
+        ),
+        empty_message=(
+            "No verified configured or runtime-pinned fusion policy is available. "
+            "This is an empty state, not an sklearn model row."
+        ),
     )
     supervised = [item for item in models.items if item.engine == "supervised"]
     if supervised:
@@ -106,7 +182,7 @@ def render(client: AegisHuntApiClient) -> None:
             except ApiClientError as error:
                 api_error(error)
     eligible = [
-        item for item in models.items if item.artifact_available and item.engine != "fusion"
+        item for item in models.items if item.activation_eligible
     ]
     if not eligible:
         return

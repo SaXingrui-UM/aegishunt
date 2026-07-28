@@ -397,6 +397,23 @@ class RuntimeJobStore:
         ).all()
         return tuple(_job(row) for row in rows)
 
+    def latest_with_status(
+        self,
+        status: RuntimeJobStatus,
+    ) -> RuntimeJob | None:
+        """Return the newest job in one explicit lifecycle state."""
+
+        row = self._session.scalar(
+            select(RuntimeJobRecord)
+            .where(RuntimeJobRecord.status == status)
+            .order_by(
+                RuntimeJobRecord.updated_at.desc(),
+                RuntimeJobRecord.job_id.desc(),
+            )
+            .limit(1)
+        )
+        return None if row is None else _job(row)
+
     def list_attempts(self, job_id: UUID) -> tuple[RuntimeAttempt, ...]:
         rows = self._session.scalars(
             select(RuntimeAttemptRecord)

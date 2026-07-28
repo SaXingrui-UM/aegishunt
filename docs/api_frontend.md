@@ -35,14 +35,14 @@ state/version conflicts (409), oversized uploads (413), validation failures
 
 | Area | Routes and capabilities |
 | --- | --- |
-| System/runtime | `/health`, `/system/status`, runtime status/jobs/workers, pause/resume/recover, bounded run-once |
+| System/runtime | `/health`, `/system/status`, runtime status/jobs/workers, measured Demo job latency, process resource snapshot, pause/resume/recover, bounded run-once |
 | Ingestion | streamed PCAP/CSV/JSON upload, allowlisted samples, sources/jobs, source-ID replay |
 | Traffic | bounded flow list/detail/summary and detection list/detail |
 | Alerts | list/detail with immutable evidence and explicit analyst-verdict update |
 | Hunts | alert-group and hypothesis list/detail, safe hypothesis transition, idempotent case creation |
-| Cases/feedback | case lifecycle, notes, evidence references, feedback, report/export/candidate artifacts |
-| Models | verified list/detail/active/importance, controlled explicit train, verified explicit activate |
-| Evaluation | verified read-only run list/latest/detail; unavailable fields stay unavailable |
+| Cases/feedback | case lifecycle, notes, evidence references, feedback, report/export/candidate artifacts, bounded read-only audit history |
+| Models | verified list/detail/global-active/importance, runtime-job effective models and policy, controlled explicit train, verified explicit activate |
+| Evaluation | verified read-only run list/latest/detail and strict Phase 7 fusion discovery; unavailable artifacts remain typed and distinct from inconclusive results |
 | Demo | read-only status and explicit allowlisted sample execution |
 
 The generated `/openapi.json`, `/docs`, and `/redoc` describe the same typed
@@ -69,8 +69,9 @@ errors into empty results, retry mutations, or fall back to direct storage.
 
 The nine pages are:
 
-1. **Overview** — server-side KPIs, active artifacts, bounded activity, and
-   explicit research caveats.
+1. **Overview** — server-side KPIs, separately labelled global-active and
+   runtime-job effective artifacts, measured Demo job latency, bounded
+   activity, and explicit research caveats.
 2. **Data Ingestion** — uploads, sample selection, replay creation and controls,
    worker run-once, and separate observed versus durable progress.
 3. **Traffic Explorer** — server-paginated flow filters, bounded summaries,
@@ -81,13 +82,18 @@ The nine pages are:
    benign alternatives, possible mappings, non-executed queries, transitions,
    and explicit case creation.
 6. **Cases** — lifecycle, priority/assignment/verdict, append-only notes and
-   typed evidence, feedback, closure, and verified report export.
-7. **Model Lab** — verified model identities, cards, thresholds, schemas,
-   non-causal importance, controlled training, and explicit activation.
-8. **Evaluation** — verified metrics and comparisons with missing curves or
-   measurements shown as not generated/unavailable.
+   typed evidence, feedback, bounded read-only Audit History, closure, and
+   verified report export.
+7. **Model Lab** — verified model identities, separately labelled global and
+   runtime-effective state, the effective Fusion Policy, cards, thresholds,
+   schemas, non-causal importance, controlled training, and explicit
+   activation.
+8. **Evaluation** — verified metrics and comparisons plus strict Phase 7
+   artifact discovery; missing machine evidence is shown as unavailable while
+   the retained recommendation remains inconclusive.
 9. **System Health** — API/database/schema, queue/workers, observed/durable
-   replay state, resource availability, policies, and disabled live capture.
+   replay state, measured process CPU/RSS/thread/PID snapshot, observed Demo
+   job latency, policies, and disabled live capture.
 
 Pages provide explicit empty, loading, success, warning, and API-error states.
 No page uses untrusted unsafe HTML. Configurable auto-refresh is bounded and
@@ -96,9 +102,13 @@ cannot repeat a mutation.
 ## Controlled sample demonstration
 
 `POST /demo/sample` and `aegishunt demo run` require explicit confirmation and
-accept only `phase12-demo-pcap`. The deterministic 350-byte PCAP uses IANA
-documentation addresses and contains one UDP exchange and one TCP handshake.
-It neither contacts nor targets a network.
+accept only allowlisted samples. `phase12-demo-pcap` remains the deterministic
+350-byte, five-packet complete-lifecycle regression fixture. The separate
+`phase12-presentation-demo-pcap` is a deterministic 3,580-byte, 32-packet
+presentation sample with IPv4, IPv6, TCP, UDP, ICMPv4, ICMPv6, bidirectional
+exchanges, repeated short connections, periodic small flows, and an asymmetric
+transfer-like flow. Both use only documentation addresses, neither contacts or
+targets a network, and neither contains an exploit payload or credential.
 
 In a fresh environment the demo:
 

@@ -101,16 +101,27 @@ class _Process:
 
 
 def test_resource_sampler_records_measurements_or_explicit_unavailable() -> None:
-    available = ProcessResourceSampler(lambda: _Process()).sample(
+    instances: list[_Process] = []
+
+    def process_factory() -> _Process:
+        process = _Process()
+        instances.append(process)
+        return process
+
+    sampler = ProcessResourceSampler(process_factory)
+    available = sampler.sample(
         worker_id="worker-a",
         job_id=None,
     )
+    repeated = sampler.sample(worker_id="worker-a", job_id=None)
     assert available.sampler_available is True
     assert available.process_cpu_percent == 12.5
     assert available.process_rss_bytes == 2_048
     assert available.system_memory_percent == 25.0
     assert available.thread_count == 3
     assert available.monitoring_status == "available"
+    assert repeated.process_cpu_percent == 12.5
+    assert len(instances) == 1
 
     unavailable = ProcessResourceSampler(
         lambda: (_ for _ in ()).throw(OSError("unavailable"))

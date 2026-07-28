@@ -25,6 +25,7 @@ from aegishunt.api.dependencies import (
     get_settings,
 )
 from aegishunt.api.errors import not_found
+from aegishunt.api.runtime_observability import RuntimeObservabilityReader
 from aegishunt.config import ApplicationSettings
 from aegishunt.metadata import APPLICATION_NAME, __version__
 from aegishunt.runtime.config import load_runtime_policy
@@ -72,7 +73,12 @@ def system_status(request: Request, database: DatabaseDependency) -> SystemStatu
 def runtime_status(database: DatabaseDependency) -> RuntimeOverview:
     """Keep observed live progress separate from durable committed evidence."""
 
-    return RuntimeOverview(status=RuntimeStatusReader(database).read())
+    latency, resource = RuntimeObservabilityReader(database).read()
+    return RuntimeOverview(
+        status=RuntimeStatusReader(database).read(),
+        latency=latency,
+        resource=resource,
+    )
 
 
 @router.get(

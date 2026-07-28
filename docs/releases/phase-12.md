@@ -15,6 +15,30 @@ Status: **Phase complete**.
 - Completion tag: annotated `phase-12-complete`, peeled to the merge commit
 - Phase 13: Not started
 
+## Demo-readiness corrective addendum
+
+After the separate Phase 0–12 Demo Validation PR #37 merged, the
+`fix/phase-12-demo-readiness-limitations` corrective added:
+
+- separate global-active and immutable runtime-job effective model views,
+  without silent activation;
+- verified runtime Fusion Policy visibility and strict Phase 7 evaluation
+  artifact discovery;
+- measured Demo job latency and persisted process resource observations, with
+  `n`, sources, capture time, and non-benchmark limitations;
+- a bounded read-only Case Audit History API/client/tab;
+- a separate deterministic 32-packet IPv4/IPv6/TCP/UDP/ICMP presentation
+  sample while preserving the original five-packet fixture; and
+- fresh isolated API, all-nine-page browser, screenshot, and regression
+  evidence.
+
+The Phase 7 registered machine-readable artifact is absent from the repository,
+so the UI now reports exact typed unavailability and retains recommendation
+`inconclusive`; it does not create a fake result. See
+[`../phase-12-demo-readiness-corrective-validation.md`](../phase-12-demo-readiness-corrective-validation.md).
+This addendum does not move the Phase 12 checkpoint Tag and does not start
+Phase 13.
+
 ## Completed scope
 
 - Modular FastAPI routers for system/runtime, ingestion, flows/detections,

@@ -15,14 +15,17 @@ from aegishunt.api.contracts import (
     AlertGroupPage,
     AnalystFeedbackPage,
     ArtifactResult,
+    CaseAuditEventPage,
     CaseDetail,
     DemoResult,
     DemoStatus,
     DetectionDetail,
     DetectionResultPage,
+    EffectiveModelState,
     EvaluationDescriptor,
     EvaluationPage,
     FlowSummary,
+    FusionEvaluationDiscovery,
     HypothesisDetail,
     InvestigationCasePage,
     ModelDescriptor,
@@ -429,6 +432,34 @@ class AegisHuntApiClient:
     def case(self, case_id: str) -> CaseDetail:
         return self._get(f"/cases/{case_id}", CaseDetail)
 
+    def case_audit_events(
+        self,
+        case_id: str,
+        *,
+        page: int = 1,
+        page_size: int | None = None,
+        action: str | None = None,
+        actor: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+        order: str = "desc",
+    ) -> CaseAuditEventPage:
+        if order not in {"asc", "desc"}:
+            raise ValueError("audit order is not allowlisted")
+        return self._get(
+            f"/cases/{case_id}/audit-events",
+            CaseAuditEventPage,
+            {
+                "page": page,
+                "page_size": page_size or self._page_size,
+                "action": action,
+                "actor": actor,
+                "created_from": created_from,
+                "created_to": created_to,
+                "order": order,
+            },
+        )
+
     def update_case(
         self,
         case_id: str,
@@ -619,6 +650,9 @@ class AegisHuntApiClient:
             {"limit": limit or self._page_size, "offset": offset},
         )
 
+    def effective_models(self) -> EffectiveModelState:
+        return self._get("/models/effective", EffectiveModelState)
+
     def model(self, model_id: str) -> ModelDescriptor:
         return self._get(f"/models/{model_id}", ModelDescriptor)
 
@@ -681,6 +715,9 @@ class AegisHuntApiClient:
 
     def evaluation(self, run_id: str) -> EvaluationDescriptor:
         return self._get(f"/evaluation/{run_id}", EvaluationDescriptor)
+
+    def fusion_evaluation_status(self) -> FusionEvaluationDiscovery:
+        return self._get("/evaluation/fusion-status", FusionEvaluationDiscovery)
 
     def demo_status(self) -> DemoStatus:
         return self._get("/demo/status", DemoStatus)

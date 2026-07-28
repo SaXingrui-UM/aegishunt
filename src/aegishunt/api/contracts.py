@@ -151,10 +151,50 @@ class RuntimeJobDetail(ApiContract):
     )
 
 
+class RuntimeLatencySummary(ApiContract):
+    """Observed latest-job wall-clock duration; never a benchmark claim."""
+
+    status: Literal["available", "unavailable"]
+    metric_name: Literal["runtime_job_start_to_completion_duration"]
+    p50_ms: float | None = Field(default=None, ge=0.0)
+    p95_ms: float | None = Field(default=None, ge=0.0)
+    observation_count: int = Field(ge=0)
+    window_start: datetime | None
+    window_end: datetime | None
+    source: Literal["runtime_jobs.started_at/completed_at"]
+    unit: Literal["ms"]
+    calculated_at: datetime
+    runtime_job_id: UUID | None
+    unavailable_reason: str | None
+    limitation: Literal["controlled runtime observation; not a performance benchmark"] = (
+        "controlled runtime observation; not a performance benchmark"
+    )
+
+
+class RuntimeResourceObservation(ApiContract):
+    """Latest persisted worker-process sample with explicit support state."""
+
+    status: Literal["available", "unavailable"]
+    worker_id: str | None
+    runtime_job_id: UUID | None
+    process_id: int | None = Field(default=None, ge=1)
+    process_cpu_percent: float | None = Field(default=None, ge=0.0)
+    process_rss_bytes: int | None = Field(default=None, ge=0)
+    active_thread_count: int | None = Field(default=None, ge=1)
+    captured_at: datetime | None
+    metric_source: Literal["runtime_resource_samples+runtime_workers.process_identity_summary"]
+    unavailable_reason: str | None
+    limitation: Literal["point-in-time process observation; not a performance benchmark"] = (
+        "point-in-time process observation; not a performance benchmark"
+    )
+
+
 class RuntimeOverview(ApiContract):
     """Truthful status with explicit progress semantics."""
 
     status: RuntimeStatus
+    latency: RuntimeLatencySummary
+    resource: RuntimeResourceObservation
     observed_progress_semantics: Literal["non_durable_live_observation"] = (
         "non_durable_live_observation"
     )
@@ -316,6 +356,29 @@ class CaseDetail(ApiContract):
     feedback: list[AnalystFeedback]
 
 
+class CaseAuditEvent(ApiContract):
+    """Bounded read-only projection of one immutable audit event."""
+
+    audit_event_id: UUID
+    object_type: str
+    object_id: str | None
+    action: str
+    actor: str
+    reason: str | None
+    timestamp: datetime
+    before_summary: JsonObject | None
+    after_summary: JsonObject | None
+    metadata_summary: JsonObject
+
+
+class CaseAuditEventPage(Page[CaseAuditEvent]):
+    """Page-number view layered over the common bounded offset contract."""
+
+    page: int = Field(ge=1)
+    page_size: int = Field(ge=1, le=100)
+    total_pages: int = Field(ge=0)
+
+
 class ArtifactRequest(ConfirmedMutationRequest):
     """Versioned data-only artifact operation."""
 
@@ -340,7 +403,66 @@ class ModelDescriptor(ApiContract):
     active: bool
     checksum: str | None
     artifact_available: bool
+    activation_eligible: bool
+    activation_ineligibility_reason: str | None = None
     limitations: tuple[str, ...] = ()
+
+
+class EffectiveModelDescriptor(ApiContract):
+    """One model actually pinned to the latest completed runtime job."""
+
+    model_id: str
+    engine_type: Literal["supervised", "anomaly"]
+    algorithm: str | None
+    version: str
+    registry_status: Literal["verified", "validation_qualified", "unavailable"]
+    source: Literal["global_active", "runtime_job_snapshot"]
+    runtime_job_id: UUID
+    feature_schema_version: str
+    artifact_hash: str
+    threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    snapshot_created_at: datetime
+    global_pointer_active: bool
+    qualification: str
+    limitations: tuple[str, ...]
+
+
+class FusionPolicyDescriptor(ApiContract):
+    """A verified JSON fusion policy, never represented as an sklearn model."""
+
+    policy_id: str
+    policy_version: str
+    status: str
+    source: Literal["configured_policy", "runtime_job_snapshot"]
+    runtime_job_id: UUID | None
+    artifact_source: str
+    artifact_hash: str
+    supervised_weight: float = Field(ge=0.0, le=1.0)
+    anomaly_weight: float = Field(ge=0.0, le=1.0)
+    rule_weight: float | None = Field(default=None, ge=0.0, le=1.0)
+    context_weight: float | None = Field(default=None, ge=0.0, le=1.0)
+    fusion_threshold: float = Field(gt=0.0, lt=1.0)
+    feature_schema_version: str
+    evaluation_source: str
+    recommendation: str
+    configured_for_new_jobs: bool
+    effective_for_latest_job: bool
+    limitations: tuple[str, ...]
+
+
+class EffectiveModelState(ApiContract):
+    """Global pointers and latest-job effective artifacts with separate semantics."""
+
+    status: Literal["available", "unavailable"]
+    latest_runtime_job_id: UUID | None
+    latest_runtime_job_status: str | None
+    snapshot_created_at: datetime | None
+    global_active_models: list[ModelDescriptor]
+    effective_models: list[EffectiveModelDescriptor]
+    configured_fusion_policy: FusionPolicyDescriptor | None
+    effective_fusion_policy: FusionPolicyDescriptor | None
+    unavailable_reason: str | None
+    limitations: tuple[str, ...]
 
 
 class ModelTrainRequest(ConfirmedMutationRequest):
@@ -394,6 +516,27 @@ class EvaluationDescriptor(ApiContract):
     verification: Literal["verified", "unavailable"]
     metrics: JsonObject | None
     provenance: JsonObject
+    limitations: tuple[str, ...]
+
+
+class FusionEvaluationDiscovery(ApiContract):
+    """Availability of registered Phase 7 evidence without a fabricated row."""
+
+    status: Literal["available", "unavailable", "invalid"]
+    experiment_id: str
+    run_id: str | None
+    recommendation: Literal[
+        "inconclusive",
+        "fusion_recommended",
+        "fusion_not_recommended",
+    ]
+    metrics_available: bool
+    expected_artifacts: tuple[str, ...]
+    missing_artifacts: tuple[str, ...]
+    invalid_reason: str | None
+    artifact_hash: str | None
+    dataset_reference: str | None
+    split_reference: str | None
     limitations: tuple[str, ...]
 
 

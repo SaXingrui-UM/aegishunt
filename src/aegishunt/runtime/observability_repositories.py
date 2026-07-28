@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from uuid import UUID
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -145,3 +146,17 @@ class RuntimeResourceRepository:
             .order_by(RuntimeResourceSampleRecord.worker_id)
         ).all()
         return tuple(RuntimeResourceSample.model_validate(row) for row in rows)
+
+    def latest_for_job(self, job_id: UUID) -> RuntimeResourceSample | None:
+        """Return the newest persisted observation attributed to one job."""
+
+        row = self._session.scalar(
+            select(RuntimeResourceSampleRecord)
+            .where(RuntimeResourceSampleRecord.job_id == job_id)
+            .order_by(
+                RuntimeResourceSampleRecord.sampled_at.desc(),
+                RuntimeResourceSampleRecord.sample_id.desc(),
+            )
+            .limit(1)
+        )
+        return None if row is None else RuntimeResourceSample.model_validate(row)

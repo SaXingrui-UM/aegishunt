@@ -69,6 +69,10 @@ def _settings(tmp_path: Path, *, pcap_limit: int = 52_428_800) -> ApplicationSet
         web=WebSettings(
             maximum_pcap_upload_bytes=pcap_limit,
             demo_artifact_root=Path("tmp") / f"phase12-demo-{uuid4().hex}",
+            demo_sample_ids=(
+                "phase12-demo-pcap",
+                "phase12-presentation-demo-pcap",
+            ),
         ),
     )
 
@@ -176,15 +180,32 @@ def test_phase12_api_workflow_is_persistent_and_truthful(tmp_path: Path) -> None
         case_detail = client.get(f"/cases/{case_id}").json()
         assert len(case_detail["notes"]) == 1
         assert len(case_detail["feedback"]) == 2
+        audit = client.get(
+            f"/cases/{case_id}/audit-events",
+            params={"page": 1, "page_size": 2, "order": "asc"},
+        )
+        assert audit.status_code == 200, audit.text
+        assert audit.json()["total"] >= 4
+        assert len(audit.json()["items"]) == 2
+        filtered_audit = client.get(
+            f"/cases/{case_id}/audit-events",
+            params={"action": "create_feedback", "actor": "phase12-analyst"},
+        )
+        assert filtered_audit.status_code == 200
+        assert filtered_audit.json()["total"] == 2
+        assert {
+            item["reason"] for item in filtered_audit.json()["items"]
+        } == {
+            "explicit analyst feedback creation"
+        }
 
         model_page = client.get("/models").json()
-        assert model_page["items"][0]["engine"] == "fusion"
-        assert model_page["items"][0]["state"] == "unavailable"
-        importance = client.get(
-            f"/models/{model_page['items'][0]['model_id']}/importance"
-        )
-        assert importance.status_code == 200
-        assert importance.json()["available"] is False
+        assert model_page["items"] == []
+        assert client.get("/models/active").json() == []
+        effective = client.get("/models/effective")
+        assert effective.status_code == 200
+        assert effective.json()["status"] == "unavailable"
+        assert effective.json()["global_active_models"] == []
         denied_training = client.post(
             "/models/train",
             json={
@@ -200,8 +221,12 @@ def test_phase12_api_workflow_is_persistent_and_truthful(tmp_path: Path) -> None
         assert denied_training.status_code == 409
         assert denied_training.json()["error_code"] == "state_conflict"
         evaluations = client.get("/evaluation").json()
-        assert evaluations["items"][0]["metrics"] is None
-        assert evaluations["items"][0]["provenance"]["recommendation"] == "inconclusive"
+        assert evaluations["items"] == []
+        fusion_status = client.get("/evaluation/fusion-status")
+        assert fusion_status.status_code == 200
+        assert fusion_status.json()["status"] == "unavailable"
+        assert fusion_status.json()["recommendation"] == "inconclusive"
+        assert fusion_status.json()["missing_artifacts"]
 
     with TestClient(create_app(settings, database)) as restarted:
         persisted = restarted.get(f"/cases/{case_id}")
@@ -282,6 +307,50 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         assert case_detail["case"]["verdict"] == "needs_more_information"
         assert len(case_detail["feedback"]) == 2
         assert "controlled synthetic pipeline verification only" in first.json()["limitations"]
+        assert client.get("/models/active").json() == []
+        effective = client.get("/models/effective").json()
+        assert effective["status"] == "available"
+        assert effective["global_active_models"] == []
+        assert {
+            (item["engine_type"], item["algorithm"], item["version"])
+            for item in effective["effective_models"]
+        } == {
+            ("supervised", "random_forest", "12.0.0"),
+            ("anomaly", "local_outlier_factor", "1.1.0-candidate"),
+        }
+        anomaly = next(
+            item
+            for item in effective["effective_models"]
+            if item["engine_type"] == "anomaly"
+        )
+        assert anomaly["registry_status"] == "validation_qualified"
+        assert anomaly["global_pointer_active"] is False
+        policy = effective["effective_fusion_policy"]
+        assert policy["source"] == "runtime_job_snapshot"
+        assert policy["policy_version"] == "1.0.0"
+        assert policy["supervised_weight"] == 0.75
+        assert policy["anomaly_weight"] == 0.25
+        assert policy["fusion_threshold"] == 0.7
+        snapshot = client.get(
+            f"/runtime/jobs/{first.json()['runtime_job_id']}"
+        ).json()["job"]["snapshot"]
+        pinned_policy = next(
+            item for item in snapshot["artifacts"] if item["artifact_type"] == "fusion_policy"
+        )
+        assert policy["artifact_hash"] == pinned_policy["checksum"]
+        runtime_observation = client.get("/runtime/status").json()
+        assert runtime_observation["latency"]["status"] == "available"
+        assert runtime_observation["latency"]["observation_count"] == 1
+        assert runtime_observation["latency"]["p95_ms"] >= 0
+        assert runtime_observation["resource"]["status"] == "available"
+        assert runtime_observation["resource"]["process_id"] > 0
+        assert runtime_observation["resource"]["process_rss_bytes"] > 0
+        assert runtime_observation["resource"]["active_thread_count"] > 0
+        case_audit = client.get(f"/cases/{case_id}/audit-events").json()
+        assert case_audit["total"] >= 3
+        assert {"create_case_from_hypothesis", "set_case_verdict", "create_feedback"} <= {
+            item["action"] for item in case_audit["items"]
+        }
 
         def api_transport(request: httpx.Request) -> httpx.Response:
             path = request.url.path
@@ -314,9 +383,56 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
             assert frontend.cases().total == 1
             assert frontend.case(case_id).case.verdict == "needs_more_information"
             assert frontend.feedback().total == 2
-            assert frontend.models().items[0].engine == "fusion"
-            assert frontend.evaluations().items[0].engine == "fusion"
+            assert frontend.models().items == []
+            effective_frontend = frontend.effective_models()
+            assert effective_frontend.status == "available"
+            assert len(effective_frontend.effective_models) == 2
+            assert effective_frontend.effective_fusion_policy is not None
+            assert frontend.evaluations().items == []
+            assert frontend.fusion_evaluation_status().status == "unavailable"
+            assert frontend.case_audit_events(case_id).total >= 3
             assert frontend.demo_status().previous_run is not None
+
+        presentation_payload = {
+            "actor": "demo-user",
+            "reason": "explicit controlled presentation pipeline",
+            "confirm": True,
+            "sample_id": "phase12-presentation-demo-pcap",
+            "create_case": False,
+        }
+        presentation = client.post("/demo/sample", json=presentation_payload)
+        repeated_presentation = client.post(
+            "/demo/sample",
+            json=presentation_payload,
+        )
+        assert presentation.status_code == 200, presentation.text
+        assert repeated_presentation.status_code == 200
+        assert presentation.json()["source_id"] == repeated_presentation.json()["source_id"]
+        assert presentation.json()["runtime_job_id"] == (
+            repeated_presentation.json()["runtime_job_id"]
+        )
+        assert presentation.json()["flow_ids"] == repeated_presentation.json()["flow_ids"]
+        assert presentation.json()["alert_ids"] == repeated_presentation.json()["alert_ids"]
+        assert len(presentation.json()["flow_ids"]) == 9
+        assert len(presentation.json()["alert_ids"]) == 9
+        assert len(presentation.json()["group_ids"]) == 3
+        assert len(presentation.json()["hypothesis_ids"]) == 3
+        assert presentation.json()["case_id"] is None
+        combined_summary = client.get("/flows/summary").json()
+        assert combined_summary["total"] == 11
+        assert combined_summary["total_packets"] == 37
+        assert combined_summary["protocol_distribution"] == {
+            "icmp": 2,
+            "tcp": 6,
+            "udp": 3,
+        }
+        presentation_flows = [
+            item
+            for item in client.get("/flows", params={"limit": 50}).json()["items"]
+            if item["flow_id"] in presentation.json()["flow_ids"]
+        ]
+        assert any(":" in item["source_ip"] for item in presentation_flows)
+        assert any(item["protocol"] == "icmp" for item in presentation_flows)
     demo_root = (
         ROOT
         / settings.web.demo_artifact_root

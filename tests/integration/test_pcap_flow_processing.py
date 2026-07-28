@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import ipaddress
+import json
+import math
 from pathlib import Path
 from uuid import UUID
 
@@ -66,6 +70,71 @@ def test_processor_builds_one_bidirectional_flow_and_replays_deterministically(
     flow = first.flows[0]
     assert (flow.forward_packet_count, flow.backward_packet_count) == (2, 1)
     assert flow.behavioral_features["completed_handshake_indicator"] == 1
+
+
+def test_presentation_sample_inventory_and_features_are_deterministic() -> None:
+    capture = SAMPLE_ROOT / "phase12-presentation-demo.pcap"
+    manifest = json.loads(
+        (SAMPLE_ROOT / "phase12-presentation-demo.manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    payload = capture.read_bytes()
+    assert hashlib.sha256(payload).hexdigest() == manifest["sha256"]
+    assert manifest["packet_count"] == 32
+    assert manifest["protocol_inventory"] == {
+        "icmp": 2,
+        "icmpv6": 2,
+        "tcp": 20,
+        "udp": 8,
+    }
+    documentation_networks = (
+        ipaddress.ip_network("192.0.2.0/24"),
+        ipaddress.ip_network("198.51.100.0/24"),
+        ipaddress.ip_network("203.0.113.0/24"),
+        ipaddress.ip_network("2001:db8::/32"),
+    )
+    assert all(
+        any(
+            ipaddress.ip_address(address) in network
+            for network in documentation_networks
+        )
+        for address in manifest["address_inventory"]
+    )
+
+    processor = PcapFlowProcessor(FlowSettings(), max_records=100)
+    first = processor.process(
+        capture,
+        source_id=SOURCE_ID,
+        capture_session_id="phase12-presentation",
+    )
+    second = processor.process(
+        capture,
+        source_id=SOURCE_ID,
+        capture_session_id="phase12-presentation",
+    )
+    assert first == second
+    assert (first.captured_packets, first.decoded_packets, first.skipped_packets) == (
+        32,
+        32,
+        0,
+    )
+    assert len(first.flows) == 9
+    assert {(flow.protocol.value, ":" in flow.source_ip) for flow in first.flows} >= {
+        ("tcp", False),
+        ("tcp", True),
+        ("udp", False),
+        ("udp", True),
+        ("icmp", False),
+        ("icmp", True),
+    }
+    assert all(
+        all(
+            not isinstance(value, float) or math.isfinite(value)
+            for value in flow.behavioral_features.values()
+        )
+        for flow in first.flows
+    )
 
 
 def test_timeout_boundary_segments_capture_and_unsupported_frames_are_skipped(

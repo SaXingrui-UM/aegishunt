@@ -21,3 +21,10 @@ samples:
     checksum: 5275d1cd350072883d046cf5b4fe4a438d8ded69375241bbd94b90a21e8c4226
     description: Deterministic two-flow PCAP for the explicit Phase 12 offline demonstration.
     synthetic: true
+  - sample_id: phase12-presentation-demo-pcap
+    filename: phase12-presentation-demo.pcap
+    source_type: pcap
+    content_type: application/vnd.tcpdump.pcap
+    checksum: 0d272ac98660eb119cded8be194a513c2db82b475d4cce982a120eb210a8ab51
+    description: Small controlled IPv4/IPv6 TCP/UDP/ICMP presentation capture.
+    synthetic: true

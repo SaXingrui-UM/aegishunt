@@ -205,6 +205,7 @@ class RuntimePipelineRunner:
                         update={"model_load_state": "verified_per_job_preflight"}
                     )
                 )
+        self._control.capture_resource_sample(job.job_id)
 
         reader = PcapPacketReader(
             max_records=self._settings.ingestion.max_records,
@@ -354,12 +355,14 @@ class RuntimePipelineRunner:
                     loaded,
                     durable_counters,
                 )
-            return self._finalize_downstream(
+            completed = self._finalize_downstream(
                 job,
                 loaded,
                 observed_counters,
                 durable_counters,
             )
+            self._control.capture_resource_sample(job.job_id)
+            return completed
         except ReplayInterrupted:
             self._control.record_observed_progress(
                 job.job_id,

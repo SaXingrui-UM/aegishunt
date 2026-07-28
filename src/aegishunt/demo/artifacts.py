@@ -174,6 +174,18 @@ class DemoArtifactManager:
             self._verify(_paths(self._root))
             return True
 
+    def read(self) -> DemoArtifactEnvironment | None:
+        """Return an existing verified environment without creating evidence."""
+
+        with _ARTIFACT_LOCK:
+            if not self._root.is_dir() or self._root.is_symlink():
+                return None
+            return DemoArtifactEnvironment(
+                settings=self._verify(_paths(self._root)),
+                root=self._root,
+                reused=True,
+            )
+
     def _demo_settings(self, paths: _DemoPaths) -> ApplicationSettings:
         return self._settings.model_copy(
             update={
@@ -210,6 +222,12 @@ class DemoArtifactManager:
                 "runtime": RuntimeSettings(
                     policy_path=paths.configs / "runtime.yaml",
                     fusion_policy_root=paths.fusion_models,
+                    fusion_evaluation_root=(
+                        self._settings.runtime.fusion_evaluation_root
+                    ),
+                    fusion_evaluation_experiment_id=(
+                        self._settings.runtime.fusion_evaluation_experiment_id
+                    ),
                 ),
             }
         )

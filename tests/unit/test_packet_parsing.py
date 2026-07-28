@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import struct
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -11,6 +13,7 @@ from aegishunt.flows.errors import CaptureFormatError, PacketParseError
 from aegishunt.flows.packets import LINKTYPE_ETHERNET, parse_packet
 from aegishunt.flows.pcap_reader import PcapPacketReader
 from aegishunt.schemas.enums import NetworkProtocol
+from scripts.generate_phase12_presentation_pcap import build_sample
 from tests.fixtures.packets import (
     at,
     ethernet_frame,
@@ -74,6 +77,48 @@ def test_parses_ipv6_tcp_and_icmpv6() -> None:
     assert tcp.source_ip == "2001:db8::1"
     assert icmp is not None and icmp.protocol is NetworkProtocol.ICMP
     assert icmp.protocol_number == 58
+
+
+def test_phase12_presentation_sample_is_reproducible_and_protocol_complete() -> None:
+    sample_root = Path(__file__).parents[2] / "data" / "sample"
+    presentation = sample_root / "phase12-presentation-demo.pcap"
+    original = sample_root / "phase12-demo.pcap"
+    assert presentation.read_bytes() == build_sample()
+    assert hashlib.sha256(original.read_bytes()).hexdigest() == (
+        "5275d1cd350072883d046cf5b4fe4a438d8ded69375241bbd94b90a21e8c4226"
+    )
+
+    captured = list(
+        PcapPacketReader(max_records=100, max_packet_bytes=65_535).packets(
+            presentation
+        )
+    )
+    decoded = [
+        parse_packet(
+            item.frame,
+            timestamp=item.timestamp,
+            link_type=item.link_type,
+        )
+        for item in captured
+    ]
+    assert all(item is not None for item in decoded)
+    inventory = Counter(
+        (
+            item.ip_version,
+            item.protocol,
+            item.protocol_number,
+        )
+        for item in decoded
+        if item is not None
+    )
+    assert inventory == {
+        (4, NetworkProtocol.TCP, 6): 14,
+        (4, NetworkProtocol.UDP, 17): 2,
+        (4, NetworkProtocol.ICMP, 1): 2,
+        (6, NetworkProtocol.TCP, 6): 6,
+        (6, NetworkProtocol.UDP, 17): 6,
+        (6, NetworkProtocol.ICMP, 58): 2,
+    }
 
 
 def test_skips_non_ip_fragments_unknown_transports_and_link_layers() -> None:

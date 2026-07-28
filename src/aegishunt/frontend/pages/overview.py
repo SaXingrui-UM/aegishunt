@@ -54,33 +54,13 @@ def render(client: AegisHuntApiClient) -> None:
         open_hypotheses = _open_hypothesis_count(client)
         open_cases = _open_case_count(client)
         ingestion = client.ingestion_jobs(limit=5)
-        models = client.models(limit=100)
+        model_state = client.effective_models()
         demo = client.demo_status()
     except ApiClientError as error:
         api_error(error)
         research_disclaimer()
         return
 
-    active_supervised = next(
-        (
-            f"{item.version} ({item.state})"
-            for item in models.items
-            if item.engine == "supervised" and item.active
-        ),
-        None,
-    )
-    active_anomaly = next(
-        (
-            f"{item.version} ({item.state})"
-            for item in models.items
-            if item.engine == "anomaly" and item.active
-        ),
-        None,
-    )
-    fusion = next((item for item in models.items if item.engine == "fusion"), None)
-    fusion_policy = (
-        None if fusion is None else f"{fusion.version} ({fusion.state})"
-    )
     worker_states = (
         ", ".join(
             f"{status}: {sum(item.status.value == status for item in runtime.status.workers)}"
@@ -106,10 +86,10 @@ def render(client: AegisHuntApiClient) -> None:
     )
     metrics(
         {
-            "Active supervised model": active_supervised,
-            "Active anomaly model": active_anomaly,
-            "Fusion policy": fusion_policy,
-            "P95 pipeline latency": None,
+            "Observed runtime p50 (ms)": runtime.latency.p50_ms,
+            "Observed runtime p95 (ms)": runtime.latency.p95_ms,
+            "Latency observations (n)": runtime.latency.observation_count,
+            "Latency source": runtime.latency.source,
         }
     )
     metrics(
@@ -120,10 +100,59 @@ def render(client: AegisHuntApiClient) -> None:
             "Worker status": worker_states,
         }
     )
+    if runtime.latency.status == "unavailable":
+        st.info(runtime.latency.unavailable_reason or "Runtime latency is unavailable.")
     st.caption(
-        "P95 pipeline latency is Unavailable because no verified end-to-end latency "
-        "series is currently persisted; no value is inferred from request timing."
+        f"{runtime.latency.metric_name} · {runtime.latency.unit} · "
+        f"calculated {runtime.latency.calculated_at.isoformat()} · "
+        f"{runtime.latency.limitation}"
     )
+    st.subheader("Global Active Models")
+    if not model_state.global_active_models:
+        empty("None. No global model pointer is active.")
+    else:
+        st.dataframe(
+            [
+                {
+                    "engine": item.engine,
+                    "algorithm": "registry bundle",
+                    "version": item.version,
+                    "status": item.state,
+                    "source": "global_active",
+                    "artifact_hash": item.checksum,
+                }
+                for item in model_state.global_active_models
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+    st.subheader("Effective Models for Latest Demo/Runtime Job")
+    if not model_state.effective_models:
+        empty(model_state.unavailable_reason or "No completed runtime snapshot is available.")
+    else:
+        st.dataframe(
+            [
+                {
+                    "engine": item.engine_type,
+                    "algorithm": item.algorithm,
+                    "version": item.version,
+                    "status": item.registry_status,
+                    "source": item.source,
+                    "runtime_job_id": str(item.runtime_job_id),
+                    "global_pointer_active": item.global_pointer_active,
+                    "artifact_hash": item.artifact_hash,
+                    "threshold": item.threshold,
+                    "qualification": item.qualification,
+                }
+                for item in model_state.effective_models
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.caption(
+            "These artifacts come from the immutable latest completed runtime-job "
+            "snapshot; they do not modify global active pointers."
+        )
     limitation(
         "Observed replay progress is non-durable live observation. Durable progress "
         "represents committed evidence; recovery restarts deterministically from origin."

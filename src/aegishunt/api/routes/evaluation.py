@@ -6,7 +6,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from aegishunt.api.contracts import EvaluationDescriptor, EvaluationPage
+from aegishunt.api.contracts import (
+    EvaluationDescriptor,
+    EvaluationPage,
+    FusionEvaluationDiscovery,
+)
 from aegishunt.api.dependencies import PaginationDependency, get_database, get_settings
 from aegishunt.api.errors import not_found
 from aegishunt.api.evaluation_service import EvaluationCatalogService
@@ -61,6 +65,20 @@ def latest_evaluations(
     for item in _items(database, settings):
         latest[item.engine] = item
     return [latest[key] for key in sorted(latest)]
+
+
+@router.get(
+    "/fusion-status",
+    response_model=FusionEvaluationDiscovery,
+    operation_id="get_fusion_evaluation_discovery",
+)
+def fusion_evaluation_discovery(
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> FusionEvaluationDiscovery:
+    """Distinguish missing artifacts from a verified inconclusive result."""
+
+    return EvaluationCatalogService(database, settings).fusion_discovery()
 
 
 @router.get(

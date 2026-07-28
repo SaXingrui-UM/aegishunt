@@ -22,7 +22,15 @@ Phases 0–12 are complete and their annotated checkpoints remain immutable.
 Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) is merged as
 `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated
 `phase-12-complete` peels to that canonical merge commit. Phase 13 is **Not
-started** and branch `phase/13-hardening` has not been created. Phase 11
+started** and branch `phase/13-hardening` has not been created. Validation PR
+[#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged. The
+subsequent Phase 12 demo-readiness corrective keeps global model pointers
+separate from immutable runtime-job effective models, exposes the effective
+Fusion Policy, reports typed Phase 7 artifact availability, adds measured
+Demo-run observations and Case Audit History, and adds a separate controlled
+IPv4/IPv6/ICMP presentation sample. See
+[`docs/phase-12-demo-readiness-corrective-validation.md`](docs/phase-12-demo-readiness-corrective-validation.md).
+Phase 11
 provides offline, rootless PCAP replay on a single
 SQLite node with durable jobs, leases, explicit recovery, verified artifact
 pinning, transactional output ledgers, separate non-durable observed replay
@@ -154,6 +162,7 @@ aegishunt runtime workers list
 aegishunt runtime status
 aegishunt demo --help
 aegishunt demo run --sample-id phase12-demo-pcap --actor analyst --reason "controlled demonstration" --confirm
+aegishunt demo run --sample-id phase12-presentation-demo-pcap --actor analyst --reason "controlled presentation demonstration" --confirm
 aegishunt api
 aegishunt frontend
 ```

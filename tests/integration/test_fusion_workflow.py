@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from aegishunt.api.evaluation_service import FusionEvaluationArtifactReader
+from aegishunt.config import ApplicationSettings, RuntimeSettings
 from aegishunt.ml.fusion.artifacts import load_policy
 from aegishunt.ml.fusion.contracts import FusionScoreInput
 from aegishunt.ml.fusion.errors import FusionArtifactError
@@ -111,6 +113,28 @@ def test_full_controlled_workflow_writes_truthful_evidence_and_verified_policy(
     assert "not probability" in result.policy.fusion_score_semantics
     assert service.verify("1.0.0") == result.policy
     assert not any(path.suffix in {".pkl", ".joblib", ".skops"} for path in tmp_path.rglob("*"))
+    descriptor, discovery = FusionEvaluationArtifactReader(
+        ApplicationSettings(
+            runtime=RuntimeSettings(
+                fusion_policy_root=tmp_path / "policies",
+                fusion_evaluation_root=tmp_path / "experiments",
+                fusion_evaluation_experiment_id="phase-07-controlled-fusion-001",
+            )
+        )
+    ).read()
+    assert descriptor is not None
+    assert descriptor.engine == "fusion"
+    assert descriptor.metrics is not None
+    assert descriptor.metrics["recommendation"] == "inconclusive"
+    assert descriptor.metrics["known_attack_comparison"]
+    assert descriptor.metrics["unseen_family_comparison"]
+    assert descriptor.metrics["supervised_anomaly_fusion_comparison"]
+    assert descriptor.metrics["confidence_intervals"]
+    assert discovery.status == "available"
+    assert discovery.recommendation == "inconclusive"
+    assert discovery.artifact_hash is not None
+    assert discovery.dataset_reference is not None
+    assert discovery.split_reference is not None
     with pytest.raises(FusionArtifactError, match="already exists"):
         service.evaluate(allow_controlled_demo=True)
 
