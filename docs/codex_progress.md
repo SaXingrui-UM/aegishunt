@@ -1,6 +1,6 @@
 # Codex Progress
 
-Last updated: 2026-07-27 (Asia/Shanghai)
+Last updated: 2026-07-28 (Asia/Shanghai)
 
 ## Current state
 
@@ -13,8 +13,8 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
-| Current activity | Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) was Squash and merge merged into `main`; the post-merge checkpoint verifies that canonical merge and records annotated Tag `phase-12-complete`. Phase 13 has not started |
-| Verification status | The post-merge checkpoint branch passed Ruff, mypy for 234 source files, 460 repository tests at 85.40% branch-aware coverage, 60 focused Phase 12/API/security/status tests, live loopback API and Streamlit checks, and two idempotent controlled Demo runs |
+| Current activity | Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) was Squash and merge merged into `main`; Phase 0–12 Demo Validation PR [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged as `a10040de971154023a7ef35b6ebbcb000e27c6bc`. The independent Phase 12 Demo Readiness Corrective is implemented on `fix/phase-12-demo-readiness-limitations` and awaiting Draft PR review. Phase 13 has not started |
+| Verification status | The post-merge checkpoint branch passed Ruff, mypy for 234 source files, 460 repository tests at 85.40% branch-aware coverage, 60 focused Phase 12/API/security/status tests, live loopback API and Streamlit checks, and two idempotent controlled Demo runs. Corrective fresh-database validation additionally completed both the original five-packet lifecycle and the separate 32-packet presentation sample; effective models, Fusion Policy, typed Phase 7 artifact unavailability, measured runtime observations, Case Audit History, all nine Streamlit pages, and current-run screenshots were verified. Final corrective Ruff passed, mypy passed for 237 source files, and all 465 tests passed in 1,557.83 seconds at 85.39% branch-aware coverage |
 | Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -50,9 +50,9 @@ Last updated: 2026-07-27 (Asia/Shanghai)
 | Phase 11 status | Phase complete |
 | Phase 12 status | Phase complete |
 | Phase 13 status | Not started |
-| Current branch | Canonical completed state is on `main`; documentation-only descendants are permitted by the stable-ancestor invariant |
+| Current branch | `fix/phase-12-demo-readiness-limitations`; corrective scope only, with no Phase 13 implementation |
 | Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Wait for explicit user authorization, then re-run the Phase 13 startup invariant before creating `phase/13-hardening` |
+| Next action | Review the Phase 12 corrective Draft PR. Do not start Phase 13 without a separate explicit authorization and startup invariant |
 
 Phase 0 through Phase 12 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
