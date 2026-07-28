@@ -237,6 +237,18 @@ Final quality results:
   `test_sample_demo_runs_full_existing_pipeline_idempotently` passed in 44.09
   seconds.
 
+The required `codex review --base main` attempt could not start because the
+packaged native executable was missing:
+
+```text
+Error: spawn /Users/yuxiaoxing/.nvm/versions/node/v22.22.1/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/codex/codex ENOENT
+```
+
+The equivalent read-only `main...HEAD` review covered correctness, security,
+requirements, test evidence, accidental secrets, generated/oversized files,
+data and evaluation integrity, hard-coded metrics or policy values, and Phase
+13 scope. It found zero unresolved Blocking, High, or Medium findings.
+
 The first focused run exposed one stale new-test expectation of one
 presentation group/hypothesis while the unchanged real policy produced three
 of each; the assertion was corrected to the independently recorded Demo/API
