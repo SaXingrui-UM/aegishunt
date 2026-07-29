@@ -17,6 +17,14 @@ from scripts.validate_phase13_security_findings import (
 )
 
 LEDGER_PATH = Path("configs/hardening/phase-13-security-findings.json")
+SECURITY_FINDINGS_PATH = Path("docs/security_findings.md")
+SECURITY_BASELINE_PATH = Path("docs/phase-13-security-baseline.md")
+SECRET_HISTORY_EVIDENCE_PATHS = (
+    Path("docs/security_review.md"),
+    SECURITY_BASELINE_PATH,
+    Path("docs/releases/phase-13.md"),
+    Path("docs/codex_progress.md"),
+)
 
 
 def _payload() -> dict[str, object]:
@@ -96,3 +104,74 @@ def test_ledger_loader_fails_closed_for_malformed_json(tmp_path: Path) -> None:
 
     with pytest.raises(SecurityFindingsLedgerError, match="unable to read"):
         load_and_validate(path)
+
+
+def test_security_documents_record_the_explicit_final_rescan_waiver() -> None:
+    findings = SECURITY_FINDINGS_PATH.read_text(encoding="utf-8")
+    baseline = SECURITY_BASELINE_PATH.read_text(encoding="utf-8")
+    combined = f"{findings}\n{baseline}"
+    normalized_findings = " ".join(findings.split())
+    normalized_baseline = " ".join(baseline.split())
+
+    assert "explicitly waived by the user" in findings
+    assert "No final rescan result is claimed" in normalized_findings
+    assert (
+        "not represented as a formal rescan or substitute result"
+        in normalized_findings
+    )
+    assert "was not executed" in baseline
+    assert "No final rescan result is claimed" in normalized_baseline
+    assert (
+        "not represented as a formal rescan or substitute result"
+        in normalized_baseline
+    )
+    assert "separate merge gate" not in combined
+    assert "still requires a formal Codex Security" not in combined
+
+
+def test_security_documents_preserve_dependency_and_bounded_history_truth() -> None:
+    baseline = SECURITY_BASELINE_PATH.read_text(encoding="utf-8")
+    review = Path("docs/security_review.md").read_text(encoding="utf-8")
+
+    assert "114 installed distributions under CPython 3.12.13" in baseline
+    assert "110 installed distributions in a clean CPython 3.11" in baseline
+    assert "113 installed distributions" not in baseline
+    assert "`pip check` reports no broken requirements" in baseline
+    assert "Unique historical text blobs scanned: 1,264" in review
+    assert "Binary blobs safely skipped: 18" in review
+    assert "Oversized blobs safely skipped: 1" in review
+    assert "Stale allowlist entries: 0" in review
+    assert "Unreviewed candidates: 0" in review
+    assert "Confirmed secrets: 0" in review
+
+    for path in SECRET_HISTORY_EVIDENCE_PATHS:
+        evidence = path.read_text(encoding="utf-8")
+        normalized = " ".join(evidence.split())
+        assert "1,264" in normalized
+        assert (
+            "18 binary" in normalized
+            or "Binary blobs safely skipped: 18" in normalized
+        )
+        assert (
+            "one oversized" in normalized
+            or "Oversized blobs safely skipped: 1" in normalized
+        )
+        assert (
+            "zero confirmed secrets" in normalized
+            or "0 confirmed secrets" in normalized
+        )
+        assert (
+            "zero unreviewed candidates" in normalized
+            or "0 unreviewed candidates" in normalized
+            or "Unreviewed candidates: 0" in normalized
+        )
+        assert (
+            "zero stale allowlist" in normalized
+            or "0 stale allowlist" in normalized
+            or "Stale allowlist entries: 0" in normalized
+        )
+        assert "bounded oversized" in normalized
+        assert "does not mean every reachable blob was scanned" in normalized
+        assert "complete reachable Git blob history" not in normalized
+        assert "complete-history" not in normalized
+        assert "full-history" not in normalized

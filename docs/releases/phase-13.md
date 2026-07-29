@@ -38,12 +38,17 @@ Status: **Implementation complete — awaiting PR review**.
 - Added performance protocol 1.1 with 100-sample micro/API measurements,
   truthful unavailable p99 for bounded runs below 100 samples, seven read-only
   API scenarios, cold/warm separation, and seven explicit RSS scenarios.
-- Ran real `pip-audit`, complete-history `detect-secrets`, and Bandit gates;
-  added independent fail-closed CI jobs for security, robustness, performance
-  smoke, and quality. GitHub's optional dependency-diff Action is not retained
-  because this repository does not have the required Dependency Graph plus
-  GitHub Advanced Security capability; that unsupported run is recorded as a
-  failure rather than a pass, while the required security job retains
+- Ran real `pip-audit`, bounded reachable-history `detect-secrets`, and Bandit
+  gates; added independent fail-closed CI jobs for security, robustness,
+  performance smoke, and quality. The history scan covered 1,264 text blobs,
+  skipped 18 binary blobs and one explicitly documented bounded oversized
+  historical blob, and reported zero confirmed secrets, zero unreviewed
+  candidates, and zero stale allowlist entries. Current tracked files remain
+  subject to the normal secret scan; passing the gate does not mean every
+  reachable blob was scanned. GitHub's optional dependency-diff Action is not
+  retained because this repository does not have the required Dependency Graph
+  plus GitHub Advanced Security capability; that unsupported run is recorded as
+  a failure rather than a pass, while the required security job retains
   `pip check` and online `pip-audit`.
 - Represented all 80 immutable Codex Security baseline findings, including all
   73 Low findings, in a validated per-finding disposition ledger.
@@ -151,9 +156,9 @@ PR #39.
   dedicated CI-contract regressions preserve these corrections. Refreshed
   exact-Head CI remains a merge gate.
 - After installing the declared setuptools 83.x dependency into the primary
-  development environment, the final full regression passed all 525 tests with
-  0 failures, 0 skips, and 0 xfails in 1,562.89 seconds. Branch-aware repository
-  coverage was 85.79%, and all 17 core packages retained their separate 80%
+  development environment, the final full regression passed all 527 tests with
+  0 failures, 0 skips, and 0 xfails in 1,555.14 seconds. Branch-aware repository
+  coverage was 85.73%, and all 17 core packages retained their separate 80%
   pass status.
 
 ## Review outcome
@@ -221,8 +226,12 @@ reported 7 Medium, 73 Low, 0 High, and 0 Critical findings. It was not rerun.
 - `pip-audit` 2.10.1 audited 114 Python 3.12 distributions and 110 clean
   Python 3.11 distributions and found zero advisories in either environment;
   `pip check` passed.
-- `detect-secrets` 1.5.0 scanned the current tree and reachable Git history,
-  with zero confirmed secrets after exact reviewed false-positive handling.
+- `detect-secrets` 1.5.0 scanned the current tree and generated PR body, plus
+  1,264 reachable historical text blobs subject to one explicitly documented
+  bounded oversized-blob exclusion. It skipped 18 binary blobs and one
+  oversized historical blob, with zero confirmed secrets, zero unreviewed
+  candidates, and zero stale allowlist entries. Current tracked files remain
+  under the normal scan; passing does not mean every reachable blob was scanned.
 - Bandit 1.9.4 reported 45 Low and 0 Medium/High findings, with no scanner
   errors and no suppression.
 - These complementary tools are not represented as a formal Codex Security

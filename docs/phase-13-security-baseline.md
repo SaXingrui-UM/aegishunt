@@ -49,14 +49,21 @@ Low findings individually:
 Every risk row records its own reachability, required attacker capability,
 mitigation, residual impact, and Phase 14 action. The ledger validator rejects
 missing, duplicate, unsupported, or untriaged rows. The immutable baseline is
-not presented as the final scan; PR #39 still requires a formal Codex Security
-scan of its exact final Head.
+not presented as the final scan. The exact-final-HEAD formal Codex Security
+rescan was explicitly waived by the user and was not executed. No final rescan
+result is claimed. The immutable baseline ledger, regression evidence, Bandit,
+dependency audit, and secret scan are complementary controls and are not
+represented as a formal rescan or substitute result.
 
 ## Independent checks completed
 
-- `detect-secrets` 1.5.0 scanned the tracked tree, complete reachable Git blob
-  history, and generated PR body. It found zero confirmed secrets after 45
-  exact reviewed false positives; candidate values were redacted.
+- `detect-secrets` 1.5.0 scanned the tracked tree and generated PR body, plus
+  reachable Git history subject to one explicitly documented, bounded
+  oversized-blob exclusion. It scanned 1,264 historical text blobs, skipped 18
+  binary blobs and one oversized historical blob, and reported zero confirmed
+  secrets, zero unreviewed candidates, and zero stale allowlist entries.
+  Current tracked files remain subject to the normal secret scan. Passing this
+  gate does not mean every reachable blob was scanned.
 - Bandit 1.9.4 scanned `src/aegishunt` and `scripts`: 45 Low, 0 Medium/High,
   0 scanner errors, and no suppression.
 - `.env` is not tracked; `.env.example` is the only tracked environment file.
@@ -64,8 +71,9 @@ scan of its exact final Head.
 - Three reviewed controlled sample PCAPs are tracked, totaling 4,044 bytes.
 - No tracked file exceeds 5 MiB.
 - `pip check` reports no broken requirements.
-- `pip-audit` 2.10.1 audited 113 installed distributions under CPython 3.12.13
-  with network access available and reported zero advisories.
+- `pip-audit` 2.10.1 audited 114 installed distributions under CPython 3.12.13
+  and 110 installed distributions in a clean CPython 3.11 environment, with
+  network access available, and reported zero advisories in both environments.
 
 Sanitized method and result details are in `docs/dependency_review.md` and
 `docs/security_review.md`.

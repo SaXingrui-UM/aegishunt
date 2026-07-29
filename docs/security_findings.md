@@ -56,4 +56,7 @@ their per-finding action rather than being silently ignored.
 - omits rationale and mitigation for a risk disposition.
 
 The ledger describes the immutable baseline. The exact-final-HEAD Codex
-Security rescan is a separate merge gate and must use the final PR revision.
+Security rescan was explicitly waived by the user. No final rescan result is
+claimed. The immutable baseline ledger, regression evidence, Bandit, dependency
+audit, and secret scan are complementary controls and are not represented as a
+formal rescan or substitute result.

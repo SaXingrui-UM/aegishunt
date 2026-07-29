@@ -10,7 +10,7 @@ or ignored path.
 | --- | --- | --- | --- | --- |
 | Dependency audit | `pip-audit` | 2.10.1 | 114 Python 3.12 and 110 clean Python 3.11 installed direct/transitive distributions | PASS; 0 advisories in both environments |
 | Environment consistency | `pip check` | pip 26.1.2 | Installed environment | PASS |
-| Secret scan | `detect-secrets` | 1.5.0 | Tracked tree, complete reachable Git blob history, `.github`, configs, docs, scripts, tests, sample manifests, generated PR body | PASS; 0 confirmed secrets |
+| Secret scan | `detect-secrets` | 1.5.0 | Tracked tree and generated PR body; reachable Git history subject to one documented bounded oversized-blob exclusion | PASS; 0 confirmed secrets |
 | Static scan | Bandit | 1.9.4 | `src/aegishunt` and `scripts` | PASS; 45 Low, 0 Medium/High, 0 errors |
 
 ## Secret scan
@@ -35,7 +35,8 @@ pull-request event payload in CI.
 The one oversized historical blob is excluded by the documented scanner work
 bound and is recorded as a limitation rather than silently treated as scanned.
 Tracked current files remain subject to the normal file scanner. A confirmed
-secret or an unreviewed candidate makes the gate fail closed.
+secret or an unreviewed candidate makes the gate fail closed. Passing the gate
+does not mean every reachable blob was scanned.
 
 ## Static scan
 

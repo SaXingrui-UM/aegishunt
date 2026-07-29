@@ -15,7 +15,7 @@ Last updated: 2026-07-29 (Asia/Shanghai)
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
 | Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; repository 85% and per-package 80% coverage gates; performance protocol 1.1; 21-scenario robustness matrix; real dependency/secret/Bandit gates; complete 80-finding disposition ledger |
 | Current activity | Phase 12 corrective PR [#38](https://github.com/SaXingrui-UM/aegishunt/pull/38) is merged into `main` as `c6efc88c2f848c4bf14ef2dd464d840ea3530712`. Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is open on `phase/13-hardening`; refreshed exact-Head CI remains the external merge gate. The user explicitly removed the final formal Codex Security rescan from this task; no rescan result is claimed. Phase 14 has not started |
-| Verification status | Current evidence: Ruff passed; strict mypy passed 237 source files; the final dependency-installed full pytest passed 525 tests with 0 failed/skipped/xfailed in 1,562.89 seconds at 85.79% branch-aware coverage; standalone offline E2E passed 22/22 after correcting a host-dependent Phase 6 literal-score test contract without changing its selection policy. `pip-audit` 2.10.1 audited 114 Python 3.12 distributions and a clean CI-equivalent Python 3.11 environment audited 110, both with 0 advisories; complete-history `detect-secrets` found 0 confirmed secrets; Bandit reported 45 Low and 0 Medium/High; all 80 baseline findings and all 73 Low findings have individual dispositions. All 17 core packages pass 80%, lowest `flows` at 81.58%. Performance protocol 1.1 uses 100 measured micro/API samples, omits p99 below 100, covers seven read-only API routes and seven RSS scenarios. The first refreshed CI exposed an unsafe bundled Python 3.11 setuptools, a console-entry-point import mismatch, and unavailable optional GitHub Dependency Review; all three are corrected or truthfully disabled. Refreshed exact-Head CI remains required. |
+| Verification status | Current evidence: Ruff passed; strict mypy passed 237 source files; the final dependency-installed full pytest passed 527 tests with 0 failed/skipped/xfailed in 1,555.14 seconds at 85.73% branch-aware coverage; standalone offline E2E passed 22/22 after correcting a host-dependent Phase 6 literal-score test contract without changing its selection policy. `pip-audit` 2.10.1 audited 114 Python 3.12 distributions and a clean CI-equivalent Python 3.11 environment audited 110, both with 0 advisories. The bounded reachable-history `detect-secrets` gate scanned 1,264 historical text blobs, skipped 18 binary blobs and one documented bounded oversized historical blob, and reported 0 confirmed secrets, 0 unreviewed candidates, and 0 stale allowlist entries; current tracked files remain under the normal scan, and passing does not mean every reachable blob was scanned. Bandit reported 45 Low and 0 Medium/High; all 80 baseline findings and all 73 Low findings have individual dispositions. All 17 core packages pass 80%, lowest `flows` at 81.58%. Performance protocol 1.1 uses 100 measured micro/API samples, omits p99 below 100, covers seven read-only API routes and seven RSS scenarios. The first refreshed CI exposed an unsafe bundled Python 3.11 setuptools, a console-entry-point import mismatch, and unavailable optional GitHub Dependency Review; all three are corrected or truthfully disabled. Refreshed exact-Head CI remains required. |
 | Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -90,8 +90,8 @@ training/activation, or response actions.
 - Passing refreshed runs observed 85.74–85.78% repository combined
   statement/branch coverage. Each of the 17 declared core packages separately
   exceeds 80%; `flows` is lowest at 81.58%.
-- Final dependency-installed repository verification passed 525 tests with no
-  failures, skips, or xfails in 1,562.89 seconds at 85.79% branch-aware
+- Final dependency-installed repository verification passed 527 tests with no
+  failures, skips, or xfails in 1,555.14 seconds at 85.73% branch-aware
   coverage; strict mypy passed 237 source files and Ruff passed. The complete
   standalone offline E2E passed 22/22 in 131.46
   seconds after its Phase 6 assertion was made candidate-aware without changing
@@ -106,9 +106,13 @@ training/activation, or response actions.
   Medium.
 - `pip check` passed. `pip-audit` 2.10.1 audited 114 Python 3.12
   distributions and 110 clean Python 3.11 distributions with zero advisories
-  in either environment; complete-history `detect-secrets` found zero confirmed
-  secrets; Bandit reported 45 Low and zero Medium/High findings without
-  suppression.
+  in either environment. The reachable-history `detect-secrets` gate scanned
+  1,264 historical text blobs subject to one documented bounded oversized-blob
+  exclusion, skipped 18 binary blobs and one oversized historical blob, and
+  reported zero confirmed secrets, zero unreviewed candidates, and zero stale
+  allowlist entries. Current tracked files remain subject to the normal scan;
+  passing does not mean every reachable blob was scanned. Bandit reported 45
+  Low and zero Medium/High findings without suppression.
 - The first refreshed GitHub Actions run correctly failed three new gates:
   Python 3.11 retained vulnerable bundled `setuptools 65.5.0`; the robustness
   console entry point could not import `tests.fixtures`; and the optional
