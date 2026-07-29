@@ -1,0 +1,1331 @@
+{
+  "branches": 3384,
+  "config_schema_version": "1.0.0",
+  "core_percent": 85.73907717435688,
+  "covered_branches": 2331,
+  "covered_statements": 14467,
+  "covered_total": 16798,
+  "file_count": 219,
+  "files": [
+    {
+      "covered": 0,
+      "path": "src/aegishunt/api/__init__.py",
+      "percent": 100.0,
+      "total": 0
+    },
+    {
+      "covered": 64,
+      "path": "src/aegishunt/api/app.py",
+      "percent": 100.0,
+      "total": 64
+    },
+    {
+      "covered": 63,
+      "path": "src/aegishunt/api/audit_service.py",
+      "percent": 80.76923076923077,
+      "total": 78
+    },
+    {
+      "covered": 323,
+      "path": "src/aegishunt/api/contracts.py",
+      "percent": 98.77675840978593,
+      "total": 327
+    },
+    {
+      "covered": 118,
+      "path": "src/aegishunt/api/demo_service.py",
+      "percent": 89.39393939393939,
+      "total": 132
+    },
+    {
+      "covered": 32,
+      "path": "src/aegishunt/api/dependencies.py",
+      "percent": 100.0,
+      "total": 32
+    },
+    {
+      "covered": 68,
+      "path": "src/aegishunt/api/errors.py",
+      "percent": 80.95238095238095,
+      "total": 84
+    },
+    {
+      "covered": 155,
+      "path": "src/aegishunt/api/evaluation_service.py",
+      "percent": 78.68020304568527,
+      "total": 197
+    },
+    {
+      "covered": 62,
+      "path": "src/aegishunt/api/middleware.py",
+      "percent": 88.57142857142857,
+      "total": 70
+    },
+    {
+      "covered": 56,
+      "path": "src/aegishunt/api/model_service.py",
+      "percent": 38.35616438356164,
+      "total": 146
+    },
+    {
+      "covered": 152,
+      "path": "src/aegishunt/api/repository.py",
+      "percent": 79.58115183246073,
+      "total": 191
+    },
+    {
+      "covered": 0,
+      "path": "src/aegishunt/api/routes/__init__.py",
+      "percent": 100.0,
+      "total": 0
+    },
+    {
+      "covered": 46,
+      "path": "src/aegishunt/api/routes/alerts.py",
+      "percent": 92.0,
+      "total": 50
+    },
+    {
+      "covered": 135,
+      "path": "src/aegishunt/api/routes/cases.py",
+      "percent": 76.70454545454545,
+      "total": 176
+    },
+    {
+      "covered": 17,
+      "path": "src/aegishunt/api/routes/demo.py",
+      "percent": 100.0,
+      "total": 17
+    },
+    {
+      "covered": 26,
+      "path": "src/aegishunt/api/routes/evaluation.py",
+      "percent": 65.0,
+      "total": 40
+    },
+    {
+      "covered": 31,
+      "path": "src/aegishunt/api/routes/flows.py",
+      "percent": 93.93939393939394,
+      "total": 33
+    },
+    {
+      "covered": 56,
+      "path": "src/aegishunt/api/routes/hunts.py",
+      "percent": 93.33333333333333,
+      "total": 60
+    },
+    {
+      "covered": 98,
+      "path": "src/aegishunt/api/routes/ingestion.py",
+      "percent": 73.13432835820896,
+      "total": 134
+    },
+    {
+      "covered": 34,
+      "path": "src/aegishunt/api/routes/models.py",
+      "percent": 91.89189189189189,
+      "total": 37
+    },
+    {
+      "covered": 65,
+      "path": "src/aegishunt/api/routes/runtime.py",
+      "percent": 84.41558441558442,
+      "total": 77
+    },
+    {
+      "covered": 103,
+      "path": "src/aegishunt/api/runtime_model_service.py",
+      "percent": 83.73983739837398,
+      "total": 123
+    },
+    {
+      "covered": 46,
+      "path": "src/aegishunt/api/runtime_observability.py",
+      "percent": 82.14285714285714,
+      "total": 56
+    },
+    {
+      "covered": 94,
+      "path": "src/aegishunt/artifact_io.py",
+      "percent": 65.73426573426573,
+      "total": 143
+    },
+    {
+      "covered": 0,
+      "path": "src/aegishunt/cases/__init__.py",
+      "percent": 100.0,
+      "total": 0
+    },
+    {
+      "covered": 129,
+      "path": "src/aegishunt/cases/cli.py",
+      "percent": 72.88135593220339,
+      "total": 177
+    },
+    {
+      "covered": 83,
+      "path": "src/aegishunt/cases/config.py",
+      "percent": 84.6938775510204,
+      "total": 98
+    },
+    {
+      "covered": 25,
+      "path": "src/aegishunt/cases/contracts.py",
+      "percent": 100.0,
+      "total": 25
+    },
+    {
+      "covered": 7,
+      "path": "src/aegishunt/cases/errors.py",
+      "percent": 100.0,
+      "total": 7
+    },
+    {
+      "covered": 60,
+      "path": "src/aegishunt/cases/evidence.py",
+      "percent": 96.7741935483871,
+      "total": 62
+    },
+    {
+      "covered": 27,
+      "path": "src/aegishunt/cases/lifecycle.py",
+      "percent": 87.09677419354838,
+      "total": 31
+    },
+    {
+      "covered": 91,
+      "path": "src/aegishunt/cases/reports.py",
+      "percent": 88.3495145631068,
+      "total": 103
+    },
+    {
+      "covered": 205,
+      "path": "src/aegishunt/cases/service.py",
+      "percent": 83.6734693877551,
+      "total": 245
+    },
+    {
+      "covered": 319,
+      "path": "src/aegishunt/config.py",
+      "percent": 93.27485380116958,
+      "total": 342
+    },
+    {
+      "covered": 3,
+      "path": "src/aegishunt/correlation/__init__.py",
+      "percent": 100.0,
+      "total": 3
+    },
+    {
+      "covered": 104,
+      "path": "src/aegishunt/correlation/config.py",
+      "percent": 83.87096774193549,
+      "total": 124
+    },
+    {
+      "covered": 48,
+      "path": "src/aegishunt/correlation/contracts.py",
+      "percent": 100.0,
+      "total": 48
+    },
+    {
+      "covered": 96,
+      "path": "src/aegishunt/correlation/entities.py",
+      "percent": 85.71428571428571,
+      "total": 112
+    },
+    {
+      "covered": 5,
+      "path": "src/aegishunt/correlation/errors.py",
+      "percent": 100.0,
+      "total": 5
+    },
+    {
+      "covered": 51,
+      "path": "src/aegishunt/correlation/grouping.py",
+      "percent": 96.22641509433963,
+      "total": 53
+    },
+    {
+      "covered": 88,
+      "path": "src/aegishunt/correlation/index.py",
+      "percent": 95.65217391304348,
+      "total": 92
+    },
+    {
+      "covered": 52,
+      "path": "src/aegishunt/correlation/rules.py",
+      "percent": 98.11320754716981,
+      "total": 53
+    },
+    {
+      "covered": 31,
+      "path": "src/aegishunt/correlation/scoring.py",
+      "percent": 100.0,
+      "total": 31
+    },
+    {
+      "covered": 40,
+      "path": "src/aegishunt/correlation/service.py",
+      "percent": 95.23809523809524,
+      "total": 42
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/datasets/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 68,
+      "path": "src/aegishunt/datasets/artifacts.py",
+      "percent": 87.17948717948718,
+      "total": 78
+    },
+    {
+      "covered": 76,
+      "path": "src/aegishunt/datasets/cli.py",
+      "percent": 78.35051546391753,
+      "total": 97
+    },
+    {
+      "covered": 45,
+      "path": "src/aegishunt/datasets/conversion.py",
+      "percent": 93.75,
+      "total": 48
+    },
+    {
+      "covered": 115,
+      "path": "src/aegishunt/datasets/demo.py",
+      "percent": 96.63865546218487,
+      "total": 119
+    },
+    {
+      "covered": 157,
+      "path": "src/aegishunt/datasets/download.py",
+      "percent": 79.29292929292929,
+      "total": 198
+    },
+    {
+      "covered": 9,
+      "path": "src/aegishunt/datasets/errors.py",
+      "percent": 100.0,
+      "total": 9
+    },
+    {
+      "covered": 66,
+      "path": "src/aegishunt/datasets/io.py",
+      "percent": 94.28571428571429,
+      "total": 70
+    },
+    {
+      "covered": 36,
+      "path": "src/aegishunt/datasets/labels.py",
+      "percent": 85.71428571428571,
+      "total": 42
+    },
+    {
+      "covered": 176,
+      "path": "src/aegishunt/datasets/leakage.py",
+      "percent": 91.19170984455958,
+      "total": 193
+    },
+    {
+      "covered": 183,
+      "path": "src/aegishunt/datasets/quality.py",
+      "percent": 84.72222222222223,
+      "total": 216
+    },
+    {
+      "covered": 33,
+      "path": "src/aegishunt/datasets/registry.py",
+      "percent": 100.0,
+      "total": 33
+    },
+    {
+      "covered": 131,
+      "path": "src/aegishunt/datasets/reports.py",
+      "percent": 100.0,
+      "total": 131
+    },
+    {
+      "covered": 272,
+      "path": "src/aegishunt/datasets/schemas.py",
+      "percent": 85.0,
+      "total": 320
+    },
+    {
+      "covered": 141,
+      "path": "src/aegishunt/datasets/service.py",
+      "percent": 86.50306748466258,
+      "total": 163
+    },
+    {
+      "covered": 77,
+      "path": "src/aegishunt/datasets/split.py",
+      "percent": 89.53488372093024,
+      "total": 86
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/demo/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 185,
+      "path": "src/aegishunt/demo/artifacts.py",
+      "percent": 85.25345622119816,
+      "total": 217
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/detection/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 32,
+      "path": "src/aegishunt/detection/adapters.py",
+      "percent": 84.21052631578948,
+      "total": 38
+    },
+    {
+      "covered": 38,
+      "path": "src/aegishunt/detection/alert_factory.py",
+      "percent": 90.47619047619048,
+      "total": 42
+    },
+    {
+      "covered": 76,
+      "path": "src/aegishunt/detection/cli.py",
+      "percent": 51.70068027210884,
+      "total": 147
+    },
+    {
+      "covered": 17,
+      "path": "src/aegishunt/detection/config.py",
+      "percent": 68.0,
+      "total": 25
+    },
+    {
+      "covered": 122,
+      "path": "src/aegishunt/detection/contracts.py",
+      "percent": 89.70588235294117,
+      "total": 136
+    },
+    {
+      "covered": 4,
+      "path": "src/aegishunt/detection/errors.py",
+      "percent": 100.0,
+      "total": 4
+    },
+    {
+      "covered": 15,
+      "path": "src/aegishunt/detection/risk.py",
+      "percent": 100.0,
+      "total": 15
+    },
+    {
+      "covered": 76,
+      "path": "src/aegishunt/detection/service.py",
+      "percent": 89.41176470588235,
+      "total": 85
+    },
+    {
+      "covered": 22,
+      "path": "src/aegishunt/detection/severity.py",
+      "percent": 91.66666666666667,
+      "total": 24
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/explainability/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 109,
+      "path": "src/aegishunt/explainability/artifacts.py",
+      "percent": 76.7605633802817,
+      "total": 142
+    },
+    {
+      "covered": 236,
+      "path": "src/aegishunt/explainability/contracts.py",
+      "percent": 90.76923076923077,
+      "total": 260
+    },
+    {
+      "covered": 45,
+      "path": "src/aegishunt/explainability/global_importance.py",
+      "percent": 76.27118644067797,
+      "total": 59
+    },
+    {
+      "covered": 36,
+      "path": "src/aegishunt/explainability/local_contributions.py",
+      "percent": 85.71428571428571,
+      "total": 42
+    },
+    {
+      "covered": 56,
+      "path": "src/aegishunt/explainability/reason_codes.py",
+      "percent": 94.91525423728814,
+      "total": 59
+    },
+    {
+      "covered": 26,
+      "path": "src/aegishunt/explainability/reference_profile.py",
+      "percent": 86.66666666666667,
+      "total": 30
+    },
+    {
+      "covered": 0,
+      "path": "src/aegishunt/feedback/__init__.py",
+      "percent": 100.0,
+      "total": 0
+    },
+    {
+      "covered": 195,
+      "path": "src/aegishunt/feedback/candidates.py",
+      "percent": 85.90308370044053,
+      "total": 227
+    },
+    {
+      "covered": 80,
+      "path": "src/aegishunt/feedback/cli.py",
+      "percent": 62.99212598425197,
+      "total": 127
+    },
+    {
+      "covered": 91,
+      "path": "src/aegishunt/feedback/contracts.py",
+      "percent": 97.84946236559139,
+      "total": 93
+    },
+    {
+      "covered": 5,
+      "path": "src/aegishunt/feedback/errors.py",
+      "percent": 100.0,
+      "total": 5
+    },
+    {
+      "covered": 60,
+      "path": "src/aegishunt/feedback/export.py",
+      "percent": 88.23529411764706,
+      "total": 68
+    },
+    {
+      "covered": 85,
+      "path": "src/aegishunt/feedback/service.py",
+      "percent": 77.98165137614679,
+      "total": 109
+    },
+    {
+      "covered": 0,
+      "path": "src/aegishunt/flows/__init__.py",
+      "percent": 100.0,
+      "total": 0
+    },
+    {
+      "covered": 114,
+      "path": "src/aegishunt/flows/aggregator.py",
+      "percent": 80.28169014084507,
+      "total": 142
+    },
+    {
+      "covered": 7,
+      "path": "src/aegishunt/flows/errors.py",
+      "percent": 100.0,
+      "total": 7
+    },
+    {
+      "covered": 118,
+      "path": "src/aegishunt/flows/features.py",
+      "percent": 89.39393939393939,
+      "total": 132
+    },
+    {
+      "covered": 12,
+      "path": "src/aegishunt/flows/finalizer.py",
+      "percent": 85.71428571428571,
+      "total": 14
+    },
+    {
+      "covered": 42,
+      "path": "src/aegishunt/flows/keys.py",
+      "percent": 95.45454545454545,
+      "total": 44
+    },
+    {
+      "covered": 157,
+      "path": "src/aegishunt/flows/packets.py",
+      "percent": 71.04072398190046,
+      "total": 221
+    },
+    {
+      "covered": 198,
+      "path": "src/aegishunt/flows/pcap_reader.py",
+      "percent": 66.44295302013423,
+      "total": 298
+    },
+    {
+      "covered": 34,
+      "path": "src/aegishunt/flows/registry.py",
+      "percent": 94.44444444444444,
+      "total": 36
+    },
+    {
+      "covered": 40,
+      "path": "src/aegishunt/flows/service.py",
+      "percent": 100.0,
+      "total": 40
+    },
+    {
+      "covered": 118,
+      "path": "src/aegishunt/flows/state.py",
+      "percent": 90.76923076923077,
+      "total": 130
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/hunting/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 118,
+      "path": "src/aegishunt/hunting/cli.py",
+      "percent": 83.68794326241135,
+      "total": 141
+    },
+    {
+      "covered": 4,
+      "path": "src/aegishunt/hunting/errors.py",
+      "percent": 100.0,
+      "total": 4
+    },
+    {
+      "covered": 107,
+      "path": "src/aegishunt/hunting/generator.py",
+      "percent": 89.16666666666667,
+      "total": 120
+    },
+    {
+      "covered": 36,
+      "path": "src/aegishunt/hunting/service.py",
+      "percent": 94.73684210526316,
+      "total": 38
+    },
+    {
+      "covered": 20,
+      "path": "src/aegishunt/hunting/templates.py",
+      "percent": 100.0,
+      "total": 20
+    },
+    {
+      "covered": 3,
+      "path": "src/aegishunt/ingestion/__init__.py",
+      "percent": 100.0,
+      "total": 3
+    },
+    {
+      "covered": 24,
+      "path": "src/aegishunt/ingestion/base.py",
+      "percent": 85.71428571428571,
+      "total": 28
+    },
+    {
+      "covered": 48,
+      "path": "src/aegishunt/ingestion/cli.py",
+      "percent": 90.56603773584905,
+      "total": 53
+    },
+    {
+      "covered": 23,
+      "path": "src/aegishunt/ingestion/errors.py",
+      "percent": 100.0,
+      "total": 23
+    },
+    {
+      "covered": 110,
+      "path": "src/aegishunt/ingestion/file_storage.py",
+      "percent": 90.1639344262295,
+      "total": 122
+    },
+    {
+      "covered": 73,
+      "path": "src/aegishunt/ingestion/flow_csv.py",
+      "percent": 83.9080459770115,
+      "total": 87
+    },
+    {
+      "covered": 171,
+      "path": "src/aegishunt/ingestion/json_events.py",
+      "percent": 79.90654205607477,
+      "total": 214
+    },
+    {
+      "covered": 122,
+      "path": "src/aegishunt/ingestion/pcap.py",
+      "percent": 81.87919463087249,
+      "total": 149
+    },
+    {
+      "covered": 74,
+      "path": "src/aegishunt/ingestion/samples.py",
+      "percent": 82.22222222222223,
+      "total": 90
+    },
+    {
+      "covered": 75,
+      "path": "src/aegishunt/ingestion/schemas.py",
+      "percent": 100.0,
+      "total": 75
+    },
+    {
+      "covered": 114,
+      "path": "src/aegishunt/ingestion/service.py",
+      "percent": 94.21487603305785,
+      "total": 121
+    },
+    {
+      "covered": 0,
+      "path": "src/aegishunt/ml/__init__.py",
+      "percent": 100.0,
+      "total": 0
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/ml/anomaly/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 72,
+      "path": "src/aegishunt/ml/anomaly/artifacts.py",
+      "percent": 78.26086956521739,
+      "total": 92
+    },
+    {
+      "covered": 33,
+      "path": "src/aegishunt/ml/anomaly/bootstrap.py",
+      "percent": 94.28571428571429,
+      "total": 35
+    },
+    {
+      "covered": 154,
+      "path": "src/aegishunt/ml/anomaly/bundle.py",
+      "percent": 76.61691542288557,
+      "total": 201
+    },
+    {
+      "covered": 52,
+      "path": "src/aegishunt/ml/anomaly/cli.py",
+      "percent": 80.0,
+      "total": 65
+    },
+    {
+      "covered": 145,
+      "path": "src/aegishunt/ml/anomaly/config.py",
+      "percent": 85.79881656804734,
+      "total": 169
+    },
+    {
+      "covered": 388,
+      "path": "src/aegishunt/ml/anomaly/contracts.py",
+      "percent": 95.09803921568627,
+      "total": 408
+    },
+    {
+      "covered": 46,
+      "path": "src/aegishunt/ml/anomaly/data.py",
+      "percent": 82.14285714285714,
+      "total": 56
+    },
+    {
+      "covered": 7,
+      "path": "src/aegishunt/ml/anomaly/errors.py",
+      "percent": 100.0,
+      "total": 7
+    },
+    {
+      "covered": 20,
+      "path": "src/aegishunt/ml/anomaly/frozen.py",
+      "percent": 100.0,
+      "total": 20
+    },
+    {
+      "covered": 11,
+      "path": "src/aegishunt/ml/anomaly/isolation_forest.py",
+      "percent": 100.0,
+      "total": 11
+    },
+    {
+      "covered": 10,
+      "path": "src/aegishunt/ml/anomaly/lof.py",
+      "percent": 100.0,
+      "total": 10
+    },
+    {
+      "covered": 90,
+      "path": "src/aegishunt/ml/anomaly/metrics.py",
+      "percent": 91.83673469387755,
+      "total": 98
+    },
+    {
+      "covered": 27,
+      "path": "src/aegishunt/ml/anomaly/model_card.py",
+      "percent": 100.0,
+      "total": 27
+    },
+    {
+      "covered": 53,
+      "path": "src/aegishunt/ml/anomaly/normalization.py",
+      "percent": 86.88524590163935,
+      "total": 61
+    },
+    {
+      "covered": 34,
+      "path": "src/aegishunt/ml/anomaly/operational.py",
+      "percent": 94.44444444444444,
+      "total": 36
+    },
+    {
+      "covered": 126,
+      "path": "src/aegishunt/ml/anomaly/plotting.py",
+      "percent": 86.3013698630137,
+      "total": 146
+    },
+    {
+      "covered": 53,
+      "path": "src/aegishunt/ml/anomaly/prediction.py",
+      "percent": 92.98245614035088,
+      "total": 57
+    },
+    {
+      "covered": 95,
+      "path": "src/aegishunt/ml/anomaly/reporting.py",
+      "percent": 97.9381443298969,
+      "total": 97
+    },
+    {
+      "covered": 26,
+      "path": "src/aegishunt/ml/anomaly/scoring.py",
+      "percent": 76.47058823529412,
+      "total": 34
+    },
+    {
+      "covered": 150,
+      "path": "src/aegishunt/ml/anomaly/selection.py",
+      "percent": 89.82035928143712,
+      "total": 167
+    },
+    {
+      "covered": 188,
+      "path": "src/aegishunt/ml/anomaly/service.py",
+      "percent": 91.70731707317073,
+      "total": 205
+    },
+    {
+      "covered": 14,
+      "path": "src/aegishunt/ml/anomaly/smoke.py",
+      "percent": 87.5,
+      "total": 16
+    },
+    {
+      "covered": 40,
+      "path": "src/aegishunt/ml/anomaly/thresholding.py",
+      "percent": 83.33333333333333,
+      "total": 48
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/ml/fusion/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 182,
+      "path": "src/aegishunt/ml/fusion/artifacts.py",
+      "percent": 80.88888888888889,
+      "total": 225
+    },
+    {
+      "covered": 115,
+      "path": "src/aegishunt/ml/fusion/bootstrap.py",
+      "percent": 95.04132231404958,
+      "total": 121
+    },
+    {
+      "covered": 37,
+      "path": "src/aegishunt/ml/fusion/cli.py",
+      "percent": 80.43478260869566,
+      "total": 46
+    },
+    {
+      "covered": 122,
+      "path": "src/aegishunt/ml/fusion/config.py",
+      "percent": 81.87919463087249,
+      "total": 149
+    },
+    {
+      "covered": 375,
+      "path": "src/aegishunt/ml/fusion/contracts.py",
+      "percent": 87.00696055684455,
+      "total": 431
+    },
+    {
+      "covered": 193,
+      "path": "src/aegishunt/ml/fusion/dataset.py",
+      "percent": 88.94009216589862,
+      "total": 217
+    },
+    {
+      "covered": 117,
+      "path": "src/aegishunt/ml/fusion/engines.py",
+      "percent": 86.66666666666667,
+      "total": 135
+    },
+    {
+      "covered": 7,
+      "path": "src/aegishunt/ml/fusion/errors.py",
+      "percent": 100.0,
+      "total": 7
+    },
+    {
+      "covered": 130,
+      "path": "src/aegishunt/ml/fusion/experiments.py",
+      "percent": 98.48484848484848,
+      "total": 132
+    },
+    {
+      "covered": 27,
+      "path": "src/aegishunt/ml/fusion/metrics.py",
+      "percent": 81.81818181818181,
+      "total": 33
+    },
+    {
+      "covered": 32,
+      "path": "src/aegishunt/ml/fusion/scoring.py",
+      "percent": 94.11764705882354,
+      "total": 34
+    },
+    {
+      "covered": 59,
+      "path": "src/aegishunt/ml/fusion/selection.py",
+      "percent": 86.76470588235294,
+      "total": 68
+    },
+    {
+      "covered": 69,
+      "path": "src/aegishunt/ml/fusion/service.py",
+      "percent": 94.52054794520548,
+      "total": 73
+    },
+    {
+      "covered": 3,
+      "path": "src/aegishunt/ml/supervised/__init__.py",
+      "percent": 100.0,
+      "total": 3
+    },
+    {
+      "covered": 61,
+      "path": "src/aegishunt/ml/supervised/artifacts.py",
+      "percent": 77.21518987341773,
+      "total": 79
+    },
+    {
+      "covered": 40,
+      "path": "src/aegishunt/ml/supervised/bootstrap.py",
+      "percent": 90.9090909090909,
+      "total": 44
+    },
+    {
+      "covered": 135,
+      "path": "src/aegishunt/ml/supervised/bundle.py",
+      "percent": 72.19251336898395,
+      "total": 187
+    },
+    {
+      "covered": 71,
+      "path": "src/aegishunt/ml/supervised/calibration.py",
+      "percent": 79.7752808988764,
+      "total": 89
+    },
+    {
+      "covered": 49,
+      "path": "src/aegishunt/ml/supervised/candidates.py",
+      "percent": 92.45283018867924,
+      "total": 53
+    },
+    {
+      "covered": 29,
+      "path": "src/aegishunt/ml/supervised/cli.py",
+      "percent": 43.93939393939394,
+      "total": 66
+    },
+    {
+      "covered": 98,
+      "path": "src/aegishunt/ml/supervised/config.py",
+      "percent": 83.05084745762711,
+      "total": 118
+    },
+    {
+      "covered": 237,
+      "path": "src/aegishunt/ml/supervised/contracts.py",
+      "percent": 96.73469387755102,
+      "total": 245
+    },
+    {
+      "covered": 95,
+      "path": "src/aegishunt/ml/supervised/cross_validation.py",
+      "percent": 94.05940594059406,
+      "total": 101
+    },
+    {
+      "covered": 220,
+      "path": "src/aegishunt/ml/supervised/data.py",
+      "percent": 76.38888888888889,
+      "total": 288
+    },
+    {
+      "covered": 8,
+      "path": "src/aegishunt/ml/supervised/errors.py",
+      "percent": 100.0,
+      "total": 8
+    },
+    {
+      "covered": 18,
+      "path": "src/aegishunt/ml/supervised/frozen.py",
+      "percent": 100.0,
+      "total": 18
+    },
+    {
+      "covered": 67,
+      "path": "src/aegishunt/ml/supervised/metrics.py",
+      "percent": 84.81012658227849,
+      "total": 79
+    },
+    {
+      "covered": 16,
+      "path": "src/aegishunt/ml/supervised/model_card.py",
+      "percent": 100.0,
+      "total": 16
+    },
+    {
+      "covered": 42,
+      "path": "src/aegishunt/ml/supervised/operational.py",
+      "percent": 87.5,
+      "total": 48
+    },
+    {
+      "covered": 46,
+      "path": "src/aegishunt/ml/supervised/prediction.py",
+      "percent": 82.14285714285714,
+      "total": 56
+    },
+    {
+      "covered": 25,
+      "path": "src/aegishunt/ml/supervised/ranking.py",
+      "percent": 100.0,
+      "total": 25
+    },
+    {
+      "covered": 54,
+      "path": "src/aegishunt/ml/supervised/reporting.py",
+      "percent": 100.0,
+      "total": 54
+    },
+    {
+      "covered": 55,
+      "path": "src/aegishunt/ml/supervised/selection.py",
+      "percent": 90.1639344262295,
+      "total": 61
+    },
+    {
+      "covered": 125,
+      "path": "src/aegishunt/ml/supervised/service.py",
+      "percent": 85.61643835616438,
+      "total": 146
+    },
+    {
+      "covered": 12,
+      "path": "src/aegishunt/ml/supervised/thresholding.py",
+      "percent": 85.71428571428571,
+      "total": 14
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/runtime/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 131,
+      "path": "src/aegishunt/runtime/cli.py",
+      "percent": 68.94736842105263,
+      "total": 190
+    },
+    {
+      "covered": 11,
+      "path": "src/aegishunt/runtime/clock.py",
+      "percent": 100.0,
+      "total": 11
+    },
+    {
+      "covered": 103,
+      "path": "src/aegishunt/runtime/config.py",
+      "percent": 88.79310344827586,
+      "total": 116
+    },
+    {
+      "covered": 416,
+      "path": "src/aegishunt/runtime/contracts.py",
+      "percent": 90.04329004329004,
+      "total": 462
+    },
+    {
+      "covered": 126,
+      "path": "src/aegishunt/runtime/control.py",
+      "percent": 86.89655172413794,
+      "total": 145
+    },
+    {
+      "covered": 9,
+      "path": "src/aegishunt/runtime/errors.py",
+      "percent": 100.0,
+      "total": 9
+    },
+    {
+      "covered": 227,
+      "path": "src/aegishunt/runtime/job_store.py",
+      "percent": 85.66037735849056,
+      "total": 265
+    },
+    {
+      "covered": 175,
+      "path": "src/aegishunt/runtime/job_transitions.py",
+      "percent": 95.62841530054645,
+      "total": 183
+    },
+    {
+      "covered": 64,
+      "path": "src/aegishunt/runtime/observability_repositories.py",
+      "percent": 100.0,
+      "total": 64
+    },
+    {
+      "covered": 20,
+      "path": "src/aegishunt/runtime/output_repository.py",
+      "percent": 100.0,
+      "total": 20
+    },
+    {
+      "covered": 220,
+      "path": "src/aegishunt/runtime/pipeline.py",
+      "percent": 86.27450980392157,
+      "total": 255
+    },
+    {
+      "covered": 156,
+      "path": "src/aegishunt/runtime/preflight.py",
+      "percent": 87.15083798882682,
+      "total": 179
+    },
+    {
+      "covered": 51,
+      "path": "src/aegishunt/runtime/replay.py",
+      "percent": 96.22641509433963,
+      "total": 53
+    },
+    {
+      "covered": 4,
+      "path": "src/aegishunt/runtime/repositories.py",
+      "percent": 100.0,
+      "total": 4
+    },
+    {
+      "covered": 35,
+      "path": "src/aegishunt/runtime/resources.py",
+      "percent": 100.0,
+      "total": 35
+    },
+    {
+      "covered": 86,
+      "path": "src/aegishunt/runtime/service.py",
+      "percent": 87.75510204081633,
+      "total": 98
+    },
+    {
+      "covered": 15,
+      "path": "src/aegishunt/runtime/status.py",
+      "percent": 100.0,
+      "total": 15
+    },
+    {
+      "covered": 107,
+      "path": "src/aegishunt/runtime/worker.py",
+      "percent": 71.33333333333333,
+      "total": 150
+    },
+    {
+      "covered": 6,
+      "path": "src/aegishunt/schemas/__init__.py",
+      "percent": 100.0,
+      "total": 6
+    },
+    {
+      "covered": 17,
+      "path": "src/aegishunt/schemas/audit.py",
+      "percent": 100.0,
+      "total": 17
+    },
+    {
+      "covered": 19,
+      "path": "src/aegishunt/schemas/base.py",
+      "percent": 100.0,
+      "total": 19
+    },
+    {
+      "covered": 135,
+      "path": "src/aegishunt/schemas/detection.py",
+      "percent": 82.82208588957056,
+      "total": 163
+    },
+    {
+      "covered": 77,
+      "path": "src/aegishunt/schemas/enums.py",
+      "percent": 100.0,
+      "total": 77
+    },
+    {
+      "covered": 233,
+      "path": "src/aegishunt/schemas/hunting.py",
+      "percent": 81.18466898954703,
+      "total": 287
+    },
+    {
+      "covered": 22,
+      "path": "src/aegishunt/schemas/model.py",
+      "percent": 100.0,
+      "total": 22
+    },
+    {
+      "covered": 111,
+      "path": "src/aegishunt/schemas/telemetry.py",
+      "percent": 90.2439024390244,
+      "total": 123
+    },
+    {
+      "covered": 2,
+      "path": "src/aegishunt/storage/__init__.py",
+      "percent": 100.0,
+      "total": 2
+    },
+    {
+      "covered": 31,
+      "path": "src/aegishunt/storage/base.py",
+      "percent": 88.57142857142857,
+      "total": 35
+    },
+    {
+      "covered": 79,
+      "path": "src/aegishunt/storage/database.py",
+      "percent": 91.86046511627907,
+      "total": 86
+    },
+    {
+      "covered": 57,
+      "path": "src/aegishunt/storage/migrations.py",
+      "percent": 85.07462686567165,
+      "total": 67
+    },
+    {
+      "covered": 8,
+      "path": "src/aegishunt/storage/models/__init__.py",
+      "percent": 100.0,
+      "total": 8
+    },
+    {
+      "covered": 16,
+      "path": "src/aegishunt/storage/models/audit.py",
+      "percent": 100.0,
+      "total": 16
+    },
+    {
+      "covered": 71,
+      "path": "src/aegishunt/storage/models/detection.py",
+      "percent": 100.0,
+      "total": 71
+    },
+    {
+      "covered": 105,
+      "path": "src/aegishunt/storage/models/hunting.py",
+      "percent": 100.0,
+      "total": 105
+    },
+    {
+      "covered": 22,
+      "path": "src/aegishunt/storage/models/model.py",
+      "percent": 100.0,
+      "total": 22
+    },
+    {
+      "covered": 134,
+      "path": "src/aegishunt/storage/models/runtime.py",
+      "percent": 100.0,
+      "total": 134
+    },
+    {
+      "covered": 9,
+      "path": "src/aegishunt/storage/models/schema.py",
+      "percent": 100.0,
+      "total": 9
+    },
+    {
+      "covered": 41,
+      "path": "src/aegishunt/storage/models/telemetry.py",
+      "percent": 100.0,
+      "total": 41
+    },
+    {
+      "covered": 3,
+      "path": "src/aegishunt/storage/repositories/__init__.py",
+      "percent": 100.0,
+      "total": 3
+    },
+    {
+      "covered": 50,
+      "path": "src/aegishunt/storage/repositories/audit.py",
+      "percent": 92.5925925925926,
+      "total": 54
+    },
+    {
+      "covered": 34,
+      "path": "src/aegishunt/storage/repositories/base.py",
+      "percent": 100.0,
+      "total": 34
+    },
+    {
+      "covered": 256,
+      "path": "src/aegishunt/storage/repositories/core.py",
+      "percent": 75.7396449704142,
+      "total": 338
+    },
+    {
+      "covered": 17,
+      "path": "src/aegishunt/storage/schema_version.py",
+      "percent": 89.47368421052632,
+      "total": 19
+    }
+  ],
+  "metric": "combined_statement_and_branch_coverage",
+  "result_schema_version": "1.0.0",
+  "statements": 16208,
+  "status": "PASS",
+  "threshold_percent": 80.0,
+  "total": 19592
+}

@@ -17,7 +17,7 @@ branch-aware gate.
 | P13-01 | Complete unit tests | Existing suite plus bounded-input, integrity, benchmark, robustness, core-coverage, and reason-catalog regressions | Implemented |
 | P13-02 | Complete integration tests | SQLite concurrency/rollback, ingestion/flow atomicity, model/policy loading, runtime and service integrations | Implemented |
 | P13-03 | Complete E2E tests | Offline Phase 0–12 suite plus real Sample Demo and Phase 13 robustness selection | Implemented |
-| P13-04 | Core coverage at least 80% | Frozen config and `check_phase13_core_coverage.py`; repository 85% gate unchanged | Final gate pending full coverage JSON |
+| P13-04 | Core coverage at least 80% | Frozen config and `check_phase13_core_coverage.py`; 85.74% combined statement/branch core coverage across 219 source files; repository 85% gate unchanged | Passed |
 | P13-05 | Corrupt PCAP tests | Truncated, forged length, malformed packet, unsupported frame, bounded PCAPNG metadata | Passed |
 | P13-06 | Wrong CSV schema tests | Missing/extra fields, invalid IP/type, non-finite values, record bounds | Passed |
 | P13-07 | Oversized upload tests | Raw ASGI pre-parser 413; exact/over staging boundary; no job or residue | Passed |
@@ -36,7 +36,7 @@ branch-aware gate.
 
 | Acceptance criterion | Evidence | Status |
 | --- | --- | --- |
-| `pytest`, `ruff`, and `mypy` pass | Required final commands | Final full gate pending |
+| `pytest`, `ruff`, and `mypy` pass | Final repository commands: 485 tests passed at 85.30% branch-aware coverage; strict mypy covered 237 source files | Satisfied |
 | E2E is offline and non-admin | Existing E2E contracts, temporary roots, robustness runner | Satisfied |
 | Bad input does not crash unrelated work | Security and atomicity regressions | Satisfied |
 | User model uploads are never deserialized | Strict bundle inventory/root/type checks and regressions | Satisfied |
@@ -51,7 +51,7 @@ branch-aware gate.
 - Performance: versioned benchmark JSON/CSV/Markdown and method.
 - Reproducibility: checksums, versions, random seeds, host/dependency metadata,
   deterministic test nodes, and reviewable results.
-- Portability: offline/rootless local Python; macOS development-host result,
-  Linux CI pending.
+- Portability: offline/rootless local Python; macOS development-host result;
+  Linux CI must pass on the pull request before merge.
 - Data/model integrity: exact dataset provenance, leakage, model/policy
   inventory, schema, checksum, and collision gates.

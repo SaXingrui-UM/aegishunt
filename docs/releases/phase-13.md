@@ -58,6 +58,9 @@ public dataset, or Phase 14 functionality was added.
 - `db29f9c` — `test: enforce phase 13 core coverage gate`
 - `bc4c531` — `test: expand phase 13 boundary regressions`
 - `05d67f6` — `fix: honor disabled explanation reason codes`
+- `9322652` — `fix: emit reviewable phase 13 csv`
+- `a4c0cf9` — `docs: document phase 13 hardening evidence`
+- `11c0d4d` — `docs: record phase 13 implementation checkpoint`
 
 Later documentation, final-verification, and review commits will be listed in
 the pull request.
@@ -85,8 +88,16 @@ the pull request.
 - Initial robustness v1.0.0 run: 16 PASS / 1 FAIL because ROB-011 named an old
   test function. The matrix was corrected and fully rerun; the failure was not
   hidden or converted to skip.
-- Final repository-wide Ruff, mypy, pytest, core coverage, and benchmark smoke
-  are required before the PR and will be recorded in the final checkpoint.
+- Final repository pytest: 485 passed, 0 failed, 0 skipped, and 0 xfailed in
+  1,548.52 seconds at 85.30% branch-aware coverage.
+- The frozen core gate passed at 85.74% combined statement/branch coverage
+  across 219 included source files, above the 80% requirement.
+- Final Ruff passed; strict mypy passed for 237 source files.
+- The final Phase 13 focused selection passed 29 tests in 3.73 seconds; the
+  complete offline E2E selection passed 22 tests in 139.74 seconds.
+- Benchmark smoke and robustness smoke both completed with reviewed output
+  contracts. CI runs those deterministic smoke modes, not the formal full
+  development-host benchmark or robustness experiment.
 
 The repository-wide 85% branch-aware threshold was not lowered. CLI and
 Streamlit are excluded only from the separately frozen 80% core subset and
