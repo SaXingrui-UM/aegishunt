@@ -1,20 +1,21 @@
 # Codex Progress
 
-Last updated: 2026-07-28 (Asia/Shanghai)
+Last updated: 2026-07-29 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 12 - FastAPI and Streamlit Complete Demonstration |
-| Status | Phase complete |
+| Current phase | Phase 13 - Hardening, Performance, Robustness, and Security Validation |
+| Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
-| Current activity | Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) was Squash and merge merged into `main`; Phase 0–12 Demo Validation PR [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged as `a10040de971154023a7ef35b6ebbcb000e27c6bc`. The independent Phase 12 Demo Readiness Corrective is implemented on `fix/phase-12-demo-readiness-limitations` and awaiting Draft PR review. Phase 13 has not started |
-| Verification status | The post-merge checkpoint branch passed Ruff, mypy for 234 source files, 460 repository tests at 85.40% branch-aware coverage, 60 focused Phase 12/API/security/status tests, live loopback API and Streamlit checks, and two idempotent controlled Demo runs. Corrective fresh-database validation additionally completed both the original five-packet lifecycle and the separate 32-packet presentation sample; effective models, Fusion Policy, typed Phase 7 artifact unavailability, measured runtime observations, Case Audit History, all nine Streamlit pages, and current-run screenshots were verified. Final corrective Ruff passed, mypy passed for 237 source files, and all 465 tests passed in 1,557.83 seconds at 85.39% branch-aware coverage |
+| Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; frozen core coverage; versioned benchmark and 21-scenario robustness matrix; Security baseline mapping |
+| Current activity | Phase 12 corrective PR [#38](https://github.com/SaXingrui-UM/aegishunt/pull/38) is merged into `main` as `c6efc88c2f848c4bf14ef2dd464d840ea3530712`. Phase 13 implementation is complete on `phase/13-hardening`; final quality/review gates and its PR remain pending. Phase 14 has not started |
+| Verification status | Startup baseline: Ruff passed, strict mypy passed for 237 source files, and 465 tests passed at 85.34% branch-aware coverage. Corrected Phase 12 startup selection: 63 passed. Phase 13 focused security/integrity/tool tests pass. Robustness matrix v1.1.0: 21/21 scenarios passed (27 test instances). Full final Ruff/mypy/pytest/core-coverage/benchmark-smoke gates remain required before PR creation |
 | Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -23,7 +24,7 @@ Last updated: 2026-07-28 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, and Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) are merged |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35), validation PR #37, and corrective PR #38 are merged; Phase 13 PR pending |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
@@ -42,17 +43,18 @@ Last updated: 2026-07-28 (Asia/Shanghai)
 | Phase 11 tag | Annotated `phase-11-complete` peels to the PR #33 merge commit `8f85949406e3db7d2fa2b3c48d04e832e84f3559` and is pushed for remote verification |
 | Phase 12 tag | Annotated `phase-12-complete` peels to the PR #35 merge commit `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17` and is pushed for remote verification |
 | Stable branch | The canonical Phase 12 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 12 Tag |
-| Working tree | Phase 12 post-merge metadata is isolated from implementation; generated databases, uploads, demo model binaries, evaluation artifacts, secrets, and formal evidence remain untracked |
+| Working tree | Phase 13 source and reviewed small reports only; generated databases, uploads, demo model binaries, coverage machine output, secrets, and formal evidence remain untracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
 | Phase 10 status | Phase complete |
 | Phase 11 status | Phase complete |
 | Phase 12 status | Phase complete |
-| Phase 13 status | Not started |
-| Current branch | `fix/phase-12-demo-readiness-limitations`; corrective scope only, with no Phase 13 implementation |
-| Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Review the Phase 12 corrective Draft PR. Do not start Phase 13 without a separate explicit authorization and startup invariant |
+| Phase 13 status | Implementation complete — awaiting PR review |
+| Phase 14 status | Not started |
+| Current branch | `phase/13-hardening` |
+| Next planned phase | Phase 14 - Final Integration and Delivery; no branch created |
+| Next action | Complete final quality checks and review, push only `phase/13-hardening`, create the Phase 13 PR, then stop for user review |
 
 Phase 0 through Phase 12 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
@@ -62,6 +64,31 @@ Recovery restarts from capture origin and verifies committed evidence; it is not
 exact packet-cursor resume. Phase 12 exposes complete explicit local API and
 frontend workflows without enabling live capture, automatic recovery, automatic
 training/activation, or response actions.
+
+## Phase 13 implementation checkpoint
+
+- The immutable Security baseline at
+  `75c73bc86a40a78a22edde5fb175359a7b755c05` covered 448 tracked files and
+  reported 7 Medium, 73 Low, 0 High, and 0 Critical findings. It was read, not
+  rerun. All seven Medium findings have regression-backed remediations; two Low
+  findings have direct fixes, while the other 71 remain documented residuals.
+- Untrusted multipart, JSON/JSONL, and PCAPNG metadata now encounter configured
+  work/memory bounds before costly framework or object materialization.
+- Flow timeout processing uses an authoritative deadline heap rather than
+  scanning every active flow per packet.
+- Dataset near-duplicate leakage uses exact tolerance components; controlled
+  generator provenance requires deterministic row equivalence; fusion
+  refitting requires registered Phase 5/6 identities and the Phase 3 schema.
+- A versioned benchmark measures six required components with throughput,
+  p50/p95/p99, CPU, peak RSS, identities, checksums, artifact sizes, and
+  environment metadata. Results are development-host observations only.
+- Robustness matrix `1.1.0` passed all 21 scenarios/27 represented tests after
+  one initial test-node naming defect was corrected and the full matrix rerun.
+- `pip check` passed and `pip inspect` recorded 92 distributions. `pip-audit`
+  is unavailable, so a dependency-CVE pass is not claimed.
+- Phase 14 deployment/authentication/packaging is not implemented. No model,
+  selection, frozen evidence, fusion conclusion, active pointer, or completion
+  Tag was changed.
 
 ## Phase 12 implementation checkpoint
 
