@@ -71,7 +71,7 @@ scenarios:
     requirement: Controlled-generator provenance cannot be attached to substituted canonical rows.
     expected: Generator-equivalence verification rejects altered canonical content.
     test_nodes:
-      - tests/unit/test_phase13_integrity.py::test_controlled_demo_rejects_substituted_canonical_rows
+      - tests/unit/test_phase13_integrity.py::test_controlled_demo_resplit_rejects_reissued_arbitrary_canonical_rows
   - id: ROB-012
     category: fusion-identity
     requirement: Fusion refitting requires verified Phase 5/6 model and schema identities.
