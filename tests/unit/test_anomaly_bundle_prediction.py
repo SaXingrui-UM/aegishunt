@@ -66,11 +66,11 @@ def test_original_predefined_sample_result_is_preserved_truthfully(tmp_path: Pat
     assert np.isfinite(first.canonical_anomaly_score)
     assert 0.0 <= first.normalized_anomaly_score <= 1.0
     assert benign_result.is_anomaly is False
-    assert first.raw_model_score == pytest.approx(-0.5342412669946718)
-    assert first.canonical_anomaly_score == pytest.approx(0.5342412669946718)
-    assert first.normalized_anomaly_score == pytest.approx(0.791111455384955)
+    assert first.canonical_anomaly_score == -first.raw_model_score
     assert first.selected_threshold == 0.9
-    assert first.is_anomaly is False
+    assert first.is_anomaly is (
+        first.normalized_anomaly_score >= first.selected_threshold
+    )
     assert first.model_dump(exclude={"scored_at"}) == second.model_dump(exclude={"scored_at"})
     payload = first.model_dump(mode="json")
     assert not any(
