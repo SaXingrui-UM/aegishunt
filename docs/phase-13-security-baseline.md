@@ -32,38 +32,43 @@ repository because those artifacts are large, environment-owned scan evidence.
 | Multipart limit applies after spooling | Raw ASGI streaming body limit installed before multipart parsing | 413/no-ingestion-job/no-staging regression | Remediated |
 | Arbitrary rows can be reissued as controlled evidence | Exact deterministic generator-equivalence gate before split publication | substituted-canonical-row rejection regression | Remediated |
 
-## Low finding disposition
+## Finding disposition
 
-The immutable ledger retains all 73 original Low findings. Phase 13 provides
-direct regression-backed remediation for two additional Low findings:
+The canonical machine-readable ledger is
+`configs/hardening/phase-13-security-findings.json`; its reader-facing summary
+is `docs/security_findings.md`. It retains all 80 original findings and all 73
+Low findings individually:
 
-- excessive JSON nesting no longer escapes the ingestion error boundary; and
-- a disabled reason-code catalog entry can no longer be emitted by a matching
-  feature or threshold trigger.
+- Fixed: 9 (all 7 Medium plus Low 35 and Low 61)
+- Accepted risk: 39
+- Deferred to Phase 14: 19
+- Needs further validation: 13
+- Duplicate / False positive / Not reachable: 0
+- Untriaged: 0
 
-The other 71 baseline Low findings remain explicit residual/deferred risks.
-They are mostly local-filesystem substitution races, artifact trust-anchor
-limitations, post-verification reopen races, or bounded-resource improvements
-whose exploitability depends on a lower-trust principal being able to modify
-the process owner's configured roots. They are not silently reclassified: no
-new full Security scan was run. Phase 14 must use the baseline ledger when
-deciding deployment permissions, authentication, reverse proxy/TLS, immutable
-artifact custody, and operational dependency scanning.
+Every risk row records its own reachability, required attacker capability,
+mitigation, residual impact, and Phase 14 action. The ledger validator rejects
+missing, duplicate, unsupported, or untriaged rows. The immutable baseline is
+not presented as the final scan; PR #39 still requires a formal Codex Security
+scan of its exact final Head.
 
 ## Independent checks completed
 
-- Secret-pattern checks found no tracked AWS access key, private-key header,
-  GitHub token, or OpenAI-style key.
+- `detect-secrets` 1.5.0 scanned the tracked tree, complete reachable Git blob
+  history, and generated PR body. It found zero confirmed secrets after 45
+  exact reviewed false positives; candidate values were redacted.
+- Bandit 1.9.4 scanned `src/aegishunt` and `scripts`: 45 Low, 0 Medium/High,
+  0 scanner errors, and no suppression.
 - `.env` is not tracked; `.env.example` is the only tracked environment file.
 - No database, SQLite, PCAPNG, pickle, joblib, or model binary is tracked.
 - Three reviewed controlled sample PCAPs are tracked, totaling 4,044 bytes.
 - No tracked file exceeds 5 MiB.
 - `pip check` reports no broken requirements.
-- `pip inspect` recorded 92 installed distributions under CPython 3.12.13 on
-  Darwin arm64.
-- `pip-audit` is not installed and no offline vulnerability database is
-  available. A dependency-CVE result was therefore **not executed** and is not
-  claimed as passing.
+- `pip-audit` 2.10.1 audited 113 installed distributions under CPython 3.12.13
+  with network access available and reported zero advisories.
+
+Sanitized method and result details are in `docs/dependency_review.md` and
+`docs/security_review.md`.
 
 ## Security boundary retained
 

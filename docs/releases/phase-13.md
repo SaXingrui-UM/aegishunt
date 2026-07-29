@@ -9,7 +9,9 @@ evidence, and preserve the scientific and audit contracts of earlier phases.
 Status: **Implementation complete — awaiting PR review**.
 
 - Branch: `phase/13-hardening`
-- Pull request: pending
+- Pull request: [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39),
+  `[Phase 13] Hardening, performance, robustness, and security validation`
+  (Open, ready for review)
 - Merge commit: pending
 - Completion tag: pending; `phase-13-complete` must not be created before merge
 - Phase 14: Not started
@@ -29,12 +31,18 @@ Status: **Implementation complete — awaiting PR review**.
 - Required verified supervised/anomaly identities and feature schema before
   fusion refitting.
 - Enforced disabled reason-code catalog entries at generation time.
-- Added a frozen core coverage definition and machine-readable gate.
+- Added a stable per-package core coverage definition and machine-readable
+  gate: repository combined statement/branch coverage remains at least 85%,
+  and every declared core package must independently reach at least 80%.
 - Added a versioned 21-scenario robustness matrix and isolated runner.
-- Added a versioned six-component benchmark with throughput, p50/p95/p99, CPU,
-  peak RSS, artifact sizes, checksums, identities, and environment metadata.
-- Referenced the immutable Security baseline, mapped all Medium findings, and
-  recorded residual Low findings and dependency-audit limitations.
+- Added performance protocol 1.1 with 100-sample micro/API measurements,
+  truthful unavailable p99 for bounded runs below 100 samples, seven read-only
+  API scenarios, cold/warm separation, and seven explicit RSS scenarios.
+- Ran real `pip-audit`, complete-history `detect-secrets`, and Bandit gates;
+  added independent fail-closed CI jobs for security, robustness, performance
+  smoke, and pull-request dependency review.
+- Represented all 80 immutable Codex Security baseline findings, including all
+  73 Low findings, in a validated per-finding disposition ledger.
 
 ## Architecture decisions
 
@@ -61,9 +69,15 @@ public dataset, or Phase 14 functionality was added.
 - `9322652` — `fix: emit reviewable phase 13 csv`
 - `a4c0cf9` — `docs: document phase 13 hardening evidence`
 - `11c0d4d` — `docs: record phase 13 implementation checkpoint`
+- `f44b71f` — `security: add auditable dependency secret and static gates`
+- `fcb5a2b` — `docs: disposition phase 13 security findings`
+- `d7ce725` — `test: preserve cli diagnostics across dependency upgrades`
+- `970471e` — `test: enforce per-package core coverage`
+- `3e8cda0` — `perf: correct percentile api and memory evidence`
+- `588de65` — `ci: add phase 13 security and audit gates`
 
-Later documentation, final-verification, and review commits will be listed in
-the pull request.
+The final documentation and exact-Head verification commits are also listed in
+PR #39.
 
 ## Tests and coverage
 
@@ -88,10 +102,26 @@ the pull request.
 - Initial robustness v1.0.0 run: 16 PASS / 1 FAIL because ROB-011 named an old
   test function. The matrix was corrected and fully rerun; the failure was not
   hidden or converted to skip.
-- Final repository pytest after review correction: 488 passed, 0 failed, 0
-  skipped, and 0 xfailed in 1,708.93 seconds at 85.29% branch-aware coverage.
-- The frozen core gate passed at 85.72% combined statement/branch coverage
-  across 219 included source files, above the 80% requirement.
+- The first complete run after the necessary dependency updates collected 518
+  tests and reported 515 passed / 3 failed. All three failures were stale
+  Click/Typer assertions that looked only at stdout after the upgraded CLI
+  correctly placed sanitized diagnostics in stderr; production behavior and
+  security handling were unchanged. The corrected focused run passed 3/3.
+- The final complete run before the exact-Head scan passed 522 tests with
+  0 failures, 0 skips, and 0 xfails in 1,702.02 seconds at 85.78% branch-aware
+  coverage.
+- The refreshed coverage evidence is 85.78% repository combined
+  statement/branch coverage. All 17 declared core packages pass their separate
+  80% gates; the lowest is `flows` at 81.58%. Strict mypy passes all 237 source
+  files and Ruff passes the complete repository.
+- A first standalone offline E2E rerun reported 21 passed / 1 failed because
+  two historical tests hard-coded the score of one Phase 6 candidate even
+  though the registered 1.0.0 policy intentionally uses host timing as its last
+  tie-break. The tests now verify the selected bundle identity, hyperparameters,
+  frozen threshold, finite score contract, decision rule, and exact
+  independent-process equality without changing the Phase 6 policy or model.
+  The corrected focused suite passed 8/8 and the complete offline E2E passed
+  22/22 in 131.46 seconds.
 - Final Ruff passed; strict mypy passed for 237 source files.
 - The final Phase 13 focused selection passed 29 tests in 3.73 seconds; the
   complete offline E2E selection passed 22 tests in 139.74 seconds.
@@ -115,17 +145,19 @@ remain in repository coverage.
 
 ## Performance baseline
 
-The controlled development-host run used the reviewed
-`phase12-presentation-demo.pcap` (32 packets, 9 flows), seed `4204`, two
-warm-ups, and ten repetitions. It measured PCAP reading, flow/feature
-aggregation, supervised inference, anomaly inference, fusion, and the complete
-flow-to-alert pipeline.
+Protocol 1.1 uses the reviewed `phase12-presentation-demo.pcap` (32 packets, 9
+flows), seed `4204`, 5 warm-ups and 100 measured samples for micro/API
+scenarios. Cold artifact load and full-pipeline runs remain bounded at 10
+samples, so their p99 is null with `insufficient_samples`. Seven TestClient GET
+routes each returned HTTP 200 for 100 measured requests and passed an ORM
+no-mutation check. Seven memory scenarios record baseline, peak, delta,
+sampling interval, status, and limitations.
 
-The actual JSON/CSV/Markdown reports are under
-`reports/hardening/phase-13/performance/`. The full pipeline p50 was
-6,138.5708 ms and its throughput was 1.4590 persisted flows/s on this host.
-These values are development-host observations only—not an SLA, public
-benchmark, production capacity, or real-world detection result.
+The current reports are under
+`reports/hardening/phase-13/performance-v1.1/`. Full-pipeline p50 was
+6,223.5294 ms and throughput was 1.4484 persisted flows/s on this host. These
+values are development-host observations only—not an SLA, public benchmark,
+production capacity, or real-world detection result.
 
 ## Robustness result
 
@@ -148,13 +180,17 @@ reported 7 Medium, 73 Low, 0 High, and 0 Critical findings. It was not rerun.
 - All seven Medium findings have regression-backed Phase 13 remediations.
 - Two Low findings have direct Phase 13 fixes (excessive JSON nesting and
   disabled reason-code enforcement).
-- The other 71 Low findings remain explicit residual/deferred risks in the
-  immutable baseline ledger.
-- Independent secret/artifact hygiene checks found no tracked secret or unsafe
-  model/database artifact.
-- `pip check` passed; `pip inspect` recorded 92 distributions.
-- Dependency CVE scanning was not executed because `pip-audit` and an offline
-  vulnerability database were unavailable.
+- All 80 findings and all 73 Low findings are individually represented:
+  9 Fixed, 39 Accepted risk, 19 Deferred to Phase 14, 13 Needs further
+  validation, and 0 Untriaged.
+- `pip-audit` 2.10.1 audited 113 installed distributions and found zero
+  advisories; `pip check` passed.
+- `detect-secrets` 1.5.0 scanned the current tree and reachable Git history,
+  with zero confirmed secrets after exact reviewed false-positive handling.
+- Bandit 1.9.4 reported 45 Low and 0 Medium/High findings, with no scanner
+  errors and no suppression.
+- These complementary tools do not replace the exact-final-Head Codex Security
+  full-repository scan required before merge.
 
 ## Generated artifacts
 
@@ -178,9 +214,11 @@ Not committed:
 - Performance uses a small controlled synthetic PCAP on one Darwin arm64
   development host; it cannot establish production capacity.
 - No noisy latency threshold is used in CI.
-- The baseline Security scan's 71 unremediated Low findings remain residual
-  risks; many require stronger deployment custody or Phase 14 controls.
-- No offline CVE database was available for dependency vulnerability scanning.
+- The baseline ledger retains 39 accepted, 19 Phase 14-deferred, and 13
+  further-validation findings; stronger deployment custody remains a Phase 14
+  concern.
+- Dependency findings are point-in-time; Phase 14 must preserve recurring audit
+  execution.
 - SQLite remains a single-node store. DEF-004 remains: total database
   unavailability cannot persist a failure record into that same database.
 - The desktop runtime can hide editable-install `.pth`; recorded manual

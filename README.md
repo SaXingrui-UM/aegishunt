@@ -33,10 +33,12 @@ IPv4/IPv6/ICMP presentation sample. See
 [`docs/phase-12-demo-readiness-corrective-validation.md`](docs/phase-12-demo-readiness-corrective-validation.md).
 Phase 13 adds earliest-boundary request and parser limits, deadline-indexed
 flow expiry, exact dataset-leakage tolerance checks, controlled-generator and
-fusion-identity gates, a frozen core-coverage definition, a 21-scenario
-robustness matrix, and a reproducible six-component performance baseline. The
-baseline is a development-host research observation, not an SLA, production
-capacity claim, public benchmark, or detection-performance result.
+fusion-identity gates, repository-wide and per-package coverage gates, a
+21-scenario robustness matrix, real dependency/secret/static security gates,
+an 80-finding disposition ledger, and a reproducible performance protocol with
+micro, read-only API, full-pipeline, and memory scenarios. The baseline is a
+development-host research observation, not an SLA, production capacity claim,
+public benchmark, or detection-performance result.
 Phase 11
 provides offline, rootless PCAP replay on a single
 SQLite node with durable jobs, leases, explicit recovery, verified artifact

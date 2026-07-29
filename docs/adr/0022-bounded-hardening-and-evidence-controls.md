@@ -45,8 +45,20 @@ Use complementary bounded controls at the earliest practical trust boundary:
 
 The repository-wide branch-aware coverage gate remains 85%. A separately
 versioned Phase 13 core boundary enforces at least 80% combined statement and
-branch coverage; excluding CLI/Streamlit from that subset does not exclude them
-from the repository-wide gate.
+branch coverage for each declared core package independently; excluding
+CLI/Streamlit from that subset does not exclude them from the repository-wide
+gate.
+
+Security validation uses complementary, fail-closed tools: `pip-audit` over the
+installed direct/transitive environment, `detect-secrets` over the current tree
+and reachable Git blob history with exact reviewed digests, Bandit over
+production source and scripts, and a final full Codex Security scan over the
+exact PR Head. No one tool is treated as a replacement for another.
+
+Performance protocol 1.1 permits p99 only at 100 or more measured samples,
+keeps cold-load/full-pipeline runs bounded with p99 explicitly unavailable,
+labels TestClient timings as in-process latency, proves read-only GET scenarios
+do not mutate ORM tables, and represents unavailable RSS sampling as null.
 
 ## Alternatives considered
 
@@ -76,6 +88,10 @@ from the repository-wide gate.
   compaction and regression coverage.
 - Exact tolerance components cost more than rounded hashing but preserve the
   declared leakage invariant for the current bounded dataset workflow.
+- Full Git-history scanning has a bounded per-blob size; skipped binary or
+  oversized blobs are counted and disclosed rather than silently passed.
+- Dependency and static scanner results are point-in-time evidence, so Phase 14
+  must retain automated review and define an operational update cadence.
 
 ## Risks
 
