@@ -1,20 +1,21 @@
 # Codex Progress
 
-Last updated: 2026-07-28 (Asia/Shanghai)
+Last updated: 2026-07-29 (Asia/Shanghai)
 
 ## Current state
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 12 - FastAPI and Streamlit Complete Demonstration |
-| Status | Phase complete |
+| Current phase | Phase 13 - Hardening, Performance, Robustness, and Security Validation |
+| Status | Implementation complete — awaiting PR review |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
-| Current activity | Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) was Squash and merge merged into `main`; Phase 0–12 Demo Validation PR [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged as `a10040de971154023a7ef35b6ebbcb000e27c6bc`. The independent Phase 12 Demo Readiness Corrective is implemented on `fix/phase-12-demo-readiness-limitations` and awaiting Draft PR review. Phase 13 has not started |
-| Verification status | The post-merge checkpoint branch passed Ruff, mypy for 234 source files, 460 repository tests at 85.40% branch-aware coverage, 60 focused Phase 12/API/security/status tests, live loopback API and Streamlit checks, and two idempotent controlled Demo runs. Corrective fresh-database validation additionally completed both the original five-packet lifecycle and the separate 32-packet presentation sample; effective models, Fusion Policy, typed Phase 7 artifact unavailability, measured runtime observations, Case Audit History, all nine Streamlit pages, and current-run screenshots were verified. Final corrective Ruff passed, mypy passed for 237 source files, and all 465 tests passed in 1,557.83 seconds at 85.39% branch-aware coverage |
+| Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; repository 85% and per-package 80% coverage gates; performance protocol 1.1; 21-scenario robustness matrix; real dependency/secret/Bandit gates; complete 80-finding disposition ledger |
+| Current activity | Phase 12 corrective PR [#38](https://github.com/SaXingrui-UM/aegishunt/pull/38) is merged into `main` as `c6efc88c2f848c4bf14ef2dd464d840ea3530712`. Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is open on `phase/13-hardening`; refreshed exact-Head CI remains the external merge gate. The user explicitly removed the final formal Codex Security rescan from this task; no rescan result is claimed. Phase 14 has not started |
+| Verification status | Current evidence: Ruff passed; strict mypy passed 237 source files; the final dependency-installed full pytest passed 527 tests with 0 failed/skipped/xfailed in 1,555.14 seconds at 85.73% branch-aware coverage; standalone offline E2E passed 22/22 after correcting a host-dependent Phase 6 literal-score test contract without changing its selection policy. `pip-audit` 2.10.1 audited 114 Python 3.12 distributions and a clean CI-equivalent Python 3.11 environment audited 110, both with 0 advisories. The bounded reachable-history `detect-secrets` gate scanned 1,264 historical text blobs, skipped 18 binary blobs and one documented bounded oversized historical blob, and reported 0 confirmed secrets, 0 unreviewed candidates, and 0 stale allowlist entries; current tracked files remain under the normal scan, and passing does not mean every reachable blob was scanned. Bandit reported 45 Low and 0 Medium/High; all 80 baseline findings and all 73 Low findings have individual dispositions. All 17 core packages pass 80%, lowest `flows` at 81.58%. Performance protocol 1.1 uses 100 measured micro/API samples, omits p99 below 100, covers seven read-only API routes and seven RSS scenarios. The first refreshed CI exposed an unsafe bundled Python 3.11 setuptools, a console-entry-point import mismatch, and unavailable optional GitHub Dependency Review; all three are corrected or truthfully disabled. Refreshed exact-Head CI remains required. |
 | Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -23,7 +24,7 @@ Last updated: 2026-07-28 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, and Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) are merged |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35), validation PR #37, and corrective PR #38 are merged; Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is open and ready for review |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
@@ -42,17 +43,18 @@ Last updated: 2026-07-28 (Asia/Shanghai)
 | Phase 11 tag | Annotated `phase-11-complete` peels to the PR #33 merge commit `8f85949406e3db7d2fa2b3c48d04e832e84f3559` and is pushed for remote verification |
 | Phase 12 tag | Annotated `phase-12-complete` peels to the PR #35 merge commit `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17` and is pushed for remote verification |
 | Stable branch | The canonical Phase 12 checkpoint is reachable from synchronized `main`; later documentation-only descendants do not move the Phase 12 Tag |
-| Working tree | Phase 12 post-merge metadata is isolated from implementation; generated databases, uploads, demo model binaries, evaluation artifacts, secrets, and formal evidence remain untracked |
+| Working tree | Phase 13 source and reviewed small reports only; generated databases, uploads, demo model binaries, coverage machine output, secrets, and formal evidence remain untracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
 | Phase 9 status | Phase complete |
 | Phase 10 status | Phase complete |
 | Phase 11 status | Phase complete |
 | Phase 12 status | Phase complete |
-| Phase 13 status | Not started |
-| Current branch | `fix/phase-12-demo-readiness-limitations`; corrective scope only, with no Phase 13 implementation |
-| Next planned branch | `phase/13-hardening` (not created) |
-| Next action | Review the Phase 12 corrective Draft PR. Do not start Phase 13 without a separate explicit authorization and startup invariant |
+| Phase 13 status | Implementation complete — awaiting PR review |
+| Phase 14 status | Not started |
+| Current branch | `phase/13-hardening` |
+| Next planned phase | Phase 14 - Final Integration and Delivery; no branch created |
+| Next action | Commit and push only `phase/13-hardening`, obtain successful refreshed CI for the exact Head, refresh PR #39 with the sanitized results, and stop for user review |
 
 Phase 0 through Phase 12 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
@@ -62,6 +64,74 @@ Recovery restarts from capture origin and verifies committed evidence; it is not
 exact packet-cursor resume. Phase 12 exposes complete explicit local API and
 frontend workflows without enabling live capture, automatic recovery, automatic
 training/activation, or response actions.
+
+## Phase 13 implementation checkpoint
+
+- The immutable Security baseline at
+  `75c73bc86a40a78a22edde5fb175359a7b755c05` covered 448 tracked files and
+  reported 7 Medium, 73 Low, 0 High, and 0 Critical findings. It was read, not
+  rerun. All 80 rows are now represented in a validated ledger: 9 Fixed,
+  39 Accepted risk, 19 Deferred to Phase 14, 13 Needs further validation, and
+  0 Untriaged.
+- Untrusted multipart, JSON/JSONL, and PCAPNG metadata now encounter configured
+  work/memory bounds before costly framework or object materialization.
+- Flow timeout processing uses an authoritative deadline heap rather than
+  scanning every active flow per packet.
+- Dataset near-duplicate leakage uses exact tolerance components; controlled
+  generator provenance requires deterministic row equivalence; fusion
+  refitting requires registered Phase 5/6 identities and the Phase 3 schema.
+- Performance protocol 1.1 uses 100 measured samples for micro/API scenarios,
+  records p99 only at that sample count, keeps bounded 10-sample scenarios'
+  p99 unavailable, covers seven read-only API routes with a no-mutation check,
+  and records seven explicit RSS scenarios. Results are development-host
+  observations only.
+- Robustness matrix `1.1.0` passed all 21 scenarios/27 represented tests after
+  one initial test-node naming defect was corrected and the full matrix rerun.
+- Passing refreshed runs observed 85.74–85.78% repository combined
+  statement/branch coverage. Each of the 17 declared core packages separately
+  exceeds 80%; `flows` is lowest at 81.58%.
+- Final dependency-installed repository verification passed 527 tests with no
+  failures, skips, or xfails in 1,555.14 seconds at 85.73% branch-aware
+  coverage; strict mypy passed 237 source files and Ruff passed. The complete
+  standalone offline E2E passed 22/22 in 131.46
+  seconds after its Phase 6 assertion was made candidate-aware without changing
+  any model, threshold, selection policy, or historical evidence.
+- Final Phase 13-focused tests passed 29/29 in 3.73 seconds, and the complete
+  offline E2E selection passed 22/22 in 139.74 seconds. Deterministic benchmark
+  and robustness smoke commands completed using temporary output directories.
+- Native `codex review --base main` failed to start with `ENOENT` for the local
+  arm64 vendor executable. Equivalent read-only review found one Medium
+  extreme-JSON-depth boundary defect; `f8d424e` fixed it and added streaming
+  body/depth regressions. Final findings: 0 Blocking, 0 High, 0 unresolved
+  Medium.
+- `pip check` passed. `pip-audit` 2.10.1 audited 114 Python 3.12
+  distributions and 110 clean Python 3.11 distributions with zero advisories
+  in either environment. The reachable-history `detect-secrets` gate scanned
+  1,264 historical text blobs subject to one documented bounded oversized-blob
+  exclusion, skipped 18 binary blobs and one oversized historical blob, and
+  reported zero confirmed secrets, zero unreviewed candidates, and zero stale
+  allowlist entries. Current tracked files remain subject to the normal scan;
+  passing does not mean every reachable blob was scanned. Bandit reported 45
+  Low and zero Medium/High findings without suppression.
+- The first refreshed GitHub Actions run correctly failed three new gates:
+  Python 3.11 retained vulnerable bundled `setuptools 65.5.0`; the robustness
+  console entry point could not import `tests.fixtures`; and the optional
+  official Dependency Review Action was unavailable because the repository
+  lacks Dependency Graph plus GitHub Advanced Security. The build/development
+  dependency now requires reviewed setuptools 83.x, every CI pytest step uses
+  `python -m pytest`, and the unsupported optional job is removed rather than
+  mislabeled as passing. A clean Python 3.11 reproduction audited 110
+  distributions with zero advisories, passed the full local security gate, and
+  passed 53 robustness/security boundary tests.
+- A formal Codex Security workspace was opened for the previous exact Head and
+  its capability preflight returned ready, but the scan was canceled before
+  discovery when those CI failures made that Head non-final. The user later
+  explicitly removed the final formal rescan from this task. No formal rescan
+  result is claimed, and the completed Bandit, secret-history, dependency, and
+  ledger evidence is not presented as a replacement scan.
+- Phase 14 deployment/authentication/packaging is not implemented. No model,
+  selection, frozen evidence, fusion conclusion, active pointer, or completion
+  Tag was changed.
 
 ## Phase 12 implementation checkpoint
 

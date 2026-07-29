@@ -20,7 +20,10 @@ Phase 10 adds audited investigation cases, typed evidence, analyst feedback,
 controlled exports, and explicit retraining candidates. Phase 11 adds a durable
 single-node runtime queue, leased workers, verified offline PCAP replay,
 transactional output ledgers, explicit recovery, and bounded resource status.
-Complete external workflows remain Phase 12 scope.
+Complete external workflows are implemented in Phase 12. Phase 13 adds bounded
+request/parser controls, deadline-indexed flow expiration, stronger
+dataset/model-policy identity checks, and reproducible robustness/performance
+evidence without changing the Phase 5–7 research selections.
 
 ## System context
 
@@ -59,6 +62,7 @@ One deployable Python application is divided by responsibility:
 | cases and feedback | Implemented investigation workflow, exports and retraining candidates | 10 |
 | runtime | Implemented queue, worker, replay, health, recovery, shutdown | 11 |
 | API and frontend | Complete external workflows and sample demonstration | 12 |
+| hardening and validation | Bounded trust boundaries, performance/robustness evidence | 13 |
 
 Domain modules must not depend on Streamlit. FastAPI routes and the CLI call
 application services; repositories isolate persistence; adapters isolate file,
@@ -317,6 +321,17 @@ Streamlit layer uses the typed API client exclusively. The controlled
 demonstration stores generated evidence and verified ML artifacts below an
 isolated configured demo root; generated binaries and runtime databases remain
 untracked.
+
+Phase 13 places a streaming ASGI request-body guard before multipart parsing,
+parses JSON telemetry incrementally with record/depth bounds, and caps PCAPNG
+interface metadata independently of packet counts. A deadline heap replaces
+per-packet scans of all active flows while the authoritative flow table retains
+timeout semantics. Dataset near-duplicate checks use exact tolerance
+components; controlled-generator reissuance requires deterministic row
+equivalence; fusion fitting verifies both engine identities and the feature
+schema. Versioned benchmark and robustness scripts run only with isolated
+temporary databases/artifacts and never activate a model or reopen formal
+frozen evidence. See ADR 0022.
 
 ## Deployment and trust boundaries
 

@@ -32,6 +32,7 @@ class PcapFlowProcessor:
         self._reader = PcapPacketReader(
             max_records=max_records,
             max_packet_bytes=settings.max_packet_bytes,
+            max_interfaces=settings.max_pcapng_interfaces,
         )
 
     def process(

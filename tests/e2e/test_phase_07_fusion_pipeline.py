@@ -109,6 +109,6 @@ def test_phase_07_cli_refuses_implicit_controlled_evidence(tmp_path: Path) -> No
     )
 
     assert result.exit_code == 1
-    assert "explicit pipeline-verification permission" in result.stdout
-    assert "Traceback" not in result.stdout
-    assert str(tmp_path) not in result.stdout
+    assert "explicit pipeline-verification permission" in result.output
+    assert "Traceback" not in result.output
+    assert str(tmp_path) not in result.output

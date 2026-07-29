@@ -76,6 +76,15 @@ does not claim any unexecuted result.
   leakage controls, or explanation provenance.
 - **Verification:** versioned benchmark scripts and experiment reports in the declared phase.
 
+### Phase 13 measured baseline
+
+Phase 13 recorded a single-process development-host baseline using the reviewed
+32-packet/9-flow controlled sample, two warm-ups, and ten repetitions. The
+machine-readable JSON/CSV and human report include p50/p95/p99, throughput, CPU,
+peak RSS, artifact sizes, identities, checksums, environment, and limitations.
+No measured latency is an SLA or CI pass/fail threshold. See
+`docs/phase-13-performance.md`.
+
 ## Reproducibility
 
 - **NFR-REP-01:** Record code commit, runtime and dependency versions, OS,
@@ -137,3 +146,15 @@ does not claim any unexecuted result.
 - **NFR-MODEL-05:** Do not hard-code model results, tune on the final test set, or
   overstate anomaly detection, importance, or MITRE mappings.
 - **Verification:** registry, corruption, mismatch, activation, and evaluation-protocol tests.
+
+## Phase 13 hardening evidence
+
+- The repository-wide branch-aware coverage threshold remains 85%.
+- The separately frozen core boundary requires at least 80% combined statement
+  and branch coverage without excluding CLI/Streamlit from repository coverage.
+- The versioned robustness matrix contains 21 offline scenarios and exits
+  non-zero on any failure.
+- The immutable Security baseline is referenced rather than rerun; all seven
+  Medium findings have targeted Phase 13 remediation and regression evidence.
+- Dependency consistency passed. A CVE audit is explicitly not claimed because
+  no offline vulnerability database or `pip-audit` installation was available.

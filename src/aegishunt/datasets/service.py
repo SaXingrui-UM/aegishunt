@@ -17,6 +17,8 @@ from aegishunt.datasets.demo import (
     BASE_TIME,
     DEFAULT_GROUPS_PER_PATTERN,
     DEMO_DATASET_ID,
+    DEMO_PATTERNS,
+    ROWS_PER_GROUP,
     build_controlled_demo,
     demo_generation_config,
 )
@@ -289,6 +291,27 @@ class DatasetService:
         if len(dataset_ids) != 1:
             raise DatasetQualityError("canonical input contains multiple dataset IDs")
         definition = self.describe(next(iter(dataset_ids)))
+        identities = {
+            (row.metadata.dataset_id, row.metadata.dataset_version) for row in rows
+        }
+        if identities != {(definition.dataset_id, definition.version)}:
+            raise DatasetQualityError("canonical dataset identity does not match the registry")
+        if definition.dataset_id == DEMO_DATASET_ID:
+            rows_per_pattern = len(DEMO_PATTERNS) * ROWS_PER_GROUP
+            groups_per_pattern, remainder = divmod(len(rows), rows_per_pattern)
+            if remainder or groups_per_pattern < DEFAULT_GROUPS_PER_PATTERN:
+                raise DatasetQualityError(
+                    "controlled-demo rows do not match a registered generator shape"
+                )
+            expected = build_controlled_demo(
+                seed=self._settings.demo_seed,
+                label_mapper=self._label_mapper(definition),
+                groups_per_pattern=groups_per_pattern,
+            )
+            if rows != expected:
+                raise DatasetQualityError(
+                    "controlled-demo provenance does not match the registered generator"
+                )
         access_dates = {row.metadata.source_access_date for row in rows}
         creation_timestamp = datetime.combine(max(access_dates), time.min, tzinfo=UTC)
         mapping_versions = {row.labels.label_mapping_version for row in rows}

@@ -1,4 +1,4 @@
-"""Regression tests for the stable Phase 12 post-merge checkpoint."""
+"""Regression tests for the Phase 13 pre-merge implementation checkpoint."""
 
 from pathlib import Path
 
@@ -10,7 +10,7 @@ def _section(content: str, start: str, end: str) -> str:
     return content.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
 
 
-def test_readme_records_phase_twelve_without_starting_phase_thirteen() -> None:
+def test_readme_records_phase_thirteen_without_starting_phase_fourteen() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
@@ -20,9 +20,11 @@ def test_readme_records_phase_twelve_without_starting_phase_thirteen() -> None:
     assert "is merged as" in normalized
     assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in current
     assert "phase-12-complete" in current
-    assert "Phase 13 is **Not started**" in normalized
+    assert "Phase 13 hardening is **Implementation complete — awaiting PR review**" in (
+        normalized
+    )
     assert "phase/13-hardening" in normalized
-    assert "has not been created" in normalized
+    assert "Phase 14 is **Not started**" in normalized
     assert "offline, rootless PCAP replay" in normalized
     assert "durable jobs" in normalized
     assert "verified artifact pinning" in normalized
@@ -43,17 +45,17 @@ def test_readme_records_phase_twelve_without_starting_phase_thirteen() -> None:
     assert "public benchmark" in current and "production validation" in current
     assert "proof of zero-day detection" in current
     for transient in (
-        "Implementation complete — awaiting PR review",
         "live capture is enabled",
         "automatic recovery is enabled",
         "Phase 13 is **In progress**",
+        "Phase 14 is **In progress**",
     ):
         assert transient not in current
     assert "No operation trains, activates, or replaces a model" in normalized
     assert "retraining_candidate" in normalized
 
 
-def test_frontend_records_completed_phase_twelve_checkpoint() -> None:
+def test_frontend_records_phase_thirteen_awaiting_review() -> None:
     source = (
         PROJECT_ROOT / "src/aegishunt/frontend/app.py"
     ).read_text(encoding="utf-8")
@@ -61,9 +63,9 @@ def test_frontend_records_completed_phase_twelve_checkpoint() -> None:
     assert "Phase 12 complete" in source
     assert "PR #35 merged" in source
     assert "phase-12-complete verified" in source
-    assert "Phase 13: Not started" in source
-    assert "awaiting PR review" not in source
-    assert "Phase 13: In progress" not in source
+    assert "Phase 13 hardening: Implementation complete — awaiting PR review" in source
+    assert "Phase 14: Not started" in source
+    assert "Phase 14: In progress" not in source
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -81,14 +83,14 @@ def test_pm_def_001_is_resolved_without_erasing_history() -> None:
     assert "not public\n  benchmark or real-world performance evidence" in pm_def_001
 
 
-def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope() -> None:
+def test_progress_and_release_record_phase_thirteen_without_phase_fourteen_scope() -> None:
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
-    release = (PROJECT_ROOT / "docs/releases/phase-12.md").read_text(encoding="utf-8")
+    release = (PROJECT_ROOT / "docs/releases/phase-13.md").read_text(encoding="utf-8")
 
     progress_current = _section(
         progress,
         "## Current state",
-        "## Phase 12 implementation checkpoint",
+        "## Phase 13 implementation checkpoint",
     )
     release_current = _section(
         release,
@@ -100,52 +102,46 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
     normalized_release = " ".join(release.split())
 
     for content in (progress_current, release_current):
-        assert "Phase complete" in content
-        assert "Implementation complete — awaiting PR review" not in content
-        assert "Phase 13" in content and "not started" in content.lower()
+        assert "Implementation complete — awaiting PR review" in content
+        assert "Phase 14" in content and "not started" in content.lower()
 
-    assert "Current phase | Phase 12" in normalized_progress_current
-    assert "Status | Phase complete" in normalized_progress_current
+    assert "Current phase | Phase 13" in normalized_progress_current
+    assert (
+        "Status | Implementation complete — awaiting PR review"
+        in normalized_progress_current
+    )
     assert "Phase 10 status | Phase complete" in normalized_progress_current
     assert "Phase 11 status | Phase complete" in normalized_progress_current
     assert "Phase 12 status | Phase complete" in normalized_progress_current
-    assert "Phase 13 status | Not started" in normalized_progress_current
-    assert "Phase 12 PR [#35]" in normalized_progress_current
-    assert "PR [#35]" in normalized_progress_current
-    assert "pull/35" in normalized_progress_current
-    assert "was Squash and merge merged into `main`" in normalized_progress_current
-    assert "both `quality` jobs completed successfully" in progress_current
-    assert "460 repository tests at 85.40% branch-aware coverage" in progress_current
-    assert "phase-12-complete" in progress_current
-    assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in progress_current
-
-    assert "Status: **Phase complete**" in release_current
-    assert "Pull request: [#35]" in normalized_release_current
-    assert "pull/35" in normalized_release_current
-    assert "merged" in normalized_release_current
-    assert "Completion tag: annotated `phase-12-complete`" in (
-        normalized_release_current
+    assert (
+        "Phase 13 status | Implementation complete — awaiting PR review"
+        in normalized_progress_current
     )
-    assert "baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17" in release_current
-    assert "Phase 13: Not started" in normalized_release_current
+    assert "Phase 14 status | Not started" in normalized_progress_current
+    assert "phase/13-hardening" in normalized_progress_current
+    assert "PR [#38]" in normalized_progress_current
+    assert "pull/38" in normalized_progress_current
+    assert "c6efc88c2f848c4bf14ef2dd464d840ea3530712" in progress_current
+    assert "all 80 baseline findings" in normalized_progress_current
+    assert "all 73 Low findings" in normalized_progress_current
+    assert "All 17 core packages pass 80%" in normalized_progress_current
 
-    assert "ADR 0021" in release
-    assert "API-only frontend boundary" in release
-    assert "458 passed, 0 failed" in release
-    assert "85.40%" in release
-    assert "HTTP 422" in release
-    assert "`f8a464d`" in release
-    assert "`f98a593`" in release
-    assert "all 458 tests" in release
-    assert "85.46% branch-aware coverage" in normalized_release
-    assert "portable selection policy" in release
-    assert "isolated `12.0.0` model identity" in release
-    assert "shared previous/next pagination" in release
-    assert "worker run-once" in release
-    assert "Phase 13 performance" in release
-    assert "Expanded Phase 12/API/security/status selection: 60 passed" in release
-    assert "Final post-merge-checkpoint repository-wide `pytest`: 460 passed" in release
-    assert "58 paths and 62 unique operations" in release
+    assert (
+        "Status: **Implementation complete — awaiting PR review**"
+        in release_current
+    )
+    assert "Pull request: [#39]" in normalized_release_current
+    assert "pull/39" in release_current
+    assert "Completion tag: pending" in normalized_release_current
+    assert "Phase 14: Not started" in normalized_release_current
+
+    assert "ADR 0022" in release
+    assert "21 scenarios" in release
+    assert "27 represented test instances" in release
+    assert "7 Medium, 73 Low, 0 High, and 0 Critical" in release
+    assert "not an SLA" in release
+    assert "public benchmark" in normalized_release
+    assert "Phase 14" in release
 
     for current in (progress_current, release_current):
         for transient in (
@@ -154,9 +150,9 @@ def test_progress_and_release_record_phase_twelve_without_phase_thirteen_scope()
             "Phase 11 remains unmerged",
             "Wait for PR #33",
             "Current branch | `phase/11-runtime-replay`",
-            "Phase 13 implementation complete",
-            "Phase 13 is in progress",
-            "phase/13-hardening` (created",
+            "Phase 14 implementation complete",
+            "Phase 14 is in progress",
+            "phase/14-final-delivery` (created",
         ):
             assert transient not in current
 

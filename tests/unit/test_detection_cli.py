@@ -80,6 +80,48 @@ def test_alert_verdict_rejects_missing_alert_and_invalid_enum(tmp_path: Path) ->
     assert "confirmed_attack" in invalid.output
 
 
+def test_detection_and_alert_describe_report_missing_records(tmp_path: Path) -> None:
+    runner = CliRunner()
+    config = _config(tmp_path)
+    missing_id = str(UUID(int=998))
+
+    detection = runner.invoke(
+        cli.app,
+        ["detection", "describe", missing_id, "--config", str(config)],
+    )
+    alert = runner.invoke(
+        cli.app,
+        ["alerts", "describe", missing_id, "--config", str(config)],
+    )
+
+    assert detection.exit_code == alert.exit_code == 2
+    assert "Detection does not exist" in detection.output
+    assert "Alert does not exist" in alert.output
+    assert "Traceback" not in detection.output + alert.output
+
+
+def test_detection_and_alert_lists_cleanly_report_configuration_failure(
+    tmp_path: Path,
+) -> None:
+    runner = CliRunner()
+    invalid_config = tmp_path / "invalid.yaml"
+    invalid_config.write_text("database:\n  url: not-a-database-url\n", encoding="utf-8")
+
+    detection = runner.invoke(
+        cli.app,
+        ["detection", "list", "--config", str(invalid_config)],
+    )
+    alert = runner.invoke(
+        cli.app,
+        ["alerts", "list", "--config", str(invalid_config)],
+    )
+
+    assert detection.exit_code == alert.exit_code == 1
+    assert "listing failed" in detection.output.lower()
+    assert "listing failed" in alert.output.lower()
+    assert "Traceback" not in detection.output + alert.output
+
+
 def test_explanation_verify_and_describe_use_integrity_checked_artifact(
     tmp_path: Path,
 ) -> None:

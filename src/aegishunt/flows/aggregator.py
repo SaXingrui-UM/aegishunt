@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import heapq
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from aegishunt.config import FlowSettings
@@ -37,6 +38,8 @@ class FlowAggregator:
         self._capture_session_id = capture_session_id
         self._active: dict[CanonicalFlowKey, FlowState] = {}
         self._segment_counts: dict[CanonicalFlowKey, int] = {}
+        self._deadlines: list[tuple[datetime, int, CanonicalFlowKey]] = []
+        self._deadline_sequence = 0
 
     @property
     def active_count(self) -> int:
@@ -72,9 +75,50 @@ class FlowAggregator:
             segment_index=segment_index,
         )
 
+    def _schedule_deadlines(self, state: FlowState) -> None:
+        if state.first_seen is None or state.last_seen is None:
+            raise FlowStateError("active flow is missing timestamp evidence")
+        for deadline in (
+            state.first_seen + timedelta(seconds=self._settings.active_timeout_seconds),
+            state.last_seen + timedelta(seconds=self._settings.idle_timeout_seconds),
+        ):
+            self._deadline_sequence += 1
+            heapq.heappush(
+                self._deadlines,
+                (deadline, self._deadline_sequence, state.key),
+            )
+        self._compact_deadlines()
+
+    def _compact_deadlines(self) -> None:
+        """Bound stale heap entries created by refreshed idle deadlines."""
+
+        maximum_entries = max(1_024, len(self._active) * 4)
+        if len(self._deadlines) <= maximum_entries:
+            return
+        rebuilt: list[tuple[datetime, int, CanonicalFlowKey]] = []
+        for state in self._active.values():
+            if state.first_seen is None or state.last_seen is None:
+                raise FlowStateError("active flow is missing timestamp evidence")
+            for deadline in (
+                state.first_seen + timedelta(seconds=self._settings.active_timeout_seconds),
+                state.last_seen + timedelta(seconds=self._settings.idle_timeout_seconds),
+            ):
+                self._deadline_sequence += 1
+                rebuilt.append((deadline, self._deadline_sequence, state.key))
+        heapq.heapify(rebuilt)
+        self._deadlines = rebuilt
+
     def _expire(self, timestamp: datetime) -> list[FinalizedFlowState]:
+        candidates: set[CanonicalFlowKey] = set()
+        while self._deadlines and self._deadlines[0][0] <= timestamp:
+            _deadline, _sequence, key = heapq.heappop(self._deadlines)
+            if key in self._active:
+                candidates.add(key)
         expired: list[tuple[CanonicalFlowKey, FlowEndReason]] = []
-        for key, state in self._active.items():
+        for key in candidates:
+            state = self._active.get(key)
+            if state is None:
+                continue
             reason = self._timeout_reason(state, timestamp)
             if reason is not None:
                 expired.append((key, reason))
@@ -90,6 +134,7 @@ class FlowAggregator:
             max_packets=self._settings.max_packets_per_flow,
         )
         self._active[state.key] = state
+        self._schedule_deadlines(state)
         return state
 
     def process(self, packet: PacketRecord) -> list[FinalizedFlowState]:
@@ -106,11 +151,14 @@ class FlowAggregator:
             self._new_state(packet)
             return finalized
         state.add(packet)
+        self._schedule_deadlines(state)
         return finalized
 
     def _flush(self, reason: FlowEndReason) -> list[FinalizedFlowState]:
         keys = sorted(self._active)
-        return [self._finalize(key, reason) for key in keys]
+        finalized = [self._finalize(key, reason) for key in keys]
+        self._deadlines.clear()
+        return finalized
 
     def flush_capture_end(self) -> list[FinalizedFlowState]:
         """Finalize all remaining states at end-of-capture; repeated calls are empty."""

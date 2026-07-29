@@ -1,0 +1,47 @@
+schema_version: "2.0.0"
+metric: combined_statement_and_branch_coverage
+repository_threshold_percent: 85.0
+package_threshold_percent: 80.0
+frozen_before_final_phase_13_measurement: true
+packages:
+  api:
+    include: [src/aegishunt/api/]
+  artifact_io:
+    include: [src/aegishunt/artifact_io.py]
+  cases:
+    include: [src/aegishunt/cases/]
+  config:
+    include: [src/aegishunt/config.py]
+  correlation:
+    include: [src/aegishunt/correlation/]
+  datasets:
+    include: [src/aegishunt/datasets/]
+  demo:
+    include: [src/aegishunt/demo/]
+  detection:
+    include: [src/aegishunt/detection/]
+  explainability:
+    include: [src/aegishunt/explainability/]
+  feedback:
+    include: [src/aegishunt/feedback/]
+  flows:
+    include: [src/aegishunt/flows/]
+  hunting:
+    include: [src/aegishunt/hunting/]
+  ingestion:
+    include: [src/aegishunt/ingestion/]
+  ml:
+    include: [src/aegishunt/ml/]
+  runtime:
+    include: [src/aegishunt/runtime/]
+  schemas:
+    include: [src/aegishunt/schemas/]
+  storage:
+    include: [src/aegishunt/storage/]
+repository_only:
+  - src/aegishunt/cli.py
+  - src/aegishunt/frontend/
+notes:
+  - Every declared core package must independently meet the 80 percent branch-aware combined gate.
+  - CLI and Streamlit remain covered by the repository-wide 85 percent branch-aware gate.
+  - No source file is omitted from pytest or repository-wide coverage.

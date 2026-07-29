@@ -269,6 +269,31 @@ def test_every_enabled_reason_code_requires_matching_evidence() -> None:
     ) == ()
 
 
+def test_disabled_catalog_entry_cannot_be_emitted_by_a_matching_trigger() -> None:
+    artifact = explanation_artifact()
+    profile = artifact.reference_profile
+    entries = tuple(
+        item.model_copy(update={"enabled_in_phase_8": False})
+        if item.code == "RISK_SCORE_ABOVE_ALERT_THRESHOLD"
+        else item
+        for item in artifact.reason_catalog.entries
+    )
+    catalog = artifact.reason_catalog.model_copy(update={"entries": entries})
+    scores = verified_scores(fusion_score=0.8)
+
+    reasons = generate_reason_evidence(
+        {name: 0.2 for name in profile.feature_names},
+        profile=profile,
+        scores=scores,
+        risk=evaluate_risk(scores, risk_policy()),
+        catalog=catalog,
+    )
+
+    assert "RISK_SCORE_ABOVE_ALERT_THRESHOLD" not in {
+        reason.code for reason in reasons
+    }
+
+
 def test_explanation_artifact_round_trip_and_integrity_rejections(tmp_path: Path) -> None:
     artifact = explanation_artifact()
     saved = save_explanation_artifact(

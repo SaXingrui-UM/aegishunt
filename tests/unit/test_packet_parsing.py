@@ -10,7 +10,13 @@ from pathlib import Path
 import pytest
 
 from aegishunt.flows.errors import CaptureFormatError, PacketParseError
-from aegishunt.flows.packets import LINKTYPE_ETHERNET, parse_packet
+from aegishunt.flows.packets import (
+    LINKTYPE_ETHERNET,
+    LINKTYPE_IPV4,
+    LINKTYPE_IPV6,
+    LINKTYPE_RAW,
+    parse_packet,
+)
 from aegishunt.flows.pcap_reader import PcapPacketReader
 from aegishunt.schemas.enums import NetworkProtocol
 from scripts.generate_phase12_presentation_pcap import build_sample
@@ -143,6 +149,77 @@ def test_malformed_supported_packets_raise_typed_errors() -> None:
     malformed_udp = ipv4_packet(b"\x00" * 7, protocol=17)
     with pytest.raises(PacketParseError, match="UDP"):
         parse_packet(malformed_udp, timestamp=at(0), link_type=101)
+
+
+def test_transport_and_ip_header_contracts_fail_closed() -> None:
+    invalid_tcp = bytearray(tcp_segment(40_000, 443, 0x02))
+    invalid_tcp[12] = 0x10
+    with pytest.raises(PacketParseError, match="TCP header length"):
+        parse_packet(
+            ipv4_packet(bytes(invalid_tcp), protocol=6),
+            timestamp=at(0),
+            link_type=LINKTYPE_RAW,
+        )
+
+    invalid_udp = bytearray(udp_datagram(40_000, 53, b""))
+    invalid_udp[4:6] = struct.pack("!H", 7)
+    with pytest.raises(PacketParseError, match="UDP datagram length"):
+        parse_packet(
+            ipv4_packet(bytes(invalid_udp), protocol=17),
+            timestamp=at(0),
+            link_type=LINKTYPE_IPV4,
+        )
+
+    ipv4 = bytearray(ipv4_packet(tcp_segment(40_000, 443, 0x02), protocol=6))
+    invalid_version = bytes([0x55, *ipv4[1:]])
+    with pytest.raises(PacketParseError, match="IPv4 version"):
+        parse_packet(invalid_version, timestamp=at(0), link_type=LINKTYPE_IPV4)
+    ipv4[0] = 0x44
+    with pytest.raises(PacketParseError, match="IPv4 header length"):
+        parse_packet(bytes(ipv4), timestamp=at(0), link_type=LINKTYPE_IPV4)
+
+    ipv6 = bytearray(ipv6_packet(tcp_segment(443, 40_000, 0x10), next_header=6))
+    invalid_ipv6 = bytes([0x50, *ipv6[1:]])
+    with pytest.raises(PacketParseError, match="IPv6 version"):
+        parse_packet(invalid_ipv6, timestamp=at(0), link_type=LINKTYPE_IPV6)
+    ipv6[4:6] = b"\x00\x00"
+    with pytest.raises(PacketParseError, match="jumbo"):
+        parse_packet(bytes(ipv6), timestamp=at(0), link_type=LINKTYPE_IPV6)
+
+
+def test_raw_vlan_and_non_echo_icmp_paths_are_bounded() -> None:
+    assert parse_packet(b"\x10", timestamp=at(0), link_type=LINKTYPE_RAW) is None
+
+    vlan_header = (
+        bytes.fromhex("0200000000020200000000018100")
+        + b"\x00\x01\x88\xa8"
+        + b"\x00\x02\x81\x00"
+        + b"\x00\x03\x08\x00"
+    )
+    assert (
+        parse_packet(
+            vlan_header + ipv4_packet(udp_datagram(1, 2), protocol=17),
+            timestamp=at(0),
+            link_type=LINKTYPE_ETHERNET,
+        )
+        is None
+    )
+
+    non_echo = parse_packet(
+        ipv4_packet(icmp_message(3), protocol=1),
+        timestamp=at(0),
+        link_type=LINKTYPE_RAW,
+    )
+    assert non_echo is not None
+    assert non_echo.icmp_type == 3
+    assert non_echo.icmp_identifier is None
+
+    with pytest.raises(PacketParseError, match="ICMP echo"):
+        parse_packet(
+            ipv4_packet(b"\x08\x00\x00\x00", protocol=1),
+            timestamp=at(0),
+            link_type=LINKTYPE_RAW,
+        )
 
 
 def test_classic_reader_is_bounded_and_detects_truncation(tmp_path: Path) -> None:

@@ -21,8 +21,9 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 Phases 0–12 are complete and their annotated checkpoints remain immutable.
 Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) is merged as
 `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated
-`phase-12-complete` peels to that canonical merge commit. Phase 13 is **Not
-started** and branch `phase/13-hardening` has not been created. Validation PR
+`phase-12-complete` peels to that canonical merge commit. Phase 13 hardening is
+**Implementation complete — awaiting PR review** on
+`phase/13-hardening`; Phase 14 is **Not started**. Validation PR
 [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged. The
 subsequent Phase 12 demo-readiness corrective keeps global model pointers
 separate from immutable runtime-job effective models, exposes the effective
@@ -30,6 +31,14 @@ Fusion Policy, reports typed Phase 7 artifact availability, adds measured
 Demo-run observations and Case Audit History, and adds a separate controlled
 IPv4/IPv6/ICMP presentation sample. See
 [`docs/phase-12-demo-readiness-corrective-validation.md`](docs/phase-12-demo-readiness-corrective-validation.md).
+Phase 13 adds earliest-boundary request and parser limits, deadline-indexed
+flow expiry, exact dataset-leakage tolerance checks, controlled-generator and
+fusion-identity gates, repository-wide and per-package coverage gates, a
+21-scenario robustness matrix, real dependency/secret/static security gates,
+an 80-finding disposition ledger, and a reproducible performance protocol with
+micro, read-only API, full-pipeline, and memory scenarios. The baseline is a
+development-host research observation, not an SLA, production capacity claim,
+public benchmark, or detection-performance result.
 Phase 11
 provides offline, rootless PCAP replay on a single
 SQLite node with durable jobs, leases, explicit recovery, verified artifact

@@ -12,7 +12,10 @@ from pydantic import BaseModel
 
 from aegishunt.api.contracts import ErrorResponse
 from aegishunt.api.errors import install_error_handlers
-from aegishunt.api.middleware import install_request_id_middleware
+from aegishunt.api.middleware import (
+    install_request_body_limit_middleware,
+    install_request_id_middleware,
+)
 from aegishunt.api.routes.alerts import detections_router
 from aegishunt.api.routes.alerts import router as alerts_router
 from aegishunt.api.routes.cases import router as cases_router
@@ -83,6 +86,27 @@ def create_app(
                 (500, "Sanitized internal failure"),
                 (503, "Required local service unavailable"),
             )
+        },
+    )
+    multipart_overhead = runtime_settings.web.maximum_multipart_overhead_bytes
+    install_request_body_limit_middleware(
+        application,
+        endpoint_limits={
+            "/ingestion/pcap": (
+                runtime_settings.web.maximum_pcap_upload_bytes + multipart_overhead
+            ),
+            "/ingestion/csv": (
+                runtime_settings.web.maximum_csv_upload_bytes + multipart_overhead
+            ),
+            "/ingestion/flow-csv": (
+                runtime_settings.web.maximum_csv_upload_bytes + multipart_overhead
+            ),
+            "/ingestion/json": (
+                runtime_settings.web.maximum_json_upload_bytes + multipart_overhead
+            ),
+            "/ingestion/json-events": (
+                runtime_settings.web.maximum_json_upload_bytes + multipart_overhead
+            ),
         },
     )
     install_request_id_middleware(

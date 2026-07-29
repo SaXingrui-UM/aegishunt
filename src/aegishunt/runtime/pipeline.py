@@ -210,6 +210,7 @@ class RuntimePipelineRunner:
         reader = PcapPacketReader(
             max_records=self._settings.ingestion.max_records,
             max_packet_bytes=self._settings.flows.max_packet_bytes,
+            max_interfaces=self._settings.flows.max_pcapng_interfaces,
         )
         aggregator = FlowAggregator(
             self._settings.flows,
