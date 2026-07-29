@@ -15,7 +15,7 @@ Last updated: 2026-07-29 (Asia/Shanghai)
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
 | Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; repository 85% and per-package 80% coverage gates; performance protocol 1.1; 21-scenario robustness matrix; real dependency/secret/Bandit gates; complete 80-finding disposition ledger |
 | Current activity | Phase 12 corrective PR [#38](https://github.com/SaXingrui-UM/aegishunt/pull/38) is merged into `main` as `c6efc88c2f848c4bf14ef2dd464d840ea3530712`. Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is open on `phase/13-hardening`; final local verification, exact-Head Codex Security rescan, and refreshed CI remain merge gates. Phase 14 has not started |
-| Verification status | Current evidence: Ruff passed; strict mypy passed 237 source files; final full pytest passed 522 tests with 0 failed/skipped/xfailed in 1,702.02 seconds at 85.78% branch-aware coverage; standalone offline E2E passed 22/22 after correcting a host-dependent Phase 6 literal-score test contract without changing its selection policy. `pip-audit` 2.10.1 audited 113 distributions with 0 advisories; complete-history `detect-secrets` found 0 confirmed secrets; Bandit reported 45 Low and 0 Medium/High; all 80 baseline findings and all 73 Low findings have individual dispositions. All 17 core packages pass 80%, lowest `flows` at 81.58%. Performance protocol 1.1 uses 100 measured micro/API samples, omits p99 below 100, covers seven read-only API routes and seven RSS scenarios. Exact-Head Codex Security rescan and refreshed CI remain required external merge gates. |
+| Verification status | Current evidence: Ruff passed; strict mypy passed 237 source files; final full pytest passed 522 tests with 0 failed/skipped/xfailed in 1,650.90 seconds at 85.74% branch-aware coverage; standalone offline E2E passed 22/22 after correcting a host-dependent Phase 6 literal-score test contract without changing its selection policy. `pip-audit` 2.10.1 audited 113 distributions with 0 advisories; complete-history `detect-secrets` found 0 confirmed secrets; Bandit reported 45 Low and 0 Medium/High; all 80 baseline findings and all 73 Low findings have individual dispositions. All 17 core packages pass 80%, lowest `flows` at 81.58%. Performance protocol 1.1 uses 100 measured micro/API samples, omits p99 below 100, covers seven read-only API routes and seven RSS scenarios. Exact-Head Codex Security rescan and refreshed CI remain required external merge gates. |
 | Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -87,11 +87,11 @@ training/activation, or response actions.
   observations only.
 - Robustness matrix `1.1.0` passed all 21 scenarios/27 represented tests after
   one initial test-node naming defect was corrected and the full matrix rerun.
-- Current refreshed coverage evidence is 85.78% repository combined
+- Passing refreshed runs observed 85.74–85.78% repository combined
   statement/branch coverage. Each of the 17 declared core packages separately
   exceeds 80%; `flows` is lowest at 81.58%.
 - Final pre-scan repository verification passed 522 tests with no failures,
-  skips, or xfails in 1,702.02 seconds; strict mypy passed 237 source files and
+  skips, or xfails in 1,650.90 seconds; strict mypy passed 237 source files and
   Ruff passed. The complete standalone offline E2E passed 22/22 in 131.46
   seconds after its Phase 6 assertion was made candidate-aware without changing
   any model, threshold, selection policy, or historical evidence.

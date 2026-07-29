@@ -107,10 +107,10 @@ PR #39.
   Click/Typer assertions that looked only at stdout after the upgraded CLI
   correctly placed sanitized diagnostics in stderr; production behavior and
   security handling were unchanged. The corrected focused run passed 3/3.
-- The final complete run before the exact-Head scan passed 522 tests with
-  0 failures, 0 skips, and 0 xfails in 1,702.02 seconds at 85.78% branch-aware
-  coverage.
-- The refreshed coverage evidence is 85.78% repository combined
+- A final complete rerun after the status-assertion correction passed 522 tests
+  with 0 failures, 0 skips, and 0 xfails in 1,650.90 seconds at 85.74%
+  branch-aware coverage.
+- Passing complete runs observed 85.74–85.78% repository combined
   statement/branch coverage. All 17 declared core packages pass their separate
   80% gates; the lowest is `flows` at 81.58%. Strict mypy passes all 237 source
   files and Ruff passes the complete repository.
