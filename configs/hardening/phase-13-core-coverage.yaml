@@ -1,0 +1,28 @@
+schema_version: "1.0.0"
+threshold_percent: 80.0
+metric: combined_statement_and_branch_coverage
+frozen_before_phase_13_measurement: true
+include:
+  - src/aegishunt/artifact_io.py
+  - src/aegishunt/config.py
+  - src/aegishunt/api/
+  - src/aegishunt/cases/
+  - src/aegishunt/correlation/
+  - src/aegishunt/datasets/
+  - src/aegishunt/demo/
+  - src/aegishunt/detection/
+  - src/aegishunt/explainability/
+  - src/aegishunt/feedback/
+  - src/aegishunt/flows/
+  - src/aegishunt/hunting/
+  - src/aegishunt/ingestion/
+  - src/aegishunt/ml/
+  - src/aegishunt/runtime/
+  - src/aegishunt/schemas/
+  - src/aegishunt/storage/
+exclude_from_core_only:
+  - src/aegishunt/cli.py
+  - src/aegishunt/frontend/
+notes:
+  - CLI and Streamlit remain covered by the repository-wide 85 percent branch-aware gate.
+  - Core exclusion does not remove any file from pytest or repository-wide coverage.
