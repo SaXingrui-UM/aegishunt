@@ -7,13 +7,22 @@ import hashlib
 import tempfile
 import time
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from uuid import UUID
 
+import yaml
+from fastapi.testclient import TestClient
+from sqlalchemy import func, inspect, select
+
+from aegishunt.api.app import create_app
 from aegishunt.api.contracts import DemoRequest
 from aegishunt.api.demo_service import SampleDemoService
+from aegishunt.cases.config import load_case_feedback_policy
+from aegishunt.cases.reports import CaseReportService
 from aegishunt.config import (
     ApplicationSettings,
+    CaseFeedbackSettings,
     DatabaseSettings,
     IngestionSettings,
     WebSettings,
@@ -36,12 +45,25 @@ from aegishunt.ml.supervised.bundle import load_bundle as load_supervised_bundle
 from aegishunt.ml.supervised.prediction import PredictionBatch, predict_batch
 from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.storage import Database
+from aegishunt.storage.base import Base
 from scripts.phase13_benchmark_support import (
     BENCHMARK_SCHEMA_VERSION,
+    RSS_SAMPLING_INTERVAL_SECONDS,
+    current_rss_bytes,
     directory_size,
     environment,
     measure,
     write_results,
+)
+
+API_READ_COMPONENTS = (
+    "api_health",
+    "api_system_status",
+    "api_flows_page",
+    "api_alerts_page",
+    "api_runtime_status",
+    "api_demo_status",
+    "api_flow_detail",
 )
 
 
@@ -51,6 +73,7 @@ def _settings(
     *,
     artifact_root: Path,
     database_name: str,
+    case_policy_path: Path,
 ) -> ApplicationSettings:
     return ApplicationSettings(
         database=DatabaseSettings(url=f"sqlite:///{runtime_root / database_name}"),
@@ -66,6 +89,7 @@ def _settings(
             demo_worker_id="phase13-benchmark-worker",
             web_worker_id_prefix="phase13-benchmark-web",
         ),
+        case_feedback=CaseFeedbackSettings(policy_path=case_policy_path),
     )
 
 
@@ -74,19 +98,83 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("reports/hardening/phase-13/performance"),
+        default=Path("reports/hardening/phase-13/performance-v1.1"),
     )
-    parser.add_argument("--warmups", type=int, default=2)
-    parser.add_argument("--repetitions", type=int, default=10)
+    parser.add_argument("--micro-warmups", type=int, default=5)
+    parser.add_argument("--micro-repetitions", type=int, default=100)
+    parser.add_argument("--full-pipeline-repetitions", type=int, default=10)
     parser.add_argument("--smoke", action="store_true")
     return parser.parse_args()
+
+
+def _table_counts(database: Database) -> dict[str, int]:
+    """Count ORM-managed rows without constructing SQL identifiers from strings."""
+
+    table_names = tuple(sorted(inspect(database.engine).get_table_names()))
+    unknown = set(table_names) - set(Base.metadata.tables)
+    if unknown:
+        raise ValueError(f"API benchmark database has unknown tables: {sorted(unknown)}")
+    with database.engine.connect() as connection:
+        return {
+            name: int(
+                connection.scalar(
+                    select(func.count()).select_from(Base.metadata.tables[name])
+                )
+                or 0
+            )
+            for name in table_names
+        }
+
+
+def _memory_result(
+    scenario: str,
+    measured: dict[str, int | float | str | None],
+    *,
+    limitation: str,
+) -> dict[str, int | float | str | None]:
+    return {
+        "scenario": scenario,
+        "sample_count": measured["sample_count"],
+        "baseline_rss_bytes": measured["baseline_rss_bytes"],
+        "peak_rss_bytes": measured["peak_rss_bytes"],
+        "rss_delta_bytes": measured["rss_delta_bytes"],
+        "sampling_interval_seconds": measured["rss_sampling_interval_seconds"],
+        "status": measured["memory_status"],
+        "unit": "bytes",
+        "limitation": limitation,
+    }
+
+
+def _require_successful_api_read(path: str, status_code: int) -> None:
+    if status_code != 200:
+        raise ValueError(f"in-process API read {path} returned {status_code}")
+
+
+def _require_unchanged_get_counts(
+    before: dict[str, int],
+    after: dict[str, int],
+) -> None:
+    if before != after:
+        raise ValueError("GET benchmark mutated persistent table row counts")
+
+
+def _rss_sort_value(result: dict[str, int | float | str | None]) -> int:
+    value = result["peak_rss_bytes"]
+    return int(value) if isinstance(value, (int, float)) else -1
+
+
+def _numeric_feature(value: object, *, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"benchmark feature {name} is not numeric")
+    return float(value)
 
 
 def main() -> int:
     arguments = _parse_arguments()
     project_root = Path(__file__).resolve().parents[1]
-    repetitions = 1 if arguments.smoke else arguments.repetitions
-    warmups = 0 if arguments.smoke else arguments.warmups
+    micro_repetitions = 1 if arguments.smoke else arguments.micro_repetitions
+    full_repetitions = 1 if arguments.smoke else arguments.full_pipeline_repetitions
+    micro_warmups = 0 if arguments.smoke else arguments.micro_warmups
     sample = project_root / "data" / "sample" / "phase12-presentation-demo.pcap"
     sample_checksum = hashlib.sha256(sample.read_bytes()).hexdigest()
     output_dir = (
@@ -102,11 +190,29 @@ def main() -> int:
             dir=project_root / "artifacts",
         ) as artifact_name:
             artifact_relative = Path(artifact_name).relative_to(project_root)
+            case_policy_path = runtime_root / "case-feedback.yaml"
+            case_policy = yaml.safe_load(
+                (project_root / "configs/case_feedback.yaml").read_text(encoding="utf-8")
+            )
+            if not isinstance(case_policy, dict):
+                raise ValueError("case feedback policy root must be a mapping")
+            case_policy.update(
+                {
+                    "export_root": (artifact_relative / "feedback").as_posix(),
+                    "report_root": (artifact_relative / "case-reports").as_posix(),
+                    "candidate_root": (artifact_relative / "candidates").as_posix(),
+                }
+            )
+            case_policy_path.write_text(
+                yaml.safe_dump(case_policy, sort_keys=False),
+                encoding="utf-8",
+            )
             base_settings = _settings(
                 project_root,
                 runtime_root,
                 artifact_root=artifact_relative,
                 database_name="setup.db",
+                case_policy_path=case_policy_path,
             )
             preparation_started = time.perf_counter()
             environment_settings = DemoArtifactManager(
@@ -169,7 +275,7 @@ def main() -> int:
             )
             feature_rows = tuple(
                 tuple(
-                    float(flow.behavioral_features[name])
+                    _numeric_feature(flow.behavioral_features[name], name=name)
                     for name in supervised.manifest.feature_names
                 )
                 for flow in flow_result.flows
@@ -228,6 +334,7 @@ def main() -> int:
                     runtime_root,
                     artifact_root=artifact_relative,
                     database_name=f"pipeline-{pipeline_index}.db",
+                    case_policy_path=case_policy_path,
                 )
                 service = SampleDemoService(
                     database=Database(settings.database),
@@ -244,48 +351,221 @@ def main() -> int:
                 )
                 return len(result.flow_ids)
 
+            packet_result = measure(
+                "pcap_packet_parsing",
+                parse_packets,
+                warmups=micro_warmups,
+                repetitions=micro_repetitions,
+                operation_unit="captured_packets",
+            )
+            aggregation_result = measure(
+                "flow_aggregation_feature_extraction",
+                aggregate_flows,
+                warmups=micro_warmups,
+                repetitions=micro_repetitions,
+                operation_unit="captured_packets",
+            )
+            supervised_result = measure(
+                "supervised_warm_inference",
+                supervised_inference,
+                warmups=micro_warmups,
+                repetitions=micro_repetitions,
+                operation_unit="flow_rows",
+            )
+            anomaly_result = measure(
+                "anomaly_warm_inference",
+                anomaly_inference,
+                warmups=micro_warmups,
+                repetitions=micro_repetitions,
+                operation_unit="flow_rows",
+            )
+            fusion_result = measure(
+                "fusion",
+                fusion_inference,
+                warmups=micro_warmups,
+                repetitions=micro_repetitions,
+                operation_unit="score_pairs",
+            )
+
+            def load_model_artifacts() -> int:
+                load_supervised_bundle(
+                    environment_settings.supervised.artifact_root
+                    / runtime_policy.supervised_model_version,
+                    artifact_root=environment_settings.supervised.artifact_root,
+                )
+                load_anomaly_bundle(
+                    environment_settings.anomaly.artifact_root
+                    / runtime_policy.anomaly_model_version,
+                    artifact_root=environment_settings.anomaly.artifact_root,
+                )
+                return 2
+
+            model_load_result = measure(
+                "supervised_anomaly_artifact_load",
+                load_model_artifacts,
+                warmups=0,
+                repetitions=full_repetitions,
+                operation_unit="verified_artifacts",
+            )
+            full_pipeline_result = measure(
+                "full_flow_to_alert_pipeline",
+                full_pipeline,
+                warmups=0,
+                repetitions=full_repetitions,
+                operation_unit="persisted_flows",
+            )
+
+            api_settings = _settings(
+                project_root,
+                runtime_root,
+                artifact_root=artifact_relative,
+                database_name="api-read.db",
+                case_policy_path=case_policy_path,
+            )
+            api_database = Database(api_settings.database)
+            api_database.initialize()
+            api_demo = SampleDemoService(api_database, api_settings).run(
+                DemoRequest(
+                    sample_id="phase12-presentation-demo-pcap",
+                    create_case=True,
+                    actor="phase13-api-benchmark",
+                    reason="controlled in-process API read baseline",
+                    confirm=True,
+                )
+            )
+            if not api_demo.flow_ids or api_demo.case_id is None:
+                raise ValueError("API benchmark setup did not create required evidence")
+            api_case_id = api_demo.case_id
+            before_api_counts = _table_counts(api_database)
+            api_results: list[dict[str, int | float | str | None]] = []
+            with TestClient(create_app(api_settings, api_database)) as client:
+
+                def api_read(path: str) -> int:
+                    response = client.get(path)
+                    _require_successful_api_read(path, response.status_code)
+                    return 1
+
+                for component, path, route in (
+                    ("api_health", "/health", "/health"),
+                    ("api_system_status", "/system/status", "/system/status"),
+                    ("api_flows_page", "/flows?limit=10&offset=0", "/flows"),
+                    ("api_alerts_page", "/alerts?limit=10&offset=0", "/alerts"),
+                    ("api_runtime_status", "/runtime/status", "/runtime/status"),
+                    ("api_demo_status", "/demo/status", "/demo/status"),
+                    (
+                        "api_flow_detail",
+                        f"/flows/{api_demo.flow_ids[0]}",
+                        "/flows/{flow_id}",
+                    ),
+                ):
+                    result = measure(
+                        component,
+                        partial(api_read, path),
+                        warmups=micro_warmups,
+                        repetitions=micro_repetitions,
+                        operation_unit="http_200_responses",
+                    )
+                    result.update(
+                        {
+                            "request_method": "GET",
+                            "route": route,
+                            "http_status": 200,
+                            "latency_semantics": "in_process_testclient_latency",
+                        }
+                    )
+                    api_results.append(result)
+            after_api_counts = _table_counts(api_database)
+            _require_unchanged_get_counts(before_api_counts, after_api_counts)
+
+            report_index = 0
+            loaded_case_policy = load_case_feedback_policy(case_policy_path)
+
+            def export_case_report() -> int:
+                nonlocal report_index
+                report_index += 1
+                with api_database.session() as session, session.begin():
+                    CaseReportService(
+                        session,
+                        loaded_case_policy,
+                        project_root=project_root,
+                    ).generate(
+                        api_case_id,
+                        f"performance-{report_index}",
+                        actor="phase13-benchmark",
+                    )
+                return 1
+
+            report_result = measure(
+                "case_report_export",
+                export_case_report,
+                warmups=0,
+                repetitions=full_repetitions,
+                operation_unit="versioned_reports",
+            )
+            api_database.dispose()
+
             results = [
-                measure(
-                    "pcap_packet_parsing",
-                    parse_packets,
-                    warmups=warmups,
-                    repetitions=repetitions,
-                    operation_unit="captured_packets",
+                packet_result,
+                aggregation_result,
+                supervised_result,
+                anomaly_result,
+                fusion_result,
+                model_load_result,
+                full_pipeline_result,
+                *api_results,
+                report_result,
+            ]
+            baseline_rss = current_rss_bytes()
+            memory_results = [
+                {
+                    "scenario": "baseline_process_rss",
+                    "sample_count": 1,
+                    "baseline_rss_bytes": baseline_rss,
+                    "peak_rss_bytes": baseline_rss,
+                    "rss_delta_bytes": 0 if baseline_rss is not None else None,
+                    "sampling_interval_seconds": RSS_SAMPLING_INTERVAL_SECONDS,
+                    "status": "available" if baseline_rss is not None else "unavailable",
+                    "unit": "bytes",
+                    "limitation": (
+                        "single point-in-time RSS observation"
+                        if baseline_rss is not None
+                        else "process RSS sampler unavailable on this platform"
+                    ),
+                },
+                _memory_result(
+                    "supervised_anomaly_artifact_load_delta",
+                    model_load_result,
+                    limitation="allocator reuse can reduce the observed incremental RSS",
                 ),
-                measure(
-                    "flow_aggregation_feature_extraction",
-                    aggregate_flows,
-                    warmups=warmups,
-                    repetitions=repetitions,
-                    operation_unit="captured_packets",
+                _memory_result(
+                    "warm_inference_peak",
+                    max(
+                        (supervised_result, anomaly_result),
+                        key=_rss_sort_value,
+                    ),
+                    limitation="small controlled feature batch",
                 ),
-                measure(
-                    "supervised_inference",
-                    supervised_inference,
-                    warmups=warmups,
-                    repetitions=repetitions,
-                    operation_unit="flow_rows",
+                _memory_result(
+                    "full_sample_replay_peak",
+                    aggregation_result,
+                    limitation="controlled sample PCAP; not a large-capture capacity claim",
                 ),
-                measure(
-                    "anomaly_inference",
-                    anomaly_inference,
-                    warmups=warmups,
-                    repetitions=repetitions,
-                    operation_unit="flow_rows",
+                _memory_result(
+                    "sample_demo_peak",
+                    full_pipeline_result,
+                    limitation="isolated controlled demo with bounded synthetic input",
                 ),
-                measure(
-                    "fusion",
-                    fusion_inference,
-                    warmups=warmups,
-                    repetitions=repetitions,
-                    operation_unit="score_pairs",
+                _memory_result(
+                    "bounded_api_list_peak",
+                    next(
+                        item for item in api_results if item["component"] == "api_flows_page"
+                    ),
+                    limitation="in-process TestClient; excludes network and browser memory",
                 ),
-                measure(
-                    "full_flow_to_alert_pipeline",
-                    full_pipeline,
-                    warmups=warmups,
-                    repetitions=repetitions,
-                    operation_unit="persisted_flows",
+                _memory_result(
+                    "case_report_export_peak",
+                    report_result,
+                    limitation="bounded controlled case evidence only",
                 ),
             ]
             payload: dict[str, object] = {
@@ -293,11 +573,16 @@ def main() -> int:
                 "recorded_at": datetime.now(UTC).isoformat(),
                 "environment": environment(project_root),
                 "method": {
-                    "warmups": warmups,
-                    "repetitions": repetitions,
+                    "micro_warmups": micro_warmups,
+                    "micro_repetitions": micro_repetitions,
+                    "full_pipeline_repetitions": full_repetitions,
                     "percentile_method": "linear_interpolation",
+                    "p99_minimum_samples": 100,
                     "rss_sampling_interval_seconds": 0.002,
                     "concurrency": "single_process_sequential",
+                    "api_latency_semantics": "in_process_testclient_latency",
+                    "api_read_components": list(API_READ_COMPONENTS),
+                    "api_get_mutation_check": "PASS",
                     "artifact_preparation_seconds": preparation_seconds,
                 },
                 "workload": {
@@ -330,11 +615,14 @@ def main() -> int:
                     "explanation_artifact": directory_size(explanation_dir),
                 },
                 "results": results,
+                "memory_results": memory_results,
                 "limitations": [
                     "development-host research baseline only",
                     "controlled synthetic sample; not a public benchmark",
                     "not an SLA or production capacity claim",
                     "RSS sampled at two-millisecond intervals",
+                    "API latency is in-process TestClient latency, not network latency",
+                    "full-pipeline and report samples below 100 intentionally omit p99",
                     "no frozen evaluation evidence was reopened",
                 ],
             }

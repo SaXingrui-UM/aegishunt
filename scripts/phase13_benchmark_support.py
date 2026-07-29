@@ -7,6 +7,7 @@ import json
 import math
 import os
 import platform
+import statistics
 import subprocess
 import sys
 import threading
@@ -18,7 +19,9 @@ from typing import Any
 
 import psutil
 
-BENCHMARK_SCHEMA_VERSION = "1.0.0"
+BENCHMARK_SCHEMA_VERSION = "1.1.0"
+P99_MINIMUM_SAMPLES = 100
+RSS_SAMPLING_INTERVAL_SECONDS = 0.002
 DEPENDENCIES = (
     "fastapi",
     "numpy",
@@ -32,25 +35,48 @@ DEPENDENCIES = (
 class PeakRssSampler:
     """Sample process RSS at a fixed small interval during one workload."""
 
-    def __init__(self, interval_seconds: float = 0.002) -> None:
+    def __init__(self, interval_seconds: float = RSS_SAMPLING_INTERVAL_SECONDS) -> None:
         self._interval_seconds = interval_seconds
         self._stop = threading.Event()
-        self._process = psutil.Process()
+        self._process: psutil.Process | None = None
         self._thread = threading.Thread(target=self._sample, daemon=True)
-        self.peak_bytes = self._process.memory_info().rss
+        self.peak_bytes = current_rss_bytes()
+        if self.peak_bytes is not None:
+            self._process = psutil.Process()
 
     def _sample(self) -> None:
         while not self._stop.wait(self._interval_seconds):
-            self.peak_bytes = max(self.peak_bytes, self._process.memory_info().rss)
+            if self._process is None or self.peak_bytes is None:
+                return
+            try:
+                self.peak_bytes = max(self.peak_bytes, self._process.memory_info().rss)
+            except (OSError, psutil.Error):
+                self.peak_bytes = None
+                return
 
     def __enter__(self) -> PeakRssSampler:
-        self._thread.start()
+        if self._process is not None:
+            self._thread.start()
         return self
 
     def __exit__(self, *_exc_info: object) -> None:
         self._stop.set()
-        self._thread.join(timeout=1)
-        self.peak_bytes = max(self.peak_bytes, self._process.memory_info().rss)
+        if self._thread.is_alive():
+            self._thread.join(timeout=1)
+        final = current_rss_bytes()
+        if self.peak_bytes is not None and final is not None:
+            self.peak_bytes = max(self.peak_bytes, final)
+        else:
+            self.peak_bytes = None
+
+
+def current_rss_bytes() -> int | None:
+    """Return current process RSS, or None when the platform sampler is unavailable."""
+
+    try:
+        return psutil.Process().memory_info().rss
+    except (OSError, psutil.Error):
+        return None
 
 
 def percentile(values: list[float], fraction: float) -> float:
@@ -75,7 +101,7 @@ def measure(
     warmups: int,
     repetitions: int,
     operation_unit: str,
-) -> dict[str, int | float | str]:
+) -> dict[str, int | float | str | None]:
     """Measure one deterministic callable without applying noisy pass/fail thresholds."""
 
     if warmups < 0 or repetitions < 1:
@@ -86,7 +112,7 @@ def measure(
 
     latencies_ms: list[float] = []
     operation_count = 0
-    rss_start = psutil.Process().memory_info().rss
+    rss_start = current_rss_bytes()
     cpu_start = time.process_time()
     with PeakRssSampler() as sampler:
         for _ in range(repetitions):
@@ -99,22 +125,36 @@ def measure(
             latencies_ms.append(elapsed / 1_000_000)
     cpu_seconds = time.process_time() - cpu_start
     wall_seconds = sum(latencies_ms) / 1_000
+    p99_available = repetitions >= P99_MINIMUM_SAMPLES
+    peak_rss = sampler.peak_bytes
+    if rss_start is not None and peak_rss is not None:
+        memory_status = "available"
+        rss_delta: int | None = peak_rss - rss_start
+    else:
+        memory_status = "unavailable"
+        rss_delta = None
     return {
         "component": component,
         "operation_unit": operation_unit,
         "warmups": warmups,
         "repetitions": repetitions,
+        "sample_count": len(latencies_ms),
         "operations": operation_count,
         "throughput_per_second": operation_count / wall_seconds,
         "latency_min_ms": min(latencies_ms),
         "latency_mean_ms": sum(latencies_ms) / len(latencies_ms),
+        "latency_stddev_ms": statistics.pstdev(latencies_ms),
         "latency_p50_ms": percentile(latencies_ms, 0.50),
         "latency_p95_ms": percentile(latencies_ms, 0.95),
-        "latency_p99_ms": percentile(latencies_ms, 0.99),
+        "latency_p99_ms": percentile(latencies_ms, 0.99) if p99_available else None,
+        "p99_status": "available" if p99_available else "insufficient_samples",
         "latency_max_ms": max(latencies_ms),
         "cpu_seconds": cpu_seconds,
-        "peak_rss_bytes": sampler.peak_bytes,
-        "rss_delta_bytes": sampler.peak_bytes - rss_start,
+        "baseline_rss_bytes": rss_start,
+        "peak_rss_bytes": peak_rss,
+        "rss_delta_bytes": rss_delta,
+        "rss_sampling_interval_seconds": RSS_SAMPLING_INTERVAL_SECONDS,
+        "memory_status": memory_status,
     }
 
 
@@ -171,32 +211,51 @@ def _markdown(payload: Mapping[str, Any]) -> str:
         "",
         "## Method",
         "",
-        f"- Warm-ups: {payload['method']['warmups']}",
-        f"- Repetitions: {payload['method']['repetitions']}",
+        f"- Micro/API warm-ups: {payload['method']['micro_warmups']}",
+        f"- Micro/API measured samples: {payload['method']['micro_repetitions']}",
+        f"- Full-pipeline measured samples: {payload['method']['full_pipeline_repetitions']}",
         f"- Sample: `{payload['workload']['sample_name']}`",
         f"- Sample SHA-256: `{payload['workload']['sample_sha256']}`",
         f"- Feature schema: `{payload['workload']['feature_schema_version']}`",
         "- Execution: single process, offline, loopback-free, no root, no live capture",
-        "- Percentiles: deterministic linear interpolation over per-iteration latency",
+        "- Percentiles: deterministic linear interpolation over measured per-iteration latency",
+        "- p99: reported only for scenarios with at least 100 measured samples",
         "- Peak RSS: 2 ms process sampling during each measured component",
         "",
         "## Results",
         "",
         (
-            "| Component | Unit | Operations | Throughput/s | p50 ms | p95 ms | "
-            "p99 ms | CPU s | Peak RSS bytes |"
+            "| Component | Samples | Unit | Operations | Throughput/s | p50 ms | p95 ms | "
+            "p99 ms | p99 status | CPU s | Peak RSS bytes |"
         ),
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|",
     ]
     for result in payload["results"]:
+        p99 = result["latency_p99_ms"]
+        p99_display = "n/a" if p99 is None else f"{p99:.6f}"
         lines.append(
-            "| {component} | {operation_unit} | {operations} | "
+            "| {component} | {sample_count} | {operation_unit} | {operations} | "
             "{throughput_per_second:.6f} | {latency_p50_ms:.6f} | "
-            "{latency_p95_ms:.6f} | {latency_p99_ms:.6f} | "
-            "{cpu_seconds:.6f} | {peak_rss_bytes} |".format(**result)
+            "{latency_p95_ms:.6f} | {p99_display} | {p99_status} | "
+            "{cpu_seconds:.6f} | {peak_rss_bytes} |".format(
+                **result,
+                p99_display=p99_display,
+            )
         )
     lines.extend(
         [
+            "",
+            "## Memory Scenarios",
+            "",
+            "| Scenario | Samples | Baseline RSS | Peak RSS | Delta RSS | Status | Limitation |",
+            "|---|---:|---:|---:|---:|---|---|",
+            *(
+                "| {scenario} | {sample_count} | {baseline_rss_bytes} | "
+                "{peak_rss_bytes} | {rss_delta_bytes} | {status} | {limitation} |".format(
+                    **item
+                )
+                for item in payload["memory_results"]
+            ),
             "",
             "## Artifact Sizes",
             "",
@@ -209,7 +268,7 @@ def _markdown(payload: Mapping[str, Any]) -> str:
             "",
             "- The workload is a small controlled synthetic PCAP.",
             "- Host scheduling and thermal state can affect latency.",
-            "- RSS sampling can miss peaks shorter than the sampling interval.",
+            "- RSS sampling can miss peaks shorter than the two-millisecond interval.",
             "- Model and policy evidence is isolated and was not activated globally.",
             "- No frozen test set, model selection, or fusion threshold was reopened.",
             "",
@@ -228,9 +287,10 @@ def write_results(output_dir: Path, payload: dict[str, object]) -> tuple[Path, .
         results = payload["results"]
         if not isinstance(results, list) or not results:
             raise ValueError("benchmark results cannot be empty")
+        fieldnames = sorted({field for result in results for field in result})
         writer = csv.DictWriter(
             destination,
-            fieldnames=list(results[0]),
+            fieldnames=fieldnames,
             lineterminator="\n",
         )
         writer.writeheader()
