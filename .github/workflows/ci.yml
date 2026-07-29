@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     # The branch-aware suite includes bounded training/E2E checks and can exceed
     # 15 minutes on a slower hosted runner even when every test passes.
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -37,4 +37,21 @@ jobs:
         run: mypy src
 
       - name: Run pytest with coverage
-        run: pytest
+        run: pytest --cov-report=term-missing --cov-report=xml --cov-report=json
+
+      - name: Enforce Phase 13 core coverage
+        run: >-
+          PYTHONPATH=src python -m scripts.check_phase13_core_coverage
+          --output-dir /tmp/aegishunt-phase13-core-coverage
+
+      - name: Run Phase 13 robustness smoke
+        run: >-
+          PYTHONPATH=src python -m scripts.run_phase13_robustness
+          --smoke
+          --output-dir /tmp/aegishunt-phase13-robustness-smoke
+
+      - name: Run Phase 13 deterministic benchmark smoke
+        run: >-
+          PYTHONPATH=src python -m scripts.run_phase13_benchmark
+          --smoke
+          --output-dir /tmp/aegishunt-phase13-benchmark-smoke
