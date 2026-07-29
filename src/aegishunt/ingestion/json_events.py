@@ -36,6 +36,38 @@ def _validate_depth(value: object, *, maximum_depth: int, position: str) -> None
             stack.extend((item, depth + 1) for item in current)
 
 
+def _validate_structural_depth(
+    text: str,
+    *,
+    maximum_depth: int,
+    position: str,
+) -> None:
+    """Reject excessive structure before recursive decoder materialization."""
+
+    depth = 0
+    in_string = False
+    escaped = False
+    for character in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                in_string = False
+            continue
+        if character == '"':
+            in_string = True
+        elif character in "[{":
+            depth += 1
+            if depth > maximum_depth:
+                raise TelemetryFormatError(
+                    f"JSON event at {position} exceeds the configured nesting depth"
+                )
+        elif character in "]}":
+            depth = max(0, depth - 1)
+
+
 def _validate_event(
     value: object,
     *,
@@ -68,11 +100,18 @@ def _decode_value(
     buffer: str,
     *,
     maximum_record_bytes: int,
+    maximum_depth: int,
+    position: str,
 ) -> tuple[object, str]:
     decoder = json.JSONDecoder(parse_constant=_reject_non_finite)
     eof = False
     buffer, eof = _strip_leading_whitespace(stream, buffer)
     while True:
+        _validate_structural_depth(
+            buffer,
+            maximum_depth=maximum_depth,
+            position=position,
+        )
         try:
             value, end = decoder.raw_decode(buffer)
         except json.JSONDecodeError as exc:
@@ -104,6 +143,7 @@ def _iter_json_array(
     buffer: str,
     *,
     maximum_record_bytes: int,
+    maximum_depth: int,
 ) -> Iterator[tuple[int, object]]:
     index = 0
     expect_value = True
@@ -132,6 +172,8 @@ def _iter_json_array(
             stream,
             buffer,
             maximum_record_bytes=maximum_record_bytes,
+            maximum_depth=maximum_depth,
+            position=f"index {index}",
         )
         yield index, value
         index += 1
@@ -159,6 +201,11 @@ def _json_lines(
             raise TelemetryFormatError("JSON telemetry must use UTF-8 text encoding") from exc
         if not line.strip():
             raise TelemetryFormatError(f"JSON Lines entry {line_number} is blank")
+        _validate_structural_depth(
+            line,
+            maximum_depth=maximum_depth,
+            position=f"line {line_number}",
+        )
         value = json.loads(line, parse_constant=_reject_non_finite)
         _validate_event(
             value,
@@ -228,6 +275,7 @@ class JsonEventIngestor(TelemetryIngestor):
                         text_stream,
                         prefix[1:],
                         maximum_record_bytes=self._maximum_record_bytes,
+                        maximum_depth=self._maximum_depth,
                     ):
                         _validate_event(
                             event,
@@ -250,6 +298,8 @@ class JsonEventIngestor(TelemetryIngestor):
                         text_stream,
                         prefix,
                         maximum_record_bytes=self._maximum_record_bytes,
+                        maximum_depth=self._maximum_depth,
+                        position="index 0",
                     )
                     _validate_event(
                         event,

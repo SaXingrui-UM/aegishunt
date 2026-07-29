@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import asyncio
 import struct
 from io import BytesIO
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.responses import JSONResponse
+from starlette.types import Message, Receive, Scope, Send
 
 from aegishunt.api.app import create_app
+from aegishunt.api.middleware import RequestBodyLimitMiddleware
 from aegishunt.config import (
     ApplicationSettings,
     DatabaseSettings,
@@ -65,6 +69,33 @@ def test_json_parser_rejects_excessive_nesting_without_recursive_failure(
 
     with pytest.raises(TelemetryFormatError, match="nesting depth"):
         JsonEventIngestor(maximum_depth=8).inspect(nested, max_records=1)
+
+
+def test_json_parser_rejects_extreme_nesting_before_decoder_recursion(
+    tmp_path: Path,
+) -> None:
+    nested = tmp_path / "extreme.json"
+    nested.write_text(
+        '{"value":' + ("[" * 20_000) + "0" + ("]" * 20_000) + "}",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TelemetryFormatError, match="nesting depth"):
+        JsonEventIngestor(
+            maximum_record_bytes=100_000,
+            maximum_depth=64,
+        ).inspect(nested, max_records=1)
+
+
+def test_json_depth_scanner_ignores_structural_characters_inside_strings(
+    tmp_path: Path,
+) -> None:
+    event = tmp_path / "string-brackets.json"
+    event.write_text('{"value":"[[[{{{\\"nested-looking\\"}}}]]]"}', encoding="utf-8")
+
+    inspection = JsonEventIngestor(maximum_depth=2).inspect(event, max_records=1)
+
+    assert inspection.records_processed == 1
 
 
 def test_flow_csv_rejects_missing_and_extra_schema_columns(tmp_path: Path) -> None:
@@ -145,6 +176,57 @@ def test_api_rejects_raw_multipart_body_before_creating_an_ingestion_job(
     assert jobs.status_code == 200
     assert jobs.json()["total"] == 0
     assert not list((tmp_path / "raw").glob("*"))
+
+
+def test_raw_body_limit_rejects_underreported_streaming_content_length() -> None:
+    messages = iter(
+        (
+            {"type": "http.request", "body": b"123", "more_body": True},
+            {"type": "http.request", "body": b"456", "more_body": False},
+        )
+    )
+    sent: list[Message] = []
+
+    async def receive() -> Message:
+        return next(messages)
+
+    async def send(message: Message) -> None:
+        sent.append(message)
+
+    async def consume_body(scope: Scope, receive: Receive, send: Send) -> None:
+        while True:
+            message = await receive()
+            if not message.get("more_body", False):
+                break
+        await JSONResponse({"status": "unexpected"})(scope, receive, send)
+
+    scope: Scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": "/ingestion/json",
+        "raw_path": b"/ingestion/json",
+        "query_string": b"",
+        "headers": [(b"content-length", b"1")],
+        "client": ("127.0.0.1", 10000),
+        "server": ("127.0.0.1", 8000),
+    }
+    middleware = RequestBodyLimitMiddleware(
+        consume_body,
+        limits={"/ingestion/json": 4},
+    )
+
+    asyncio.run(middleware(scope, receive, send))
+
+    response_start = next(message for message in sent if message["type"] == "http.response.start")
+    assert response_start["status"] == 413
+    assert b"request_body_too_large" in b"".join(
+        message.get("body", b"")
+        for message in sent
+        if message["type"] == "http.response.body"
+    )
 
 
 def test_upload_staging_accepts_exact_limit_and_cleans_exceeded_limit(
