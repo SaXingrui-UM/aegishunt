@@ -148,10 +148,13 @@ def generate_reason_evidence(
     output: list[ReasonEvidence] = []
 
     def feature_high(code: str, name: str) -> None:
+        entry = by_code[code]
+        if not entry.enabled_in_phase_8:
+            return
         reference = references.get(name)
         value = features.get(name)
         if reference is not None and value is not None and value > reference.q95:
-            output.append(_reference_evidence(by_code[code], value, reference.q05, reference.q95))
+            output.append(_reference_evidence(entry, value, reference.q05, reference.q95))
 
     feature_high("ABNORMALLY_HIGH_PACKET_RATE", "packets_per_second")
     std_reference = references.get("std_inter_arrival_time")
@@ -164,11 +167,16 @@ def generate_reason_evidence(
         and mean_iat > 0.0
         and std_value < std_reference.q05
     ):
-        output.append(
-            _reference_evidence(
-                by_code["LOW_IAT_VARIANCE"], std_value, std_reference.q05, std_reference.q95
+        entry = by_code["LOW_IAT_VARIANCE"]
+        if entry.enabled_in_phase_8:
+            output.append(
+                _reference_evidence(
+                    entry,
+                    std_value,
+                    std_reference.q05,
+                    std_reference.q95,
+                )
             )
-        )
     feature_high("PERIODIC_BEACONING_PATTERN", "periodicity_score")
     feature_high("HIGH_SYN_RATIO", "syn_ratio")
     feature_high("HIGH_RESET_RATIO", "rst_ratio")
@@ -203,8 +211,9 @@ def generate_reason_evidence(
         ),
     )
     for code, value, threshold, triggered in threshold_triggers:
-        if triggered():
-            output.append(_threshold_evidence(by_code[code], value, threshold))
+        entry = by_code[code]
+        if entry.enabled_in_phase_8 and triggered():
+            output.append(_threshold_evidence(entry, value, threshold))
     return tuple(output)
 
 
