@@ -67,6 +67,8 @@ class IngestionSettings(BaseModel):
     max_upload_bytes: int = Field(default=52_428_800, ge=1)
     chunk_size_bytes: int = Field(default=65_536, ge=1, le=1_048_576)
     max_records: int = Field(default=100_000, ge=1)
+    max_json_record_bytes: int = Field(default=1_048_576, ge=1, le=52_428_800)
+    max_json_nesting_depth: int = Field(default=64, ge=1, le=256)
 
 
 class FlowSettings(BaseModel):
@@ -79,6 +81,7 @@ class FlowSettings(BaseModel):
     max_packets_per_flow: int = Field(default=10_000, ge=1, le=1_000_000)
     max_active_flows: int = Field(default=100_000, ge=1, le=1_000_000)
     max_packet_bytes: int = Field(default=262_144, ge=64, le=16_777_216)
+    max_pcapng_interfaces: int = Field(default=256, ge=1, le=65_535)
 
 
 class DatasetSettings(BaseModel):
@@ -208,6 +211,11 @@ class WebSettings(BaseModel):
     maximum_pcap_upload_bytes: int = Field(default=52_428_800, ge=1)
     maximum_csv_upload_bytes: int = Field(default=10_485_760, ge=1)
     maximum_json_upload_bytes: int = Field(default=10_485_760, ge=1)
+    maximum_multipart_overhead_bytes: int = Field(
+        default=1_048_576,
+        ge=1_024,
+        le=8_388_608,
+    )
     demo_sample_ids: tuple[str, ...] = ("phase12-demo-pcap",)
     demo_dataset_version: str = Field(
         default="1.0.0",

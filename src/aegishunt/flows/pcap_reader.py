@@ -120,9 +120,16 @@ def _timestamp_units(options: dict[int, list[bytes]]) -> int:
 class PcapPacketReader:
     """Read packet bytes with record and allocation bounds independent of Phase 2."""
 
-    def __init__(self, *, max_records: int, max_packet_bytes: int) -> None:
+    def __init__(
+        self,
+        *,
+        max_records: int,
+        max_packet_bytes: int,
+        max_interfaces: int = 256,
+    ) -> None:
         self._max_records = max_records
         self._max_packet_bytes = max_packet_bytes
+        self._max_interfaces = max_interfaces
 
     def packets(self, path: Path) -> Iterator[CapturedPacket]:
         """Yield captured packets without loading the capture into memory."""
@@ -230,6 +237,10 @@ class PcapPacketReader:
                 link_type, _reserved, snap_length = struct.unpack(f"{endian}HHI", body[:8])
                 if snap_length <= 0:
                     raise CaptureFormatError("PCAPNG interface snap length must be positive")
+                if len(interfaces) >= self._max_interfaces:
+                    raise CaptureFormatError(
+                        "PCAPNG interface inventory exceeds the configured limit"
+                    )
                 options = _read_options(body[8:], endian)
                 interfaces.append(
                     _Interface(

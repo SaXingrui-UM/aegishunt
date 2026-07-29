@@ -40,10 +40,20 @@ from aegishunt.storage.repositories import (
 )
 
 
-def default_registry() -> IngestorRegistry:
+def default_registry(settings: IngestionSettings | None = None) -> IngestorRegistry:
     """Build the Phase 2 file-ingestor registry."""
 
-    return IngestorRegistry((PcapIngestor(), FlowCsvIngestor(), JsonEventIngestor()))
+    active_settings = settings or IngestionSettings()
+    return IngestorRegistry(
+        (
+            PcapIngestor(),
+            FlowCsvIngestor(),
+            JsonEventIngestor(
+                maximum_record_bytes=active_settings.max_json_record_bytes,
+                maximum_depth=active_settings.max_json_nesting_depth,
+            ),
+        )
+    )
 
 
 def _updated(source: TelemetrySource, **changes: object) -> TelemetrySource:
@@ -66,7 +76,7 @@ class IngestionService:
         self._database = database
         self._settings = settings
         self._flow_settings = flow_settings or FlowSettings()
-        self._registry = registry or default_registry()
+        self._registry = registry or default_registry(settings)
         self._storage = SafeFileStorage(
             settings.storage_root,
             max_bytes=settings.max_upload_bytes,
