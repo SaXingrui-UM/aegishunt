@@ -40,7 +40,11 @@ Status: **Implementation complete — awaiting PR review**.
   API scenarios, cold/warm separation, and seven explicit RSS scenarios.
 - Ran real `pip-audit`, complete-history `detect-secrets`, and Bandit gates;
   added independent fail-closed CI jobs for security, robustness, performance
-  smoke, and pull-request dependency review.
+  smoke, and quality. GitHub's optional dependency-diff Action is not retained
+  because this repository does not have the required Dependency Graph plus
+  GitHub Advanced Security capability; that unsupported run is recorded as a
+  failure rather than a pass, while the required security job retains
+  `pip check` and online `pip-audit`.
 - Represented all 80 immutable Codex Security baseline findings, including all
   73 Low findings, in a validated per-finding disposition ledger.
 
@@ -75,6 +79,7 @@ public dataset, or Phase 14 functionality was added.
 - `970471e` — `test: enforce per-package core coverage`
 - `3e8cda0` — `perf: correct percentile api and memory evidence`
 - `588de65` — `ci: add phase 13 security and audit gates`
+- `6fcb415` — `ci: fix clean-linux phase 13 gates`
 
 The final documentation and exact-Head verification commits are also listed in
 PR #39.
@@ -133,6 +138,23 @@ PR #39.
 - Benchmark smoke and robustness smoke both completed with reviewed output
   contracts. CI runs those deterministic smoke modes, not the formal full
   development-host benchmark or robustness experiment.
+- The first refreshed CI execution of the hardened workflow exposed three
+  environment contracts before any merge claim. The optional official
+  Dependency Review Action was unsupported by the repository's GitHub feature
+  set. The required security job found the Python 3.11 virtual environment's
+  bundled `setuptools 65.5.0`; the build and development contracts now require
+  the audited 83.x line, and a clean Python 3.11 reproduction audits 110
+  distributions with zero advisories. The robustness job also exposed that the
+  `pytest` console entry point did not put the repository root on `sys.path`;
+  all CI pytest steps now use the portable `python -m pytest` form. The same
+  clean environment passed the 53-test robustness/security selection. Three
+  dedicated CI-contract regressions preserve these corrections. Refreshed
+  exact-Head CI remains a merge gate.
+- After installing the declared setuptools 83.x dependency into the primary
+  development environment, the final full regression passed all 525 tests with
+  0 failures, 0 skips, and 0 xfails in 1,562.89 seconds. Branch-aware repository
+  coverage was 85.79%, and all 17 core packages retained their separate 80%
+  pass status.
 
 ## Review outcome
 
@@ -147,6 +169,14 @@ findings.
 The repository-wide 85% branch-aware threshold was not lowered. CLI and
 Streamlit are excluded only from the separately frozen 80% core subset and
 remain in repository coverage.
+
+The formal repository-wide Codex Security rescan was prepared against the
+then-current exact Head and passed capability preflight, but it was canceled
+before discovery when refreshed CI exposed defects that required a new commit.
+The user subsequently explicitly removed the final formal rescan from this
+task. No formal rescan result is claimed, and Bandit, the secret-history gate,
+the dependency audit, and the baseline ledger are not represented as a
+substitute for that unexecuted scan.
 
 ## Performance baseline
 
@@ -188,14 +218,16 @@ reported 7 Medium, 73 Low, 0 High, and 0 Critical findings. It was not rerun.
 - All 80 findings and all 73 Low findings are individually represented:
   9 Fixed, 39 Accepted risk, 19 Deferred to Phase 14, 13 Needs further
   validation, and 0 Untriaged.
-- `pip-audit` 2.10.1 audited 113 installed distributions and found zero
-  advisories; `pip check` passed.
+- `pip-audit` 2.10.1 audited 114 Python 3.12 distributions and 110 clean
+  Python 3.11 distributions and found zero advisories in either environment;
+  `pip check` passed.
 - `detect-secrets` 1.5.0 scanned the current tree and reachable Git history,
   with zero confirmed secrets after exact reviewed false-positive handling.
 - Bandit 1.9.4 reported 45 Low and 0 Medium/High findings, with no scanner
   errors and no suppression.
-- These complementary tools do not replace the exact-final-Head Codex Security
-  full-repository scan required before merge.
+- These complementary tools are not represented as a formal Codex Security
+  full-repository rescan. The user explicitly removed that final rescan from
+  this task, and no rescan result is claimed.
 
 ## Generated artifacts
 

@@ -8,7 +8,7 @@ or ignored path.
 
 | Gate | Tool | Version | Scope | Result |
 | --- | --- | --- | --- | --- |
-| Dependency audit | `pip-audit` | 2.10.1 | 113 installed direct/transitive distributions | PASS; 0 advisories |
+| Dependency audit | `pip-audit` | 2.10.1 | 114 Python 3.12 and 110 clean Python 3.11 installed direct/transitive distributions | PASS; 0 advisories in both environments |
 | Environment consistency | `pip check` | pip 26.1.2 | Installed environment | PASS |
 | Secret scan | `detect-secrets` | 1.5.0 | Tracked tree, complete reachable Git blob history, `.github`, configs, docs, scripts, tests, sample manifests, generated PR body | PASS; 0 confirmed secrets |
 | Static scan | Bandit | 1.9.4 | `src/aegishunt` and `scripts` | PASS; 45 Low, 0 Medium/High, 0 errors |
@@ -46,9 +46,9 @@ secret and security-gate tests rather than used as the production static-scan
 scope.
 
 The Bandit gate rejects scanner errors and blocks a Medium or High result. It
-also records severity totals in sanitized JSON. Bandit complements, but does
-not replace, the exact-final-HEAD Codex Security repository scan required before
-PR #39 can be accepted.
+also records severity totals in sanitized JSON. Bandit is not represented as a
+formal Codex Security repository rescan. The user explicitly removed that final
+rescan from this task, and no rescan result is claimed.
 
 ## Boundaries
 
