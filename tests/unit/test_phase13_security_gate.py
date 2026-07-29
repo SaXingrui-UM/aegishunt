@@ -11,6 +11,7 @@ from scripts.run_phase13_security import (
     evaluate_bandit,
     evaluate_pip_audit,
     evaluate_secret_candidates,
+    generated_pr_body_candidates,
     run_dependency_scan,
     tracked_secret_candidates,
 )
@@ -135,5 +136,31 @@ def test_detect_secrets_scans_real_tracked_file_without_raw_value(
 
     assert len(candidates) == 1
     assert candidates[0].path == "credential.py"
+    assert candidates[0].detector_type == "Secret Keyword"
+    assert not hasattr(candidates[0], "secret_value")
+
+
+def test_github_pull_request_body_is_scanned_and_redacted(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event = tmp_path / "event.json"
+    event.write_text(
+        json.dumps(
+            {
+                "pull_request": {
+                    "body": 'password = "deliberately-invalid-pr-fixture"'
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+
+    candidates, scanned = generated_pr_body_candidates(tmp_path)
+
+    assert scanned is True
+    assert len(candidates) == 1
+    assert candidates[0].path == ".github/generated/phase-13-pr.md"
     assert candidates[0].detector_type == "Secret Keyword"
     assert not hasattr(candidates[0], "secret_value")

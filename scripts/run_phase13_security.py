@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -111,6 +112,47 @@ def tracked_secret_candidates(
             for potential in scan_file(str(absolute)):
                 candidates.add(_candidate(relative.as_posix(), potential))
     return tuple(sorted(candidates))
+
+
+def generated_pr_body_candidates(
+    project_root: Path,
+) -> tuple[tuple[SecretCandidate, ...], bool]:
+    """Scan a local generated body or the GitHub pull-request event body."""
+
+    display_path = Path(".github/generated/phase-13-pr.md")
+    local_path = project_root / display_path
+    if local_path.is_file():
+        with default_settings():
+            candidates = tuple(
+                sorted(
+                    _candidate(display_path.as_posix(), potential)
+                    for potential in scan_file(str(local_path))
+                )
+            )
+        return candidates, True
+
+    event_path_value = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path_value:
+        return (), False
+    try:
+        event = json.loads(Path(event_path_value).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("GitHub event payload cannot be read safely") from exc
+    pull_request = event.get("pull_request") if isinstance(event, dict) else None
+    body = pull_request.get("body") if isinstance(pull_request, dict) else None
+    if not isinstance(body, str):
+        return (), False
+    with tempfile.TemporaryDirectory(prefix="aegishunt-pr-body-") as temp_name:
+        temporary = Path(temp_name) / "phase-13-pr.md"
+        temporary.write_text(body, encoding="utf-8")
+        with default_settings():
+            candidates = tuple(
+                sorted(
+                    _candidate(display_path.as_posix(), potential)
+                    for potential in scan_file(str(temporary))
+                )
+            )
+    return candidates, True
 
 
 def history_secret_candidates(
@@ -308,8 +350,9 @@ def run_bandit_scan(project_root: Path, temp_root: Path) -> dict[str, Any]:
 
 def run_secret_scan(project_root: Path) -> dict[str, Any]:
     allowlist = load_secret_allowlist(project_root / SECRET_ALLOWLIST)
-    generated_body = Path(".github/generated/phase-13-pr.md")
-    tracked = tracked_secret_candidates(project_root, extra_paths=(generated_body,))
+    tracked = tracked_secret_candidates(project_root)
+    generated, generated_scanned = generated_pr_body_candidates(project_root)
+    tracked = tuple(sorted(set(tracked) | set(generated)))
     history, counts = history_secret_candidates(project_root)
     result = evaluate_secret_candidates(
         tracked=tracked,
@@ -321,7 +364,7 @@ def run_secret_scan(project_root: Path) -> dict[str, Any]:
             "tool": "detect-secrets",
             "tool_version": version("detect-secrets"),
             "history_included": True,
-            "generated_pr_body_scanned": (project_root / generated_body).is_file(),
+            "generated_pr_body_scanned": generated_scanned,
             **counts,
         }
     )
