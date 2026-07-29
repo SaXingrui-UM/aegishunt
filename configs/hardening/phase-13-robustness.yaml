@@ -1,0 +1,110 @@
+schema_version: "1.0.0"
+random_seed: 20260729
+execution:
+  offline: true
+  root_required: false
+  live_capture: false
+scenarios:
+  - id: ROB-001
+    category: malformed-pcap
+    requirement: Truncated and forged-length PCAP inputs fail closed.
+    expected: Invalid captures are rejected without unbounded reads.
+    test_nodes:
+      - tests/unit/test_ingestion_adapters.py::test_pcap_inspector_rejects_truncation_and_record_overflow
+  - id: ROB-002
+    category: invalid-csv
+    requirement: Flow CSV schema, types, and finite values are validated.
+    expected: Invalid flow CSV rows are rejected without persistence.
+    test_nodes:
+      - tests/unit/test_ingestion_adapters.py::test_flow_csv_inspector_validates_canonical_rows
+  - id: ROB-003
+    category: oversized-upload
+    requirement: Oversized multipart request bodies are rejected before parsing.
+    expected: HTTP 413 is returned and no ingestion job is created.
+    test_nodes:
+      - tests/security/test_phase13_input_limits.py::test_api_rejects_raw_multipart_body_before_creating_an_ingestion_job
+  - id: ROB-004
+    category: model-schema
+    requirement: Inference rejects feature schema, order, type, and finite-value drift.
+    expected: Invalid inference batches fail closed before model execution.
+    test_nodes:
+      - tests/unit/test_anomaly_bundle_prediction.py::test_prediction_rejects_schema_order_dtype_nonfinite_and_empty
+  - id: ROB-005
+    category: path-traversal
+    requirement: User-controlled storage and archive paths cannot escape configured roots.
+    expected: Relative traversal, absolute paths, and unsafe archive members are rejected.
+    test_nodes:
+      - tests/unit/test_file_storage.py::test_storage_rejects_unsafe_or_unsupported_names
+      - tests/security/test_dataset_download_security.py::test_archive_traversal_and_absolute_paths_are_rejected
+  - id: ROB-006
+    category: sqlite-concurrency
+    requirement: Five controlled concurrent ingestion jobs survive a database restart.
+    expected: Jobs have unique identities and reach durable terminal states without lock leakage.
+    test_nodes:
+      - tests/integration/test_ingestion_concurrency.py::test_five_concurrent_sample_jobs_survive_database_restart
+  - id: ROB-007
+    category: corrupt-model
+    requirement: Missing, extra, corrupt, and unsafe anomaly artifacts are rejected.
+    expected: Bundle verification fails closed before deserialization or prediction.
+    test_nodes:
+      - tests/unit/test_anomaly_bundle_prediction.py::test_bundle_rejects_extra_missing_corrupt_and_unsafe_artifacts
+  - id: ROB-008
+    category: model-version-collision
+    requirement: Existing model identities cannot be silently overwritten.
+    expected: A model-version collision is rejected and the original bundle remains intact.
+    test_nodes:
+      - tests/unit/test_anomaly_bundle_prediction.py::test_bundle_refuses_model_version_collision
+  - id: ROB-009
+    category: duplicate-ingestion
+    requirement: Duplicate names and content do not overwrite stored telemetry.
+    expected: Jobs remain independently auditable while immutable content is safely reused.
+    test_nodes:
+      - tests/security/test_ingestion_security.py::test_duplicate_names_and_content_create_jobs_without_overwrite
+  - id: ROB-010
+    category: transaction-rollback
+    requirement: Rolled-back repository mutations do not survive a new session.
+    expected: Commit and rollback boundaries remain durable and isolated.
+    test_nodes:
+      - tests/integration/test_phase_00_02_foundation.py::test_repository_commit_rollback_pagination_update_and_audit
+  - id: ROB-011
+    category: provenance
+    requirement: Controlled-generator provenance cannot be attached to substituted canonical rows.
+    expected: Generator-equivalence verification rejects altered canonical content.
+    test_nodes:
+      - tests/unit/test_phase13_integrity.py::test_controlled_demo_rejects_substituted_canonical_rows
+  - id: ROB-012
+    category: fusion-identity
+    requirement: Fusion refitting requires verified Phase 5/6 model and schema identities.
+    expected: Model or feature-schema drift is rejected before policy fitting.
+    test_nodes:
+      - tests/unit/test_phase13_integrity.py::test_fusion_refit_rejects_unverified_model_and_schema_identities
+  - id: ROB-013
+    category: json-bounds
+    requirement: JSON arrays and JSONL are parsed incrementally with record-size limits.
+    expected: Oversized records are rejected without whole-file materialization.
+    test_nodes:
+      - tests/security/test_phase13_input_limits.py::test_json_array_and_jsonl_enforce_limits_during_incremental_parsing
+  - id: ROB-014
+    category: pcapng-bounds
+    requirement: PCAPNG interface metadata cannot grow without a configured bound.
+    expected: Excess interface blocks are rejected before packet processing.
+    test_nodes:
+      - tests/security/test_phase13_input_limits.py::test_pcapng_interface_inventory_is_bounded_before_packet_processing
+  - id: ROB-015
+    category: file-size-boundary
+    requirement: Staged uploads enforce the configured size and remove partial files.
+    expected: An oversized file is rejected and no staging residue remains.
+    test_nodes:
+      - tests/unit/test_file_storage.py::test_storage_enforces_size_and_removes_staging_file
+  - id: ROB-016
+    category: idempotent-demo
+    requirement: The real sample demo is restart-safe and idempotent.
+    expected: Repeated execution returns stable evidence without duplicate durable state.
+    test_nodes:
+      - tests/e2e/test_phase_12_api_frontend.py::test_sample_demo_runs_full_existing_pipeline_idempotently
+  - id: ROB-017
+    category: atomic-flow-persistence
+    requirement: Packet-processing failure cannot leave partial NetworkFlow rows.
+    expected: The ingestion job fails safely and the transaction leaves no partial flows.
+    test_nodes:
+      - tests/integration/test_pcap_flow_processing.py::test_packet_failure_persists_failed_job_without_partial_flows
