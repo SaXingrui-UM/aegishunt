@@ -88,9 +88,9 @@ the pull request.
 - Initial robustness v1.0.0 run: 16 PASS / 1 FAIL because ROB-011 named an old
   test function. The matrix was corrected and fully rerun; the failure was not
   hidden or converted to skip.
-- Final repository pytest: 485 passed, 0 failed, 0 skipped, and 0 xfailed in
-  1,548.52 seconds at 85.30% branch-aware coverage.
-- The frozen core gate passed at 85.74% combined statement/branch coverage
+- Final repository pytest after review correction: 488 passed, 0 failed, 0
+  skipped, and 0 xfailed in 1,708.93 seconds at 85.29% branch-aware coverage.
+- The frozen core gate passed at 85.72% combined statement/branch coverage
   across 219 included source files, above the 80% requirement.
 - Final Ruff passed; strict mypy passed for 237 source files.
 - The final Phase 13 focused selection passed 29 tests in 3.73 seconds; the
@@ -98,6 +98,16 @@ the pull request.
 - Benchmark smoke and robustness smoke both completed with reviewed output
   contracts. CI runs those deterministic smoke modes, not the formal full
   development-host benchmark or robustness experiment.
+
+## Review outcome
+
+Native `codex review --base main` could not start because the local arm64 vendor
+executable was missing (`ENOENT`). The equivalent read-only diff review found
+one correctness-related Medium: extreme JSON nesting could reach decoder
+recursion before the post-decode depth check. Commit `f8d424e` added a
+pre-decode structural-depth gate plus extreme-depth and underreported streaming
+body regressions. Final review has 0 Blocking, 0 High, and 0 unresolved Medium
+findings.
 
 The repository-wide 85% branch-aware threshold was not lowered. CLI and
 Streamlit are excluded only from the separately frozen 80% core subset and

@@ -15,7 +15,7 @@ Last updated: 2026-07-29 (Asia/Shanghai)
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
 | Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; frozen core coverage; versioned benchmark and 21-scenario robustness matrix; Security baseline mapping |
 | Current activity | Phase 12 corrective PR [#38](https://github.com/SaXingrui-UM/aegishunt/pull/38) is merged into `main` as `c6efc88c2f848c4bf14ef2dd464d840ea3530712`. Phase 13 implementation is complete on `phase/13-hardening`; local final quality gates pass and review/PR publication remains. Phase 14 has not started |
-| Verification status | Startup baseline: Ruff passed, strict mypy passed for 237 source files, and 465 tests passed at 85.34% branch-aware coverage. Final repository pytest: 485 passed, 0 failed/skipped/xfailed in 1,548.52 seconds at 85.30% branch-aware coverage. Frozen core coverage: 85.74% across 219 source files (80% required). Final Ruff and strict mypy pass; Phase 13 focused selection: 29 passed; complete offline E2E: 22 passed; benchmark and robustness smoke pass. Robustness matrix v1.1.0: 21/21 scenarios passed (27 test instances). |
+| Verification status | Startup baseline: Ruff passed, strict mypy passed for 237 source files, and 465 tests passed at 85.34% branch-aware coverage. Final post-review repository pytest: 488 passed, 0 failed/skipped/xfailed in 1,708.93 seconds at 85.29% branch-aware coverage. Frozen core coverage: 85.72% across 219 source files (80% required). Final Ruff and strict mypy pass; complete offline E2E: 22 passed; benchmark and robustness smoke pass. Robustness matrix v1.1.0: 21/21 scenarios passed (27 test instances). |
 | Stable branch checkpoint | PR #35 was squash-merged to `main` as `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated Tag `phase-12-complete` peels to that canonical merge commit |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -84,12 +84,17 @@ training/activation, or response actions.
   environment metadata. Results are development-host observations only.
 - Robustness matrix `1.1.0` passed all 21 scenarios/27 represented tests after
   one initial test-node naming defect was corrected and the full matrix rerun.
-- The final repository suite passed all 485 tests with no failures, skips, or
-  xfails at 85.30% branch-aware coverage. The separately frozen core gate passed
-  at 85.74% combined statement/branch coverage over 219 source files.
+- The final post-review repository suite passed all 488 tests with no failures,
+  skips, or xfails at 85.29% branch-aware coverage. The separately frozen core
+  gate passed at 85.72% combined statement/branch coverage over 219 source files.
 - Final Phase 13-focused tests passed 29/29 in 3.73 seconds, and the complete
   offline E2E selection passed 22/22 in 139.74 seconds. Deterministic benchmark
   and robustness smoke commands completed using temporary output directories.
+- Native `codex review --base main` failed to start with `ENOENT` for the local
+  arm64 vendor executable. Equivalent read-only review found one Medium
+  extreme-JSON-depth boundary defect; `f8d424e` fixed it and added streaming
+  body/depth regressions. Final findings: 0 Blocking, 0 High, 0 unresolved
+  Medium.
 - `pip check` passed and `pip inspect` recorded 92 distributions. `pip-audit`
   is unavailable, so a dependency-CVE pass is not claimed.
 - Phase 14 deployment/authentication/packaging is not implemented. No model,

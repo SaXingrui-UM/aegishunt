@@ -1,10 +1,10 @@
 {
-  "branches": 3384,
+  "branches": 3402,
   "config_schema_version": "1.0.0",
-  "core_percent": 85.73907717435688,
-  "covered_branches": 2331,
-  "covered_statements": 14467,
-  "covered_total": 16798,
+  "core_percent": 85.72301736871594,
+  "covered_branches": 2345,
+  "covered_statements": 14485,
+  "covered_total": 16830,
   "file_count": 219,
   "files": [
     {
@@ -56,9 +56,9 @@
       "total": 197
     },
     {
-      "covered": 62,
+      "covered": 66,
       "path": "src/aegishunt/api/middleware.py",
-      "percent": 88.57142857142857,
+      "percent": 94.28571428571429,
       "total": 70
     },
     {
@@ -662,10 +662,10 @@
       "total": 87
     },
     {
-      "covered": 171,
+      "covered": 211,
       "path": "src/aegishunt/ingestion/json_events.py",
-      "percent": 79.90654205607477,
-      "total": 214
+      "percent": 82.74509803921569,
+      "total": 255
     },
     {
       "covered": 122,
@@ -1088,9 +1088,9 @@
       "total": 462
     },
     {
-      "covered": 126,
+      "covered": 114,
       "path": "src/aegishunt/runtime/control.py",
-      "percent": 86.89655172413794,
+      "percent": 78.62068965517241,
       "total": 145
     },
     {
@@ -1324,8 +1324,8 @@
   ],
   "metric": "combined_statement_and_branch_coverage",
   "result_schema_version": "1.0.0",
-  "statements": 16208,
+  "statements": 16231,
   "status": "PASS",
   "threshold_percent": 80.0,
-  "total": 19592
+  "total": 19633
 }
