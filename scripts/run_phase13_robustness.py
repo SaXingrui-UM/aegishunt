@@ -189,7 +189,11 @@ def write_results(output_dir: Path, payload: dict[str, Any]) -> tuple[Path, ...]
     rows = payload["results"]
     with csv_path.open("w", encoding="utf-8", newline="") as destination:
         fieldnames = list(rows[0])
-        writer = csv.DictWriter(destination, fieldnames=fieldnames)
+        writer = csv.DictWriter(
+            destination,
+            fieldnames=fieldnames,
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(
             {

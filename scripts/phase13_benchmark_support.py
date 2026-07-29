@@ -228,7 +228,11 @@ def write_results(output_dir: Path, payload: dict[str, object]) -> tuple[Path, .
         results = payload["results"]
         if not isinstance(results, list) or not results:
             raise ValueError("benchmark results cannot be empty")
-        writer = csv.DictWriter(destination, fieldnames=list(results[0]))
+        writer = csv.DictWriter(
+            destination,
+            fieldnames=list(results[0]),
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(results)
     markdown_path.write_text(_markdown(payload), encoding="utf-8")
