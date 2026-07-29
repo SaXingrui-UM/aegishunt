@@ -11,6 +11,7 @@ import skops.io as sio
 from numpy.typing import NDArray
 from sklearn.pipeline import Pipeline
 
+from aegishunt.flows.registry import FEATURE_SCHEMA_VERSION
 from aegishunt.ml.anomaly.config import AnomalyTrainingConfig
 from aegishunt.ml.anomaly.contracts import AnomalyPredictionResult, ScoreNormalization
 from aegishunt.ml.anomaly.lof import build_lof_comparator, lof_parameters
@@ -94,6 +95,24 @@ def _validate_fixed_configs(
     supervised: SupervisedTrainingConfig,
     anomaly: AnomalyTrainingConfig,
 ) -> None:
+    expected_identity = (
+        f"aegishunt-supervised-{supervised.model_version}",
+        supervised.model_version,
+        f"aegishunt-anomaly-{anomaly.model_version}",
+        anomaly.model_version,
+        FEATURE_SCHEMA_VERSION,
+    )
+    configured_identity = (
+        fusion.supervised_model_id,
+        fusion.supervised_model_version,
+        fusion.anomaly_model_id,
+        fusion.anomaly_model_version,
+        fusion.feature_schema_version,
+    )
+    if configured_identity != expected_identity:
+        raise FusionContractError(
+            "Phase 7 engine or feature-schema identity differs from verified Phase 5/6 contracts"
+        )
     random_forest = next(
         (
             candidate

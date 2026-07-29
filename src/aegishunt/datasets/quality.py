@@ -30,9 +30,79 @@ def feature_fingerprint(row: CanonicalDatasetRow) -> str:
 
 
 def near_feature_fingerprint(row: CanonicalDatasetRow, tolerance: float) -> str:
+    """Return a display fingerprint; correctness uses exact distance comparisons."""
+
     quantized = tuple(round(value / tolerance) for value in row.features.values)
     payload = json.dumps(quantized, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def near_duplicate_components(
+    rows: Sequence[CanonicalDatasetRow],
+    tolerance: float,
+) -> tuple[tuple[int, ...], ...]:
+    """Find Chebyshev-distance components without quantization boundary gaps."""
+
+    if tolerance <= 0.0 or not math.isfinite(tolerance):
+        raise DatasetQualityError("near-duplicate tolerance must be finite and positive")
+    if len(rows) < 2:
+        return ()
+    feature_count = len(rows[0].features.values)
+    if any(len(row.features.values) != feature_count for row in rows):
+        raise DatasetQualityError("near-duplicate rows must share one feature width")
+
+    ranges = [
+        max(row.features.values[index] for row in rows)
+        - min(row.features.values[index] for row in rows)
+        for index in range(feature_count)
+    ]
+    pivot = max(range(feature_count), key=ranges.__getitem__)
+    ordered = sorted(
+        range(len(rows)),
+        key=lambda index: (rows[index].features.values[pivot], index),
+    )
+    parents = list(range(len(rows)))
+
+    def find(index: int) -> int:
+        while parents[index] != index:
+            parents[index] = parents[parents[index]]
+            index = parents[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        left_root = find(left)
+        right_root = find(right)
+        if left_root != right_root:
+            parents[max(left_root, right_root)] = min(left_root, right_root)
+
+    window_start = 0
+    for position, row_index in enumerate(ordered):
+        current = rows[row_index].features.values
+        while (
+            current[pivot] - rows[ordered[window_start]].features.values[pivot]
+            > tolerance
+        ):
+            window_start += 1
+        for candidate_position in range(window_start, position):
+            candidate_index = ordered[candidate_position]
+            candidate = rows[candidate_index].features.values
+            if candidate == current:
+                continue
+            if all(
+                abs(left - right) <= tolerance
+                for left, right in zip(current, candidate, strict=True)
+            ):
+                union(row_index, candidate_index)
+
+    components: dict[int, list[int]] = defaultdict(list)
+    for index in range(len(rows)):
+        components[find(index)].append(index)
+    return tuple(
+        sorted(
+            (tuple(indices) for indices in components.values() if len(indices) > 1),
+            key=lambda component: component[0],
+        )
+    )
 
 
 def _duplicates(fingerprints: Sequence[str]) -> int:
@@ -63,13 +133,9 @@ def analyze_quality(
     provenance_fingerprints = [
         f"{row.metadata.source_file}|{row.metadata.original_row_id}" for row in rows
     ]
-    near_groups: dict[str, list[CanonicalDatasetRow]] = defaultdict(list)
-    for row in rows:
-        near_groups[near_feature_fingerprint(row, near_duplicate_tolerance)].append(row)
     near_duplicate_sets = [
-        group
-        for group in near_groups.values()
-        if len(group) > 1 and len({feature_fingerprint(row) for row in group}) > 1
+        [rows[index] for index in component]
+        for component in near_duplicate_components(rows, near_duplicate_tolerance)
     ]
     invalid: list[str] = []
     for definition in FEATURE_DEFINITIONS:

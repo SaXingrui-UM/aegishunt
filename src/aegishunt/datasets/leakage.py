@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 from collections import defaultdict
 from collections.abc import Sequence
 
-from aegishunt.datasets.quality import feature_fingerprint, near_feature_fingerprint
+from aegishunt.datasets.quality import (
+    feature_fingerprint,
+    near_duplicate_components,
+)
 from aegishunt.datasets.reports import LeakageReport, QualityFinding
 from aegishunt.datasets.schemas import SplitAssignment
 
@@ -54,13 +58,21 @@ def _fingerprint_overlap(
     *,
     near_tolerance: float | None,
 ) -> tuple[str, ...]:
+    if near_tolerance is not None:
+        rows = [assignment.row for assignment in assignments]
+        evidence: list[str] = []
+        for component in near_duplicate_components(rows, near_tolerance):
+            splits = {assignments[index].split for index in component}
+            if len(splits) > 1:
+                fingerprints = sorted(feature_fingerprint(rows[index]) for index in component)
+                evidence.append(
+                    hashlib.sha256("|".join(fingerprints).encode()).hexdigest()
+                )
+        return tuple(sorted(evidence))
+
     owners: dict[str, set[str]] = defaultdict(set)
     for assignment in assignments:
-        fingerprint = (
-            feature_fingerprint(assignment.row)
-            if near_tolerance is None
-            else near_feature_fingerprint(assignment.row, near_tolerance)
-        )
+        fingerprint = feature_fingerprint(assignment.row)
         owners[fingerprint].add(assignment.split)
     return tuple(sorted(fingerprint for fingerprint, splits in owners.items() if len(splits) > 1))
 
