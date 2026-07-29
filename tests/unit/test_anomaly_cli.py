@@ -120,6 +120,6 @@ def test_anomaly_cli_fails_safely_without_controlled_permission(tmp_path: Path) 
     )
 
     assert result.exit_code == 1
-    assert "explicit pipeline-verification permission" in result.stdout
-    assert "Traceback" not in result.stdout
-    assert str(tmp_path) not in result.stdout
+    assert "explicit pipeline-verification permission" in result.output
+    assert "Traceback" not in result.output
+    assert str(tmp_path) not in result.output

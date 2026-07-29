@@ -164,9 +164,9 @@ def test_runtime_config_failure_is_sanitized_without_traceback(tmp_path: Path) -
     )
 
     assert result.exit_code == 1
-    assert "Runtime command failed" in result.stdout
-    assert "Traceback" not in result.stdout
-    assert str(tmp_path) not in result.stdout
+    assert "Runtime command failed" in result.output
+    assert "Traceback" not in result.output
+    assert str(tmp_path) not in result.output
 
 
 def test_runtime_worker_registers_cooperative_sigint_and_sigterm_handlers(
