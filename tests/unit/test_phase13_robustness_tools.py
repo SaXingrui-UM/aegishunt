@@ -14,9 +14,9 @@ def test_phase13_robustness_matrix_is_versioned_bounded_and_complete() -> None:
         Path("configs/hardening/phase-13-robustness.yaml")
     )
 
-    assert version == "1.0.0"
+    assert version == "1.1.0"
     assert seed == 20260729
-    assert len(scenarios) == 17
+    assert len(scenarios) == 21
     assert len({scenario.identifier for scenario in scenarios}) == len(scenarios)
     assert all(scenario.test_nodes for scenario in scenarios)
     assert all(

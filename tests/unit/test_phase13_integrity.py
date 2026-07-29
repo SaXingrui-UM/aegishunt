@@ -10,8 +10,9 @@ import pytest
 from aegishunt.config import DatasetSettings, FlowSettings
 from aegishunt.datasets.errors import DatasetQualityError
 from aegishunt.datasets.io import write_canonical_jsonl
+from aegishunt.datasets.leakage import analyze_leakage
 from aegishunt.datasets.quality import analyze_quality
-from aegishunt.datasets.schemas import CanonicalDatasetRow
+from aegishunt.datasets.schemas import CanonicalDatasetRow, SplitAssignment
 from aegishunt.datasets.service import DatasetService
 from aegishunt.flows.aggregator import FlowAggregator
 from aegishunt.flows.packets import PacketRecord
@@ -78,6 +79,43 @@ def test_near_duplicate_detection_covers_quantization_boundaries() -> None:
 
     assert report.near_duplicate_count == 1
     assert report.near_duplicate_groups == (original.metadata.group_id,)
+
+
+def test_cross_split_near_duplicates_cover_quantization_boundaries() -> None:
+    original = demo_rows()[0]
+    left = _replace_feature(
+        original,
+        record_id="boundary-left",
+        feature_name="bytes_per_second",
+        value=100.49,
+    )
+    payload = _replace_feature(
+        original,
+        record_id="boundary-right",
+        feature_name="bytes_per_second",
+        value=100.51,
+    ).model_dump(mode="python")
+    payload["metadata"].update(
+        {
+            "group_id": "boundary-right-group",
+            "source_file": "boundary-right.csv",
+            "source_file_checksum": "b" * 64,
+            "capture_session_id": "boundary-right-session",
+            "scenario_id": "boundary-right-scenario",
+        }
+    )
+    right = CanonicalDatasetRow.model_validate(payload)
+
+    report = analyze_leakage(
+        (
+            SplitAssignment(split="train", row=left),
+            SplitAssignment(split="test", row=right),
+        ),
+        near_duplicate_tolerance=1.0,
+    )
+
+    assert report.status == "fail"
+    assert len(report.near_duplicate_overlap) == 1
 
 
 def test_flow_deadline_index_avoids_per_packet_full_table_scans(

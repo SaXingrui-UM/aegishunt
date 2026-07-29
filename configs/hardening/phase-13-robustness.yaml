@@ -1,4 +1,4 @@
-schema_version: "1.0.0"
+schema_version: "1.1.0"
 random_seed: 20260729
 execution:
   offline: true
@@ -17,6 +17,7 @@ scenarios:
     expected: Invalid flow CSV rows are rejected without persistence.
     test_nodes:
       - tests/unit/test_ingestion_adapters.py::test_flow_csv_inspector_validates_canonical_rows
+      - tests/security/test_phase13_input_limits.py::test_flow_csv_rejects_missing_and_extra_schema_columns
   - id: ROB-003
     category: oversized-upload
     requirement: Oversized multipart request bodies are rejected before parsing.
@@ -108,3 +109,27 @@ scenarios:
     expected: The ingestion job fails safely and the transaction leaves no partial flows.
     test_nodes:
       - tests/integration/test_pcap_flow_processing.py::test_packet_failure_persists_failed_job_without_partial_flows
+  - id: ROB-018
+    category: exact-upload-boundary
+    requirement: Upload staging distinguishes exactly-at-limit from over-limit content.
+    expected: Exact-limit bytes persist and the next byte is rejected without staging residue.
+    test_nodes:
+      - tests/security/test_phase13_input_limits.py::test_upload_staging_accepts_exact_limit_and_cleans_exceeded_limit
+  - id: ROB-019
+    category: cross-split-near-duplicate
+    requirement: Cross-split near duplicates are detected across quantization boundaries.
+    expected: Values inside the declared tolerance fail the leakage gate despite rounded-bin drift.
+    test_nodes:
+      - tests/unit/test_phase13_integrity.py::test_cross_split_near_duplicates_cover_quantization_boundaries
+  - id: ROB-020
+    category: supervised-bundle-contract
+    requirement: Supervised schema drift, corruption, unsafe files, and frozen-test repetition fail closed.
+    expected: Isolated evidence is deterministic and invalid bundles or inference contracts are rejected.
+    test_nodes:
+      - tests/e2e/test_phase_05_supervised_pipeline.py::test_phase_05_selection_test_bundle_and_independent_reload
+  - id: ROB-021
+    category: fusion-policy-contract
+    requirement: Fusion policy inventory, checksum, and filesystem boundaries are verified.
+    expected: Extra, corrupt, missing, and unsafe policy artifacts are rejected.
+    test_nodes:
+      - tests/integration/test_fusion_workflow.py::test_policy_reload_is_deterministic_and_rejects_extra_corrupt_or_unsafe_files

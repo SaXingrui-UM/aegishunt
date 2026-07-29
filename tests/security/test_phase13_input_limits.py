@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import struct
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,13 @@ from aegishunt.config import (
 )
 from aegishunt.flows.errors import CaptureFormatError
 from aegishunt.flows.pcap_reader import PcapPacketReader
-from aegishunt.ingestion.errors import TelemetryFormatError
+from aegishunt.ingestion.errors import FilePolicyError, TelemetryFormatError
+from aegishunt.ingestion.file_storage import SafeFileStorage
+from aegishunt.ingestion.flow_csv import FlowCsvIngestor
 from aegishunt.ingestion.json_events import JsonEventIngestor
+from aegishunt.ingestion.pcap import PcapIngestor
+
+SAMPLE_FLOW_CSV = Path(__file__).parents[2] / "data" / "sample" / "phase2-flows.csv"
 
 
 def _pcapng_section() -> bytes:
@@ -59,6 +65,30 @@ def test_json_parser_rejects_excessive_nesting_without_recursive_failure(
 
     with pytest.raises(TelemetryFormatError, match="nesting depth"):
         JsonEventIngestor(maximum_depth=8).inspect(nested, max_records=1)
+
+
+def test_flow_csv_rejects_missing_and_extra_schema_columns(tmp_path: Path) -> None:
+    source = SAMPLE_FLOW_CSV.read_text(encoding="utf-8")
+    header, *rows = source.splitlines()
+    columns = header.split(",")
+
+    missing = tmp_path / "missing.csv"
+    missing.write_text(
+        ",".join(column for column in columns if column != "backward_bytes")
+        + "\n"
+        + "\n".join(rows),
+        encoding="utf-8",
+    )
+    with pytest.raises(TelemetryFormatError, match="missing required columns"):
+        FlowCsvIngestor().inspect(missing, max_records=10)
+
+    extra = tmp_path / "extra.csv"
+    extra.write_text(
+        header + ",untrusted_field\n" + "\n".join(f"{row},value" for row in rows),
+        encoding="utf-8",
+    )
+    with pytest.raises(TelemetryFormatError, match="unsupported columns"):
+        FlowCsvIngestor().inspect(extra, max_records=10)
 
 
 def test_pcapng_interface_inventory_is_bounded_before_packet_processing(
@@ -115,3 +145,28 @@ def test_api_rejects_raw_multipart_body_before_creating_an_ingestion_job(
     assert jobs.status_code == 200
     assert jobs.json()["total"] == 0
     assert not list((tmp_path / "raw").glob("*"))
+
+
+def test_upload_staging_accepts_exact_limit_and_cleans_exceeded_limit(
+    tmp_path: Path,
+) -> None:
+    storage = SafeFileStorage(tmp_path, max_bytes=4, chunk_size=2)
+
+    exact = storage.stage(
+        BytesIO(b"1234"),
+        filename="exact.pcap",
+        content_type="application/octet-stream",
+        policy=PcapIngestor.policy,
+    )
+    assert exact.byte_size == 4
+    stored = storage.commit(exact)
+    assert (tmp_path / stored.stored_filename).read_bytes() == b"1234"
+
+    with pytest.raises(FilePolicyError, match="configured limit"):
+        storage.stage(
+            BytesIO(b"12345"),
+            filename="exceeded.pcap",
+            content_type="application/octet-stream",
+            policy=PcapIngestor.policy,
+        )
+    assert not list(tmp_path.glob(".upload-*"))
