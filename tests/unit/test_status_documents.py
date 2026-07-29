@@ -124,7 +124,7 @@ def test_progress_and_release_record_phase_thirteen_without_phase_fourteen_scope
     assert "c6efc88c2f848c4bf14ef2dd464d840ea3530712" in progress_current
     assert "all 80 baseline findings" in normalized_progress_current
     assert "all 73 Low findings" in normalized_progress_current
-    assert "all 17 core packages pass 80%" in normalized_progress_current
+    assert "All 17 core packages pass 80%" in normalized_progress_current
 
     assert (
         "Status: **Implementation complete — awaiting PR review**"

@@ -122,6 +122,11 @@ PR #39.
   independent-process equality without changing the Phase 6 policy or model.
   The corrected focused suite passed 8/8 and the complete offline E2E passed
   22/22 in 131.46 seconds.
+- The next exact-Head full run reported 521 passed / 1 failed because the newly
+  added status regression expected lowercase `all` while the truthful progress
+  text begins the sentence with `All`. The assertion was corrected exactly;
+  no product behavior, evidence, threshold, coverage rule, skip, or xfail was
+  changed.
 - Final Ruff passed; strict mypy passed for 237 source files.
 - The final Phase 13 focused selection passed 29 tests in 3.73 seconds; the
   complete offline E2E selection passed 22 tests in 139.74 seconds.
