@@ -1,4 +1,4 @@
-# AegisHunt Data and Artifact Model Through Phase 11
+# AegisHunt final data and artifact model
 
 ## Scope
 
@@ -14,6 +14,8 @@ Phase 10 implements investigation cases, notes, typed evidence references,
 analyst feedback, controlled exports, and explicit retraining-candidate
 artifacts. Phase 11 adds durable runtime job, attempt, worker, resource-sample,
 and output-ledger records without changing the evidence contracts of Phases 3–9.
+Phases 12–14 add API/frontend/deployment boundaries without adding another
+persistent domain entity. Current database schema version is `5`.
 
 ## Contract layers
 
@@ -54,6 +56,35 @@ for the local prototype where their internal shape evolves in later phases.
 Frequently filtered identifiers, statuses, severities, entities, and timestamps
 remain relational columns with indexes. Large telemetry, datasets, model files,
 and reports remain controlled filesystem artifacts referenced by metadata.
+
+## Keys, constraints, and indexes
+
+Primary identifiers are UUIDs except bounded worker/policy/model string
+identities where stated. Foreign keys link source→flow→detection→alert,
+group→hypothesis→case, case→notes/evidence/feedback, and source/job→attempts,
+worker samples, and output ledgers. Model ID/version, source-scoped job, and
+runtime output identities use the declared ORM/migration uniqueness.
+Frequently queried source/time, status, severity, entity, case, worker
+heartbeat/lease, scheduling, and audit object/time fields use declared indexes.
+SQLite enables foreign keys, WAL, and bounded busy timeout per connection. No
+cascade deletion is claimed where none is implemented.
+
+## Immutability and lifecycle
+
+| Record class | Immutable evidence | Mutable lifecycle |
+| --- | --- | --- |
+| Telemetry/flow/detection | checksum, source identity, flow facts/features, model/policy evidence | ingestion status/progress/error until terminal |
+| Alert | detection/evidence/reasons/explanation | review status, verdict, `updated_at` |
+| Group/hypothesis | members, policy/template evidence, observed event window | controlled triage/status transition |
+| Case | hypothesis/evidence snapshot and policy | assignment, status, verdict; notes/references append |
+| Feedback/export | object/provenance and versioned inventory | permitted correction is audited |
+| Runtime | pinned snapshot and completed output ledger | lease, counters, progress, pause/recovery/terminal status |
+| Selection/frozen evidence | full version/checksum identity | immutable; repeat identity rejected |
+
+`first_seen`/`last_seen` and group windows are observed event time.
+`created_at`/`updated_at`, job leases, attempts, audits, notes, and feedback are
+lifecycle UTC. Stable identities exclude wall-clock time where determinism
+requires it.
 
 ## Phase 4–11 artifact integrity
 
@@ -157,6 +188,13 @@ version-4 SQLite databases are upgraded additively through ordered migrations
 and retain all version records and existing rows. Repeated initialization is idempotent. Unknown versions,
 unversioned non-empty databases, and unsupported migration dialects fail closed.
 No destructive or rollback-by-deletion migration is attempted.
+
+The prototype has no automatic retention, deletion, or cascade-cleanup service.
+Operators must stop processes, preserve evidence, checkpoint SQLite WAL, and
+review artifacts before manual removal. The final sample database is generated
+only in the ignored release directory: it uses controlled samples, closes and
+checkpoints connections, passes `PRAGMA integrity_check`, records schema/row
+counts/checksum, and is not user data, benchmark evidence, or a production DB.
 
 ## SQLite behavior
 

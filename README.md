@@ -2,7 +2,7 @@
 
 **Design and Implementation of an Autonomous Threat Hunting System Using Machine Learning**
 
-AegisHunt is a defensive research prototype that will turn network-flow and
+AegisHunt is a defensive research prototype that turns network-flow and
 structured security telemetry into explainable detections, correlated alerts,
 investigation hypotheses, and analyst-managed cases. It is intended to
 demonstrate a complete threat-hunting lifecycle rather than only a classifier.
@@ -22,8 +22,9 @@ Phases 0–13 are complete and their annotated checkpoints remain immutable.
 Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is merged as
 `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; its final source-branch Head was
 `5b183a53d76aaa72807200e6d54793e9c0a4fcda`. Annotated
-`phase-13-complete` peels to the canonical Phase 13 merge commit. Phase 14 is
-**Not started**, and `phase/14-final-delivery` has not been created. Validation PR
+`phase-13-complete` peels to the canonical Phase 13 merge commit. Phase 14 final
+delivery is **In progress** on `phase/14-final-delivery`; no Phase 14 completion
+or release Tag exists. Validation PR
 [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged. The
 subsequent Phase 12 demo-readiness corrective keeps global model pointers
 separate from immutable runtime-job effective models, exposes the effective
@@ -80,7 +81,7 @@ evaluation/test/holdout or unknown provenance is excluded. No operation trains,
 activates, or replaces a model. Phase 11 reuses the existing verified models and
 policies; it does not train, select, activate, or replace them.
 
-## Planned architecture
+## Architecture summary
 
 The system is a modular monolith with a FastAPI backend, Streamlit frontend,
 Typer CLI, lightweight background processing, SQLite default storage, and a
@@ -89,18 +90,29 @@ live capture, root privileges, or a fixed network target. See
 [`docs/architecture.md`](docs/architecture.md) and the ADRs in
 [`docs/adr/`](docs/adr/).
 
-## Local development installation
+## Local installation
 
-Python 3.11 or newer is required.
+Python 3.11 or 3.12 is required. Build and install the final wheel without
+editable mode or `PYTHONPATH`:
 
 ```bash
-python3.11 -m venv .venv
+python3.12 -m venv .build-venv
+source .build-venv/bin/activate
+python -m pip install "build>=1.3,<2.0"
+python -m build
+
+python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install dist/aegishunt-1.0.0-py3-none-any.whl
+python -m pip check
 ```
 
 `pyproject.toml` is the dependency source of truth; no compatibility
-`requirements.txt` is maintained.
+`requirements.txt` is maintained. Editable installation is for contributors,
+not the release verification path. See
+[`docs/installation.md`](docs/installation.md), the
+[macOS](docs/installation_macos.md) and [Linux](docs/installation_linux.md)
+guides.
 
 ## Current commands
 
@@ -170,8 +182,8 @@ aegishunt runtime worker run --once
 aegishunt runtime workers list
 aegishunt runtime status
 aegishunt demo --help
-aegishunt demo run --sample-id phase12-demo-pcap --actor analyst --reason "controlled demonstration" --confirm
-aegishunt demo run --sample-id phase12-presentation-demo-pcap --actor analyst --reason "controlled presentation demonstration" --confirm
+aegishunt demo run --sample-id phase14-attack-like-pcap --actor analyst --reason "controlled final demonstration" --confirm
+aegishunt demo run --sample-id phase14-benign-like-pcap --actor analyst --reason "controlled final demonstration" --confirm
 aegishunt api
 aegishunt frontend
 ```
@@ -207,6 +219,34 @@ license for the operator and the selected CSE-CIC-IDS2018 benchmark remains a
 manual, checksum-recorded workflow. See
 [`docs/dataset_selection.md`](docs/dataset_selection.md) and
 [`docs/dataset_schema.md`](docs/dataset_schema.md).
+
+## Docker installation
+
+The final local Compose topology runs an idempotent initializer, one API, one
+worker, and one API-only Streamlit frontend as non-root UID 10001:
+
+```bash
+docker compose build
+docker compose run --rm init
+docker compose up -d api worker frontend
+```
+
+Open `http://127.0.0.1:8501`. Host ports remain loopback-only; containers use a
+private bridge, read-only root filesystems, dropped capabilities, and explicit
+named volumes. See [`docs/docker_deployment.md`](docs/docker_deployment.md).
+
+## Final sample and full demonstration
+
+The final sample assets are payload-free, documentation-address captures
+derived from aggregate profiles of the two user-supplied PCAPs. Raw uploads
+remain ignored and unchanged. Profile names are not ground truth, and the
+samples are never used to select models, calibration, thresholds, or policies.
+
+Run the explicit demo command shown above or follow
+[`docs/demo_guide.md`](docs/demo_guide.md) for the full path through flows, 43
+features, supervised/anomaly/fusion evidence, DetectionResult, alert,
+correlation, hypothesis, case, note, verdict, feedback, report, API, Streamlit,
+health, and restart. Opening a page never starts demo/training automatically.
 
 ## Supervised model workflow
 
@@ -358,7 +398,8 @@ database, repository, or model files directly. Empty and unavailable values are
 shown explicitly rather than replaced with fabricated zeros. Mutations require
 an explicit form, actor/reason attribution, and confirmation where applicable.
 
-With the API running, the packaged `phase12-demo-pcap` asset can be launched
+With the API running, the packaged `phase14-attack-like-pcap` or
+`phase14-benign-like-pcap` asset can be launched
 explicitly from Data Ingestion or the CLI. It uses isolated, checksummed
 demo-only artifacts, existing production services, no external network, no
 root privileges, and no live capture. Its synthetic results verify the local
@@ -391,6 +432,23 @@ The test command produces terminal coverage output and `coverage.xml`.
 Only one declared phase is developed at a time. Progress is tracked in
 [`docs/codex_progress.md`](docs/codex_progress.md).
 
+## Documentation index
+
+- [Installation](docs/installation.md), [macOS](docs/installation_macos.md),
+  [Linux](docs/installation_linux.md), [Docker](docs/docker_deployment.md), and
+  [troubleshooting](docs/troubleshooting.md)
+- [Architecture](docs/architecture.md), [data model](docs/data_model.md), and
+  [43-feature dictionary](docs/feature_dictionary.md)
+- [Model/policy cards](docs/model_cards.md),
+  [experiment protocol](docs/experiment_protocol.md),
+  [final experiment summary](docs/final_experiment_summary.md), and
+  [limitations](docs/limitations.md)
+- [Threat model](docs/threat_model.md), [Demo Guide](docs/demo_guide.md), and
+  [3–5 minute script](docs/demo_script_3_5_minutes.md)
+- [Thesis artifact index](docs/thesis/artifact_index.md),
+  [requirement traceability](docs/final_requirement_traceability.md), and
+  [acceptance report](docs/final_acceptance_report.md)
+
 ## Research-prototype disclaimer
 
 AegisHunt is not a production security product and must not be treated as an
@@ -399,3 +457,10 @@ perform unauthorized scanning, exploitation, credential attacks, unrestricted
 flooding, arbitrary command execution, firewall changes, or account disabling.
 Future detections and hypotheses will remain evidence-backed suggestions for
 human investigation.
+
+The repository currently has no declared open-source license file and no formal
+citation metadata. Do not infer reuse rights or invent a citation. Academic use
+should cite the project title and repository revision only after the author
+defines the required format. Support is limited to the documented local
+research boundary; use [Troubleshooting](docs/troubleshooting.md) and do not
+expose the application publicly.

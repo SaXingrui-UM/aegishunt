@@ -1,0 +1,44 @@
+order,name,data_type,description,calculation,minimum,maximum,empty_behavior,schema_version
+1,total_packets,integer,Packets observed in both directions.,forward + backward packets,0,,0,1.0.0
+2,total_bytes,integer,IP-layer bytes in both directions.,forward + backward bytes,0,,0,1.0.0
+3,forward_packets,integer,Packets matching the first packet direction.,forward count,0,,0,1.0.0
+4,backward_packets,integer,Packets opposite the first packet direction.,backward count,0,,0,1.0.0
+5,forward_bytes,integer,IP-layer bytes in the forward direction.,sum forward sizes,0,,0,1.0.0
+6,backward_bytes,integer,IP-layer bytes in the backward direction.,sum backward sizes,0,,0,1.0.0
+7,packets_per_second,number,Total packet rate over flow duration.,total_packets / duration; zero when duration is zero,0.0,,0.0,1.0.0
+8,bytes_per_second,number,Total IP-layer byte rate over flow duration.,total_bytes / duration; zero when duration is zero,0.0,,0.0,1.0.0
+9,forward_backward_packet_ratio,number,Forward packets divided by backward packets.,forward_packets / backward_packets; zero when backward is zero,0.0,,0.0,1.0.0
+10,forward_backward_byte_ratio,number,Forward bytes divided by backward bytes.,forward_bytes / backward_bytes; zero when backward is zero,0.0,,0.0,1.0.0
+11,mean_packet_size,number,Mean IP packet size.,population arithmetic mean,0.0,,0.0,1.0.0
+12,std_packet_size,number,Population standard deviation of IP packet sizes.,pstdev,0.0,,0.0,1.0.0
+13,min_packet_size,number,Smallest IP packet size.,minimum,0.0,,0.0,1.0.0
+14,max_packet_size,number,Largest IP packet size.,maximum,0.0,,0.0,1.0.0
+15,median_packet_size,number,Median IP packet size.,linear median,0.0,,0.0,1.0.0
+16,packet_size_q25,number,25th percentile IP packet size.,linear interpolation q=0.25,0.0,,0.0,1.0.0
+17,packet_size_q75,number,75th percentile IP packet size.,linear interpolation q=0.75,0.0,,0.0,1.0.0
+18,forward_mean_packet_size,number,Mean forward IP packet size.,forward arithmetic mean,0.0,,0.0,1.0.0
+19,backward_mean_packet_size,number,Mean backward IP packet size.,backward arithmetic mean; zero when absent,0.0,,0.0,1.0.0
+20,flow_duration,number,Seconds between earliest and latest packet.,max time - min time,0.0,,0.0,1.0.0
+21,mean_inter_arrival_time,number,Mean non-negative inter-arrival time in seconds.,mean of adjacent sorted timestamps,0.0,,0.0,1.0.0
+22,std_inter_arrival_time,number,Population standard deviation of inter-arrival times.,pstdev of adjacent sorted timestamps,0.0,,0.0,1.0.0
+23,min_inter_arrival_time,number,Minimum inter-arrival time.,minimum sorted IAT,0.0,,0.0,1.0.0
+24,max_inter_arrival_time,number,Maximum inter-arrival time.,maximum sorted IAT,0.0,,0.0,1.0.0
+25,median_inter_arrival_time,number,Median inter-arrival time.,linear median,0.0,,0.0,1.0.0
+26,iat_q25,number,25th percentile inter-arrival time.,linear interpolation q=0.25,0.0,,0.0,1.0.0
+27,iat_q75,number,75th percentile inter-arrival time.,linear interpolation q=0.75,0.0,,0.0,1.0.0
+28,forward_mean_iat,number,Mean inter-arrival time among forward packets.,mean adjacent sorted forward timestamps,0.0,,0.0,1.0.0
+29,backward_mean_iat,number,Mean inter-arrival time among backward packets.,mean adjacent sorted backward timestamps; zero when unavailable,0.0,,0.0,1.0.0
+30,syn_count,integer,TCP packets with SYN set.,bit count across packets,0,,0,1.0.0
+31,ack_count,integer,TCP packets with ACK set.,bit count across packets,0,,0,1.0.0
+32,fin_count,integer,TCP packets with FIN set.,bit count across packets,0,,0,1.0.0
+33,rst_count,integer,TCP packets with RST set.,bit count across packets,0,,0,1.0.0
+34,psh_count,integer,TCP packets with PSH set.,bit count across packets,0,,0,1.0.0
+35,urg_count,integer,TCP packets with URG set.,bit count across packets,0,,0,1.0.0
+36,syn_ratio,number,Fraction of packets with SYN set.,syn_count / total_packets,0.0,1.0,0.0,1.0.0
+37,rst_ratio,number,Fraction of packets with RST set.,rst_count / total_packets,0.0,1.0,0.0,1.0.0
+38,ack_ratio,number,Fraction of packets with ACK set.,ack_count / total_packets,0.0,1.0,0.0,1.0.0
+39,completed_handshake_indicator,integer,"Observed SYN, reverse SYN+ACK, then forward ACK in capture order.",bounded evidence indicator; not a full TCP state-machine proof,0,1,0 for non-TCP or incomplete evidence,1.0.0
+40,asymmetry_score,number,Absolute directional byte imbalance.,abs(forward_bytes - backward_bytes) / total_bytes,0.0,1.0,0.0,1.0.0
+41,connection_burst_score,number,Largest share of packets observed in any one-second window.,max one-second-window packet count / total_packets,0.0,1.0,0.0,1.0.0
+42,periodicity_score,number,Regularity proxy from inter-arrival coefficient of variation.,1 / (1 + IAT coefficient of variation); zero with fewer than three IATs,0.0,1.0,0.0,1.0.0
+43,failed_connection_indicator,integer,TCP reset or incomplete SYN evidence indicator.,"1 when TCP has RST, or SYN without the bounded handshake indicator",0,1,0 for non-TCP,1.0.0

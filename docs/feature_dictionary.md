@@ -2,8 +2,8 @@
 
 ## Contract
 
-Phase 3 feature schema version is `1.0.0`. The canonical machine-readable source
-is [`artifacts/feature_schema.json`](../artifacts/feature_schema.json). Its explicit
+Phase 3 feature schema version is `1.0.0`. The final machine-readable export is
+[`docs/assets/feature_schema.json`](assets/feature_schema.json). Its explicit
 43-feature order is mandatory for future training and inference; callers must not
 sort names or infer order from unrelated mappings. `behavioral_features` contains
 only finite integers/floats. NaN, Infinity, booleans, strings, and nested values
@@ -20,6 +20,15 @@ excludes link-layer bytes. Forward is the first decoded packet's direction. Timi
 statistics sort captured timestamps, while TCP handshake evidence retains capture
 arrival order. Population standard deviation and linear-interpolation quantiles
 are used.
+
+Every row is a training/inference input in the shown order and may also support
+non-causal reason/explanation evidence. Count/byte units are packets/IP-layer
+bytes, timing/rates are seconds or per-second, and ratios/indicators are
+unitless. Packet/flow state is the only feature source. First-packet direction
+applies to directional fields; non-directional fields combine both directions.
+All values must be finite. Empty denominators, absent directions, missing IATs,
+and single-packet duration/IAT use the documented zero behavior, never
+NaN/Infinity. TCP-only rows are zero for non-TCP flows.
 
 ## Volume features
 
@@ -69,7 +78,12 @@ are used.
 
 | Order | Feature | Type/range | Definition |
 | ---: | --- | --- | --- |
-| 30–35 | `syn_count`, `ack_count`, `fin_count`, `rst_count`, `psh_count`, `urg_count` | integer, >= 0 | Number of packets with each flag bit; all zero for non-TCP |
+| 30 | `syn_count` | integer, >= 0 | Number of packets with SYN; zero for non-TCP |
+| 31 | `ack_count` | integer, >= 0 | Number of packets with ACK; zero for non-TCP |
+| 32 | `fin_count` | integer, >= 0 | Number of packets with FIN; zero for non-TCP |
+| 33 | `rst_count` | integer, >= 0 | Number of packets with RST; zero for non-TCP |
+| 34 | `psh_count` | integer, >= 0 | Number of packets with PSH; zero for non-TCP |
+| 35 | `urg_count` | integer, >= 0 | Number of packets with URG; zero for non-TCP |
 | 36 | `syn_ratio` | number, 0–1 | SYN count divided by all flow packets |
 | 37 | `rst_ratio` | number, 0–1 | RST count divided by all flow packets |
 | 38 | `ack_ratio` | number, 0–1 | ACK count divided by all flow packets |
@@ -92,3 +106,12 @@ visibility can change it.
 `short_connection_ratio` require cross-flow entity/window state. They are not in
 schema `1.0.0` and are not filled with constants. Dataset/window or correlation
 phases must define their evidence boundary before adding them in a new schema version.
+
+## Explicit exclusions and consistency
+
+Metadata, IDs, labels, ground-truth label, attack family, source file,
+provenance, actor, verdict, case/alert status, and model output are not
+features. Runtime schema, generated JSON, and generated CSV contain exactly 43
+unique names in this order. Training, inference, model bundles, and explanation
+reference profiles bind schema `1.0.0` and fail closed on missing, extra,
+duplicated, or reordered fields.

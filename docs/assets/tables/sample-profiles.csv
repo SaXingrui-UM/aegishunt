@@ -1,0 +1,3 @@
+filename,sha256,size_bytes,observed_packet_count,observed_flow_count,observed_duration_seconds,provenance,label_status
+traffic_attack.pcap,5bf949b7bed450968d220d8da26dbeea2009c2e4b68772d3b45c00e760f68ad5,89711,1017,42,59.0,user supplied; acquisition provenance and license not established,unverified presentation profile; not ground truth
+traffic_benign.pcap,3ba50eb01e9727b7e23312e119d568f095616fb7fd504fb522b78f00ecde6800,102675,571,51,88.0,user supplied; acquisition provenance and license not established,unverified presentation profile; not ground truth
