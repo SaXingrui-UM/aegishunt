@@ -245,6 +245,7 @@ def _build_sample_database(
         database = Path(temporary) / "sample.sqlite3"
         relative_root = temporary_root.relative_to(project) / "demo-artifacts"
         environment = {
+            "AEGISHUNT_CONFIG": str(project / "configs/final-delivery.yaml"),
             "AEGISHUNT_DATABASE_URL": f"sqlite:///{database}",
             "AEGISHUNT_WEB__DEMO_ARTIFACT_ROOT": relative_root.as_posix(),
             "AEGISHUNT_WEB__DEMO_NAMESPACE": "phase14-controlled-demo",

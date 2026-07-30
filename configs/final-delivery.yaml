@@ -1,0 +1,14 @@
+application:
+  environment: final-delivery-local-research
+
+web:
+  demo_sample_ids:
+    - phase14-attack-like-pcap
+    - phase14-benign-like-pcap
+  demo_dataset_version: 1.0.0
+  demo_replay_speed: 1.0
+  demo_artifact_root: artifacts/demo/phase14
+  demo_namespace: phase14-controlled-demo
+  demo_operation_version: 1.0.0
+  demo_worker_id: phase14-demo-worker
+  web_worker_id_prefix: phase14-web-worker

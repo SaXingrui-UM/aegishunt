@@ -117,6 +117,7 @@ guides.
 ## Current commands
 
 ```bash
+export AEGISHUNT_CONFIG=configs/final-delivery.yaml
 aegishunt --help
 aegishunt doctor
 aegishunt init-db

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import yaml
 
+from aegishunt.config import load_settings
 from scripts.validate_phase14_delivery import validate
 
 ROOT = Path(__file__).parents[2]
@@ -17,8 +18,21 @@ def test_phase14_delivery_validator_passes_committed_surface() -> None:
         "application_version": "1.0.0",
         "feature_count": 43,
         "sample_count": 2,
-        "required_file_count": 34,
+        "required_file_count": 35,
     }
+
+
+def test_final_delivery_config_does_not_rewrite_historical_default() -> None:
+    historical = load_settings(ROOT / "configs/application.yaml")
+    final_delivery = load_settings(ROOT / "configs/final-delivery.yaml")
+
+    assert historical.web.demo_sample_ids == ("phase12-demo-pcap",)
+    assert historical.web.demo_namespace == "phase12-controlled-demo"
+    assert final_delivery.web.demo_sample_ids == (
+        "phase14-attack-like-pcap",
+        "phase14-benign-like-pcap",
+    )
+    assert final_delivery.web.demo_namespace == "phase14-controlled-demo"
 
 
 def test_phase14_compose_keeps_application_non_root_and_loopback_only() -> None:

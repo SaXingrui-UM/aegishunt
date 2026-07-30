@@ -212,7 +212,7 @@ jobs:
           cp -R data/sample "${workspace}/data/"
           cp pyproject.toml "${workspace}/"
           echo "AEGISHUNT_CLEAN_WORKSPACE=${workspace}" >> "$GITHUB_ENV"
-          echo "AEGISHUNT_CONFIG=${workspace}/configs/application.yaml" >> "$GITHUB_ENV"
+          echo "AEGISHUNT_CONFIG=${workspace}/configs/final-delivery.yaml" >> "$GITHUB_ENV"
           echo "AEGISHUNT_DATABASE_URL=sqlite:///${workspace}/aegishunt.sqlite3" >> "$GITHUB_ENV"
           echo "AEGISHUNT_INGESTION__SAMPLE_ROOT=${workspace}/data/sample" >> "$GITHUB_ENV"
 

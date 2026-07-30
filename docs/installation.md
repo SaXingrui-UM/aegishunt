@@ -18,13 +18,12 @@ From a clean repository checkout:
 ```bash
 python3.12 -m venv .build-venv
 source .build-venv/bin/activate
-python -m pip install -e ".[dev]"
+python -m pip install "build>=1.3,<2.0" "twine>=6.1,<7.0"
 python -m build
 python -m twine check dist/*
 ```
 
-Editable installation above is for the build workspace only. The supported
-delivery installation is the resulting wheel:
+The supported delivery installation is the resulting wheel:
 
 ```bash
 python3.12 -m venv .venv
@@ -36,6 +35,7 @@ python -m pip check
 Do not set `PYTHONPATH`. From the release bundle's `project/` directory:
 
 ```bash
+export AEGISHUNT_CONFIG=configs/final-delivery.yaml
 aegishunt --help
 aegishunt init-db
 aegishunt doctor
@@ -63,6 +63,7 @@ The final delivery uses payload-free, documentation-address derivatives of the
 two user-supplied PCAP aggregate profiles:
 
 ```bash
+export AEGISHUNT_CONFIG=configs/final-delivery.yaml
 aegishunt demo status
 aegishunt demo run \
   --sample-id phase14-attack-like-pcap \

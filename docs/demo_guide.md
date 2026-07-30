@@ -70,6 +70,7 @@ silently duplicate committed outputs.
 ## Explicit CLI demo
 
 ```bash
+export AEGISHUNT_CONFIG=configs/final-delivery.yaml
 aegishunt demo status
 aegishunt demo run \
   --sample-id phase14-attack-like-pcap \

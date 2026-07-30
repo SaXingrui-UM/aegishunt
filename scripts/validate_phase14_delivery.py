@@ -22,6 +22,7 @@ REQUIRED_FILES = (
     "Dockerfile",
     "compose.yaml",
     "configs/docker.yaml",
+    "configs/final-delivery.yaml",
     "data/sample/phase14-attack-like.pcap",
     "data/sample/phase14-benign-like.pcap",
     "data/sample/phase14-sample-provenance.json",

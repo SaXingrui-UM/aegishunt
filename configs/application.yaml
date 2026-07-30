@@ -100,12 +100,11 @@ web:
   maximum_json_upload_bytes: 10485760
   maximum_multipart_overhead_bytes: 1048576
   demo_sample_ids:
-    - phase14-attack-like-pcap
-    - phase14-benign-like-pcap
+    - phase12-demo-pcap
   demo_dataset_version: 1.0.0
   demo_replay_speed: 1.0
-  demo_artifact_root: artifacts/demo/phase14
-  demo_namespace: phase14-controlled-demo
-  demo_operation_version: 1.0.0
-  demo_worker_id: phase14-demo-worker
-  web_worker_id_prefix: phase14-web-worker
+  demo_artifact_root: artifacts/demo/phase12
+  demo_namespace: phase12-controlled-demo
+  demo_operation_version: 1.1.0
+  demo_worker_id: phase12-demo-worker
+  web_worker_id_prefix: phase12-web-worker
