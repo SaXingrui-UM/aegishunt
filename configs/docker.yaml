@@ -1,0 +1,112 @@
+application:
+  environment: docker-local-research
+
+database:
+  url: sqlite:///runtime/data/aegishunt.db
+  echo: false
+  busy_timeout_ms: 5000
+  enable_wal: true
+  enable_foreign_keys: true
+
+ingestion:
+  storage_root: runtime/data/raw
+  sample_root: data/sample
+  max_upload_bytes: 52428800
+  chunk_size_bytes: 65536
+  max_records: 100000
+  max_json_record_bytes: 1048576
+  max_json_nesting_depth: 64
+
+flows:
+  idle_timeout_seconds: 60.0
+  active_timeout_seconds: 300.0
+  max_packets_per_flow: 10000
+  max_active_flows: 100000
+  max_packet_bytes: 262144
+  max_pcapng_interfaces: 256
+
+datasets:
+  registry_path: configs/datasets/registry.yaml
+  label_mapping_root: configs/label_mappings
+  raw_root: runtime/data/datasets/raw
+  interim_root: runtime/data/datasets/interim
+  processed_root: runtime/data/datasets/processed
+  reports_root: runtime/reports/datasets
+  max_download_bytes: 10737418240
+  max_archive_members: 10000
+  max_extracted_bytes: 21474836480
+  near_duplicate_tolerance: 0.000001
+  demo_seed: 4204
+  train_ratio: 0.6
+  validation_ratio: 0.2
+  test_ratio: 0.2
+
+supervised:
+  training_config_path: configs/models/supervised.yaml
+  artifact_root: runtime/artifacts/models/supervised
+  reports_root: runtime/reports/models/supervised
+
+anomaly:
+  training_config_path: configs/models/anomaly.yaml
+  artifact_root: runtime/artifacts/models/anomaly
+  reports_root: runtime/reports/models/anomaly
+
+detection:
+  risk_policy_path: configs/models/detection.yaml
+  explanation_artifact_root: runtime/artifacts/explainability
+  local_explanation_top_k: 5
+  local_explanation_max_features: 43
+
+correlation:
+  policy_path: configs/correlation.yaml
+
+case_feedback:
+  policy_path: configs/case_feedback.yaml
+
+runtime:
+  policy_path: configs/runtime.yaml
+  fusion_policy_root: runtime/artifacts/models/fusion
+  fusion_evaluation_root: runtime/reports/models/fusion
+  fusion_evaluation_experiment_id: phase-07-controlled-fusion-001
+
+web:
+  container_network_enabled: true
+  api_host: 0.0.0.0
+  api_port: 8000
+  docs_enabled: true
+  api_base_url: http://api:8000
+  allowed_origins:
+    - http://127.0.0.1:8501
+    - http://localhost:8501
+  request_id_header: X-Request-ID
+  actor_header: X-AegisHunt-Actor
+  frontend_origin: http://127.0.0.1:8501
+  request_id_max_length: 64
+  default_page_size: 50
+  maximum_page_size: 100
+  request_timeout_seconds: 15.0
+  upload_chunk_size_bytes: 65536
+  auto_refresh_enabled: true
+  auto_refresh_seconds: 5
+  minimum_refresh_seconds: 1
+  maximum_refresh_seconds: 300
+  sample_mode_enabled: true
+  maximum_table_rows: 50
+  default_actor: local-analyst
+  page_title: AegisHunt
+  safe_download_types:
+    - case_report
+  maximum_pcap_upload_bytes: 52428800
+  maximum_csv_upload_bytes: 10485760
+  maximum_json_upload_bytes: 10485760
+  maximum_multipart_overhead_bytes: 1048576
+  demo_sample_ids:
+    - phase14-attack-like-pcap
+    - phase14-benign-like-pcap
+  demo_dataset_version: 1.0.0
+  demo_replay_speed: 1000.0
+  demo_artifact_root: runtime/artifacts/demo/phase14
+  demo_namespace: phase14-controlled-demo
+  demo_operation_version: 1.0.0
+  demo_worker_id: phase14-demo-worker
+  web_worker_id_prefix: phase14-web-worker

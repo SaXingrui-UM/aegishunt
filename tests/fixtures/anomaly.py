@@ -27,6 +27,7 @@ REGISTERED_DATASET_MANIFEST_SHA = (
     "badf8c045c29fa02299eb55f8a1cd7deb15d92aec40c0e80cd6ea4a133d98d0d"
 )
 REGISTERED_DATASET_GIT_COMMIT = "352205f92e81f82a7878f2cb8799c6e6e3b7b002"
+REGISTERED_DATASET_TOOL_VERSION = "0.1.0"
 
 
 def predefined_sample_anomaly() -> tuple[float, ...]:
@@ -58,6 +59,7 @@ def anomaly_corrective_service(
     manifest_path = dataset_report_root / "dataset_manifest.json"
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     payload["git_commit_sha"] = REGISTERED_DATASET_GIT_COMMIT
+    payload["tool_version"] = REGISTERED_DATASET_TOOL_VERSION
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -85,6 +87,7 @@ def anomaly_lof_candidate_service(
     manifest_path = dataset_report_root / "dataset_manifest.json"
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     payload["git_commit_sha"] = REGISTERED_DATASET_GIT_COMMIT
+    payload["tool_version"] = REGISTERED_DATASET_TOOL_VERSION
     manifest_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping, MutableMapping
+from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -15,6 +16,7 @@ from aegishunt.errors import ConfigurationError
 
 DEFAULT_CONFIG_PATH = Path("configs/application.yaml")
 ENV_PREFIX = "AEGISHUNT_"
+CONTAINER_WILDCARD_HOST = str(IPv4Address(0))
 
 
 class ApplicationSection(BaseModel):
@@ -180,6 +182,7 @@ class WebSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    container_network_enabled: bool = False
     api_host: str = "127.0.0.1"
     api_port: int = Field(default=8_000, ge=1, le=65_535)
     docs_enabled: bool = True
@@ -243,20 +246,19 @@ class WebSettings(BaseModel):
     @field_validator("api_base_url")
     @classmethod
     def validate_api_base_url(cls, value: str) -> str:
-        """Accept only an explicit loopback HTTP API endpoint."""
+        """Normalize one credential-free HTTP API endpoint."""
 
         normalized = value.rstrip("/")
         parsed = urlsplit(normalized)
         if (
             parsed.scheme not in {"http", "https"}
-            or parsed.hostname not in {"127.0.0.1", "localhost"}
             or parsed.username is not None
             or parsed.password is not None
             or parsed.path
             or parsed.query
             or parsed.fragment
         ):
-            raise ValueError("web API base URL must be a credential-free loopback URL")
+            raise ValueError("web API base URL must be a credential-free origin")
         return normalized
 
     @field_validator("allowed_origins", "frontend_origin")
@@ -282,11 +284,11 @@ class WebSettings(BaseModel):
     @field_validator("api_host")
     @classmethod
     def validate_api_host(cls, value: str) -> str:
-        """Keep the local research API bound to a loopback interface."""
+        """Normalize the API bind interface before joint deployment validation."""
 
         normalized = value.strip().lower()
-        if normalized not in {"127.0.0.1", "localhost"}:
-            raise ValueError("web API host must be a loopback interface")
+        if normalized not in {"127.0.0.1", "localhost", CONTAINER_WILDCARD_HOST}:
+            raise ValueError("web API host must be loopback or the container wildcard")
         return normalized
 
     @field_validator("safe_download_types")
@@ -316,7 +318,7 @@ class WebSettings(BaseModel):
 
     @model_validator(mode="after")
     def validate_web_bounds(self) -> WebSettings:
-        """Keep configurable pagination, refresh, and upload bounds coherent."""
+        """Keep bounds coherent and container-only network exceptions explicit."""
 
         if self.default_page_size > self.maximum_page_size:
             raise ValueError("default page size must not exceed the maximum page size")
@@ -330,6 +332,18 @@ class WebSettings(BaseModel):
             <= self.maximum_refresh_seconds
         ):
             raise ValueError("auto-refresh interval must be within configured bounds")
+        parsed_api = urlsplit(self.api_base_url)
+        api_hostname = parsed_api.hostname
+        if self.container_network_enabled:
+            if self.api_host != CONTAINER_WILDCARD_HOST:
+                raise ValueError("container API host must bind the container wildcard")
+            if api_hostname != "api":
+                raise ValueError("container frontend must use the declared API service")
+        elif (
+            self.api_host not in {"127.0.0.1", "localhost"}
+            or api_hostname not in {"127.0.0.1", "localhost"}
+        ):
+            raise ValueError("local web endpoints must use loopback interfaces")
         return self
 
 

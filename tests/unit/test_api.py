@@ -21,7 +21,7 @@ def test_health_endpoint_initializes_empty_database(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "application": "AegisHunt",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "status": "ok",
         "environment": "test",
         "database_status": "ready",

@@ -1,0 +1,105 @@
+name: aegishunt
+
+x-aegishunt-common: &aegishunt-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: aegishunt:1.0.0
+  user: "10001:10001"
+  init: true
+  working_dir: /opt/aegishunt
+  environment:
+    AEGISHUNT_CONFIG: /opt/aegishunt/configs/docker.yaml
+  networks:
+    - aegishunt-internal
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=64m
+  volumes:
+    - aegishunt-data:/opt/aegishunt/runtime/data
+    - aegishunt-artifacts:/opt/aegishunt/runtime/artifacts
+    - aegishunt-reports:/opt/aegishunt/runtime/reports
+
+services:
+  init:
+    <<: *aegishunt-common
+    command: ["init-db"]
+    restart: "no"
+
+  api:
+    <<: *aegishunt-common
+    command: ["api", "--host", "0.0.0.0", "--port", "8000", "--no-reload"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 10s
+    stop_grace_period: 20s
+
+  worker:
+    <<: *aegishunt-common
+    command:
+      - runtime
+      - worker
+      - run
+      - --forever
+      - --worker-id
+      - phase14-compose-worker
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    stop_grace_period: 30s
+
+  frontend:
+    <<: *aegishunt-common
+    command:
+      - frontend
+      - --address
+      - 0.0.0.0
+      - --port
+      - "8501"
+      - --headless
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8501:8501"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health',
+          timeout=3).read()
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 15s
+    stop_grace_period: 20s
+
+networks:
+  aegishunt-internal:
+    driver: bridge
+
+volumes:
+  aegishunt-data:
+  aegishunt-artifacts:
+  aegishunt-reports:

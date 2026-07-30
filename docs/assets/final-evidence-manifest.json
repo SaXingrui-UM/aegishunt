@@ -1,0 +1,73 @@
+{
+  "builder_order": [
+    "python scripts/build_final_figures.py",
+    "PYTHONPATH=src python scripts/build_final_tables.py"
+  ],
+  "evidence_boundaries": [
+    "missing or unavailable metrics are never converted to zero",
+    "performance values are development-host measurements, not an SLA",
+    "controlled results are not a public benchmark or production validation",
+    "sample profile names are not verified ground-truth labels"
+  ],
+  "outputs": [
+    {
+      "path": "docs/assets/figures/phase13-component-latency.png",
+      "sha256": "72c221612948ee64151318eca842cfe96eecfa996d9712e5dc69bb9a9855e966",
+      "size_bytes": 52058
+    },
+    {
+      "path": "docs/assets/figures/phase14-uploaded-sample-profiles.png",
+      "sha256": "c688d80e489391fdce92db935aa4bf77fb9aed96917877fae9c7a632abc82b25",
+      "size_bytes": 47774
+    },
+    {
+      "path": "docs/assets/tables/feature-schema.csv",
+      "sha256": "4aefaf924f65fac478d46909384d5de44c278dd8ec3be19452e99ab084c2ad17",
+      "size_bytes": 4898
+    },
+    {
+      "path": "docs/assets/tables/performance-components.csv",
+      "sha256": "a9db9be6abead0952905c312af3c7742f81511ca9c44376e99d2ea7101d89b4f",
+      "size_bytes": 1963
+    },
+    {
+      "path": "docs/assets/tables/phase13-security-dispositions.csv",
+      "sha256": "af9e94fd033c40c22f346a881980dad142fa615270b0d8bef604ae3c64453309",
+      "size_bytes": 250
+    },
+    {
+      "path": "docs/assets/tables/robustness-summary.csv",
+      "sha256": "bd2336ba29c7521a8e70b42323fe3db0263d678ce5ba7b3bf67964bf1e04d301",
+      "size_bytes": 77
+    },
+    {
+      "path": "docs/assets/tables/sample-profiles.csv",
+      "sha256": "1ed2673357ffb60bdb5620152ebde53b067249963c97ad07c3161c00644bb751",
+      "size_bytes": 559
+    },
+    {
+      "path": "docs/assets/feature_schema.json",
+      "sha256": "ab0c48e4087a72b4c6f0b8ea246eeaab4a4c787db448ee7b2caf42f34bb61088",
+      "size_bytes": 11694
+    }
+  ],
+  "schema_version": "1.0.0",
+  "sources": [
+    {
+      "path": "reports/hardening/phase-13/performance-v1.1/benchmark-results.json",
+      "sha256": "57992a0a98c2fc14810b9936b04e31413f52b5e1cd96d0eaf218ab0aae5102ee"
+    },
+    {
+      "path": "reports/hardening/phase-13/robustness/robustness-results.json",
+      "sha256": "efca9fb2ff76f41ed6b3611902a7a63487e9451bcc11e436ab10ee7d6c3a1630"
+    },
+    {
+      "path": "configs/hardening/phase-13-security-findings.json",
+      "sha256": "5108d3a424e0cf160c497394912fecb29e04685c4df8e1365e22ddf2851b88d0"
+    },
+    {
+      "path": "data/sample/phase14-sample-provenance.json",
+      "sha256": "438a973d86d08869117e660c1fad47cee212e355d7b33d83747e00bc25f5cb20"
+    }
+  ]
+}

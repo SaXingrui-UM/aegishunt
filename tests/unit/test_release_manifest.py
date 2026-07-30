@@ -1,0 +1,151 @@
+"""Exact-inventory release-manifest regression tests."""
+
+from __future__ import annotations
+
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+from aegishunt.delivery.release_manifest import (
+    ReleaseManifestError,
+    build_release_manifest,
+    verify_release_bundle,
+    write_release_manifest,
+)
+from scripts import build_release_bundle
+
+
+def _bundle(tmp_path: Path) -> Path:
+    root = tmp_path / "release"
+    (root / "project").mkdir(parents=True)
+    (root / "project/README.md").write_text("reviewed\n", encoding="utf-8")
+    manifest = build_release_manifest(
+        root,
+        git_commit="a" * 40,
+        generated_at="2026-07-30T00:00:00+00:00",
+        database_schema=5,
+        demo_models=(),
+    )
+    write_release_manifest(root, manifest)
+    return root
+
+
+def test_release_manifest_verifies_exact_inventory(tmp_path: Path) -> None:
+    root = _bundle(tmp_path)
+    payload = verify_release_bundle(root)
+
+    assert payload["application_version"] == "1.0.0"
+    assert payload["artifact_inventory"][0]["path"] == "project/README.md"
+
+
+@pytest.mark.parametrize("mutation", ["corrupt", "missing", "extra"])
+def test_release_manifest_rejects_inventory_mutation(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    root = _bundle(tmp_path)
+    if mutation == "corrupt":
+        (root / "project/README.md").write_text("changed\n", encoding="utf-8")
+    elif mutation == "missing":
+        (root / "project/README.md").unlink()
+    else:
+        (root / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
+
+    with pytest.raises(ReleaseManifestError):
+        verify_release_bundle(root)
+
+
+def test_release_manifest_rejects_unsafe_or_duplicate_declared_paths(
+    tmp_path: Path,
+) -> None:
+    root = _bundle(tmp_path)
+    path = root / "release-manifest.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["artifact_inventory"][0]["path"] = "../outside"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ReleaseManifestError, match="unsafe or duplicated"):
+        verify_release_bundle(root)
+
+
+def test_release_manifest_rejects_symlink(tmp_path: Path) -> None:
+    root = _bundle(tmp_path)
+    target = tmp_path / "outside"
+    target.write_text("outside\n", encoding="utf-8")
+    (root / "linked").symlink_to(target)
+
+    with pytest.raises(ReleaseManifestError, match="symlink"):
+        verify_release_bundle(root)
+
+
+def test_release_manifest_refuses_manifest_overwrite(tmp_path: Path) -> None:
+    root = _bundle(tmp_path)
+    with pytest.raises(ReleaseManifestError, match="already exists"):
+        write_release_manifest(root, {})
+
+
+def test_release_copy_defaults_to_deny_for_unlisted_pcap(tmp_path: Path) -> None:
+    source = tmp_path / "traffic_attack.pcap"
+    destination = tmp_path / "release" / source.name
+    source.write_bytes(b"unreviewed source capture")
+
+    build_release_bundle._copy_file(source, destination)
+
+    assert not destination.exists()
+
+
+def test_release_copy_allows_only_named_reviewed_sample_pcap(tmp_path: Path) -> None:
+    source = tmp_path / "phase14-attack-like.pcap"
+    destination = tmp_path / "release" / source.name
+    source.write_bytes(b"reviewed controlled sample")
+
+    build_release_bundle._copy_file(source, destination)
+
+    assert destination.read_bytes() == source.read_bytes()
+
+
+def test_demo_identity_inventory_includes_verified_risk_policy(
+    tmp_path: Path,
+) -> None:
+    for relative, payload in (
+        (
+            "models/supervised/12.0.0/manifest.json",
+            {"model_id": "supervised", "model_version": "12.0.0"},
+        ),
+        (
+            "models/anomaly/1.1.0-candidate/manifest.json",
+            {"model_id": "anomaly", "model_version": "1.1.0-candidate"},
+        ),
+        (
+            "models/fusion/1.0.0/fusion_policy_manifest.json",
+            {"policy_id": "fusion", "policy_version": "1.0.0"},
+        ),
+        (
+            "models/explainability/1.0.0/manifest.json",
+            {"artifact_id": "explanation", "artifact_version": "1.0.0"},
+        ),
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    risk_path = tmp_path / "configs/detection.yaml"
+    risk_path.parent.mkdir(parents=True)
+    shutil.copyfile(
+        Path(__file__).parents[2] / "configs/models/detection.yaml",
+        risk_path,
+    )
+
+    identities = build_release_bundle._demo_identities(tmp_path)
+
+    assert [identity["kind"] for identity in identities] == [
+        "supervised",
+        "anomaly",
+        "fusion",
+        "explainability",
+        "risk",
+    ]
+    assert identities[-1]["manifest_sha256"] == (
+        build_release_bundle.load_risk_policy(risk_path).configuration_checksum
+    )

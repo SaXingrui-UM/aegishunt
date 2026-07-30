@@ -62,6 +62,8 @@ def test_upload_status_failure_and_sample_end_to_end(tmp_path: Path) -> None:
             "phase2-flow-csv",
             "phase12-demo-pcap",
             "phase12-presentation-demo-pcap",
+            "phase14-attack-like-pcap",
+            "phase14-benign-like-pcap",
         }
         sample_job = client.post("/ingestion/samples/phase2-flow-csv")
         assert sample_job.status_code == 201

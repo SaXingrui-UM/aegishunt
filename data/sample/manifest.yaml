@@ -28,3 +28,17 @@ samples:
     checksum: 0d272ac98660eb119cded8be194a513c2db82b475d4cce982a120eb210a8ab51
     description: Small controlled IPv4/IPv6 TCP/UDP/ICMP presentation capture.
     synthetic: true
+  - sample_id: phase14-attack-like-pcap
+    filename: phase14-attack-like.pcap
+    source_type: pcap
+    content_type: application/vnd.tcpdump.pcap
+    checksum: efb3c6334ba5d484b1662fd34df748d90e5ee1208a5edda00adfbd76d7feaca8
+    description: Payload-free documentation-address sample derived from the uploaded attack-like capture aggregate profile; not ground truth.
+    synthetic: true
+  - sample_id: phase14-benign-like-pcap
+    filename: phase14-benign-like.pcap
+    source_type: pcap
+    content_type: application/vnd.tcpdump.pcap
+    checksum: 5c93e494e6ebca226d22f4a0b888bda20d2e178c92f6096b40df0dfa75f6a61a
+    description: Payload-free documentation-address sample derived from the uploaded benign-like capture aggregate profile; not ground truth.
+    synthetic: true
