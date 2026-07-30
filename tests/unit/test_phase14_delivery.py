@@ -59,3 +59,15 @@ def test_phase14_dockerfile_uses_wheel_and_non_root_runtime() -> None:
     assert "pip install --no-cache-dir /tmp/*.whl" in dockerfile
     assert "USER 10001:10001" in dockerfile
     assert "PYTHONPATH" not in dockerfile
+
+
+def test_phase14_docker_gate_runs_full_analyst_feedback_chain() -> None:
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert '"/demo/sample"' in workflow
+    assert '"create_case": True' in workflow
+    assert 'f"/cases/{case_id}/notes"' in workflow
+    assert '"verdict": "needs_more_information"' in workflow
+    assert 'f"/cases/{case_id}/feedback"' in workflow
+    assert 'case["notes"] and case["feedback"]' in workflow
+    assert "--create-case" not in workflow
