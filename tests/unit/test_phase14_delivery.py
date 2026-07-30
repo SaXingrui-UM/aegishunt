@@ -1,0 +1,47 @@
+"""Final-delivery static contract tests."""
+
+from pathlib import Path
+
+import yaml
+
+from scripts.validate_phase14_delivery import validate
+
+ROOT = Path(__file__).parents[2]
+
+
+def test_phase14_delivery_validator_passes_committed_surface() -> None:
+    result = validate(ROOT)
+
+    assert result == {
+        "status": "PASS",
+        "application_version": "1.0.0",
+        "feature_count": 43,
+        "sample_count": 2,
+        "required_file_count": 34,
+    }
+
+
+def test_phase14_compose_keeps_application_non_root_and_loopback_only() -> None:
+    compose = yaml.safe_load((ROOT / "compose.yaml").read_text(encoding="utf-8"))
+
+    assert set(compose["services"]) == {"init", "api", "worker", "frontend"}
+    for service in compose["services"].values():
+        assert service["user"] == "10001:10001"
+        assert service["init"] is True
+        assert service["read_only"] is True
+        assert service["cap_drop"] == ["ALL"]
+        assert "no-new-privileges:true" in service["security_opt"]
+        assert service.get("privileged") is not True
+        assert service.get("network_mode") != "host"
+    assert compose["services"]["api"]["ports"] == ["127.0.0.1:8000:8000"]
+    assert compose["services"]["frontend"]["ports"] == ["127.0.0.1:8501:8501"]
+    assert compose["networks"]["aegishunt-internal"]["internal"] is True
+
+
+def test_phase14_dockerfile_uses_wheel_and_non_root_runtime() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+
+    assert "python -m build --wheel" in dockerfile
+    assert "pip install --no-cache-dir /tmp/*.whl" in dockerfile
+    assert "USER 10001:10001" in dockerfile
+    assert "PYTHONPATH" not in dockerfile

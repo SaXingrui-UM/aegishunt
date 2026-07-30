@@ -20,7 +20,7 @@ from aegishunt.frontend.pages import (
     system,
     traffic,
 )
-from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME
+from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME, __version__
 
 PageRenderer = Callable[[AegisHuntApiClient], None]
 
@@ -88,10 +88,10 @@ def main() -> None:
         st.rerun()
     st.sidebar.divider()
     st.sidebar.caption(
-        "Phase 13 hardening: Complete. "
-        "PR #39 merged. "
-        "Checkpoint tag phase-13-complete verified. "
-        "Phase 14: Not started. "
+        f"AegisHunt {__version__} · "
+        "Phase 13 checkpoint complete and immutable. "
+        "Phase 14 final delivery: In progress. "
+        "No Phase 14 completion or release Tag exists. "
         "FastAPI is the only business interface."
     )
     st.sidebar.caption(APPLICATION_DESCRIPTION)

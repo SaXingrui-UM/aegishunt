@@ -6,15 +6,16 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 
 | Field | Value |
 | --- | --- |
-| Current phase | Phase 13 - Hardening, Performance, Robustness, and Security Validation |
-| Status | Phase complete |
+| Current phase | Phase 14 - Final Delivery, Deployment, Documentation, and Thesis Materials |
+| Status | Implementation in progress |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
 | Phase 11 implementation | Strict runtime policy; source/artifact preflight and pinning; schema v5 durable job/attempt/worker/resource/ledger records; atomic claims and leases; explicit origin recovery; interruptible event-time replay; separate non-durable observed replay telemetry and durable committed evidence progress; Phase 3 flow reuse; transactional detection/alert ledgers; bounded resource status; CLI; Streamlit status shell; tests and documentation |
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
 | Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; repository 85% and per-package 80% coverage gates; performance protocol 1.1; 21-scenario robustness matrix; real dependency/secret/Bandit gates; complete 80-finding disposition ledger |
-| Current activity | Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is merged. Its final source-branch Head is `5b183a53d76aaa72807200e6d54793e9c0a4fcda`, its canonical squash merge is `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`, and annotated `phase-13-complete` peels to that merge. The final exact-Head Codex Security rescan was explicitly waived by the user, was not executed, and no result is claimed. Phase 14 has not started |
+| Phase 14 implementation | Application version `1.0.0`; wheel/sdist and clean-install design; non-root local Docker/Compose; payload-free final PCAP derivatives; exact release manifest/builder; source-backed figures/tables; install/deployment/demo/thesis/traceability/acceptance materials; final delivery tests and CI in progress |
+| Current activity | Phase 14 is authorized and active on `phase/14-final-delivery`, based on synchronized main `69cf7ec87734f036a7201ea563d0759965a4d2db`. Phase 13 PR #39 and documentation PR #40 are merged; annotated `phase-13-complete` remains unchanged. The formal final Codex Security rescan remains explicitly waived, was not executed, and no result is claimed |
 | Verification status | Merged-main baseline: Ruff passed; strict mypy passed 237 source files; all 527 pytest tests passed with 0 failed/skipped/xfailed in 1,555.35 seconds at 85.79% branch-aware coverage. The final checkpoint-branch suite passed all 528 tests with 0 failed/skipped/xfailed and 18 warnings in 1,552.44 seconds at 85.73% branch-aware coverage. All 17 core packages pass 80%, lowest `flows` at 81.58%. Security regression tests passed 17/17; the 80-row ledger validated; Bandit reported 45 Low and 0 blocking findings; current Python 3.12 `pip-audit` covered 114 distributions with 0 advisories and `pip check` passed. The merged-main bounded secret gate scanned 1,293 unique text blobs while retaining the one documented oversized historical-blob exclusion, with 0 confirmed secrets, 0 unreviewed candidates, and 0 stale allowlist entries. Robustness focused tests passed 53/53 and smoke passed 1/1; performance-tool tests passed 7/7 and smoke completed. PR #39 final-head CI has eight successful checks: two each for `quality`, `security`, `robustness`, and `performance-smoke` |
 | Phase 13 canonical implementation merge commit | `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; PR #39 final source-branch Head is separately recorded as `5b183a53d76aaa72807200e6d54793e9c0a4fcda` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
@@ -52,10 +53,10 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 | Phase 11 status | Phase complete |
 | Phase 12 status | Phase complete |
 | Phase 13 status | Phase complete |
-| Phase 14 status | Not started |
+| Phase 14 status | Implementation in progress |
 | Phase 13 source branch | `phase/13-hardening` was merged through PR #39 |
-| Next planned phase | Phase 14 - Final Integration and Delivery; `phase/14-final-delivery` has not been created |
-| Next action | Run the Phase 14 startup invariant only after explicit user authorization; no additional Phase 13 status-closure PR is required after this durable checkpoint is merged |
+| Next planned phase | None; Phase 14 is the final implementation phase |
+| Next action | Complete Phase 14 delivery Gates, review, logical commits, push, PR, and required CI; do not merge or create any Phase 14/release Tag |
 
 Phase 0 through Phase 13 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
