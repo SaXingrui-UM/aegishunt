@@ -14,6 +14,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import create_engine, func, select
+
 from aegishunt.delivery.release_manifest import (
     ReleaseManifestError,
     build_release_manifest,
@@ -21,7 +23,11 @@ from aegishunt.delivery.release_manifest import (
     write_release_manifest,
 )
 from aegishunt.metadata import __version__
+from aegishunt.storage import models as storage_models
+from aegishunt.storage.base import Base
 from aegishunt.storage.schema_version import CURRENT_SCHEMA_VERSION
+
+_STORAGE_MODELS_REGISTERED = storage_models
 
 PROJECT_FILES = (
     "README.md",
@@ -133,19 +139,21 @@ def _sqlite_metadata(database: Path) -> dict[str, Any]:
     try:
         checkpoint = connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
         integrity = connection.execute("PRAGMA integrity_check").fetchone()
-        tables = [
-            row[0]
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-            )
-        ]
-        counts = {
-            table: connection.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
-            for table in tables
-            if table != "sqlite_sequence"
-        }
     finally:
         connection.close()
+    engine = create_engine(f"sqlite:///{database}")
+    try:
+        with engine.connect() as typed_connection:
+            counts = {
+                table.name: int(
+                    typed_connection.execute(
+                        select(func.count()).select_from(table)
+                    ).scalar_one()
+                )
+                for table in Base.metadata.sorted_tables
+            }
+    finally:
+        engine.dispose()
     if integrity != ("ok",):
         raise ReleaseManifestError("sample database integrity check failed")
     return {

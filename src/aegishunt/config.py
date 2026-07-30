@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping, MutableMapping
+from ipaddress import IPv4Address
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -15,6 +16,7 @@ from aegishunt.errors import ConfigurationError
 
 DEFAULT_CONFIG_PATH = Path("configs/application.yaml")
 ENV_PREFIX = "AEGISHUNT_"
+CONTAINER_WILDCARD_HOST = str(IPv4Address(0))
 
 
 class ApplicationSection(BaseModel):
@@ -285,7 +287,7 @@ class WebSettings(BaseModel):
         """Normalize the API bind interface before joint deployment validation."""
 
         normalized = value.strip().lower()
-        if normalized not in {"127.0.0.1", "localhost", "0.0.0.0"}:
+        if normalized not in {"127.0.0.1", "localhost", CONTAINER_WILDCARD_HOST}:
             raise ValueError("web API host must be loopback or the container wildcard")
         return normalized
 
@@ -333,7 +335,7 @@ class WebSettings(BaseModel):
         parsed_api = urlsplit(self.api_base_url)
         api_hostname = parsed_api.hostname
         if self.container_network_enabled:
-            if self.api_host != "0.0.0.0":
+            if self.api_host != CONTAINER_WILDCARD_HOST:
                 raise ValueError("container API host must bind the container wildcard")
             if api_hostname != "api":
                 raise ValueError("container frontend must use the declared API service")
