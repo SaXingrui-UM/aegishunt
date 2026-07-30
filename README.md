@@ -23,8 +23,12 @@ Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is merged a
 `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; its final source-branch Head was
 `5b183a53d76aaa72807200e6d54793e9c0a4fcda`. Annotated
 `phase-13-complete` peels to the canonical Phase 13 merge commit. Phase 14 final
-delivery is **In progress** on `phase/14-final-delivery`; no Phase 14 completion
-or release Tag exists. Validation PR
+delivery is **Implementation complete — awaiting PR review** on
+`phase/14-final-delivery` in PR
+[#41](https://github.com/SaXingrui-UM/aegishunt/pull/41). Required
+implementation-Head quality, security, robustness, performance, package,
+Python 3.11/3.12 clean-install, documentation, and Docker gates passed. No
+Phase 14 completion or release Tag exists. Validation PR
 [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged. The
 subsequent Phase 12 demo-readiness corrective keeps global model pointers
 separate from immutable runtime-job effective models, exposes the effective

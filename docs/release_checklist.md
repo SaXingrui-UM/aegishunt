@@ -8,7 +8,7 @@ merge, completion Tag, GitHub Release, or publication.
 - [x] Branch is `phase/14-final-delivery` from synchronized Phase 13 `main`.
 - [x] Phase 0–13 annotated Tags were read-only verified and remain unchanged.
 - [x] Working tree is clean after every logical local commit.
-- [ ] Phase 14 PR is open against `main`; no force push or direct main push.
+- [x] Phase 14 PR #41 is open against `main`; no force push or direct main push.
 
 ## Code and tests
 
@@ -28,13 +28,13 @@ merge, completion Tag, GitHub Release, or publication.
 
 ## Docker
 
-- [ ] Image builds from wheel and runs as non-root UID 10001. Local base-image
+- [x] Image builds from wheel and runs as non-root UID 10001. Local base-image
   retrieval was blocked by the workstation's Docker Hub credential/network
-  path; the new-Head Docker CI must provide this runtime evidence.
-- [ ] Compose validates; `init/api/worker/frontend` work and are healthy.
-- [ ] Ports publish on loopback, root filesystem is read-only, capabilities are
+  path; exact-Head Linux Docker CI supplied independent runtime evidence twice.
+- [x] Compose validates; `init/api/worker/frontend` work and are healthy.
+- [x] Ports publish on loopback, root filesystem is read-only, capabilities are
   dropped, network/volumes are explicit, no Docker socket/host network exists.
-- [ ] Explicit demo, restart persistence, graceful shutdown, SQLite integrity,
+- [x] Explicit demo, restart persistence, graceful shutdown, SQLite integrity,
   and test-volume cleanup pass.
 
 ## Documentation and evidence
@@ -62,8 +62,8 @@ merge, completion Tag, GitHub Release, or publication.
   model/policy/schema/artifact versions.
 - [x] Ignored release bundle builds without overwrite and its exact manifest
   verifies corruption/missing/extra rejection.
-- [ ] Phase 14 PR CI jobs `quality`, `security`, `robustness`,
+- [x] Phase 14 PR implementation-Head CI jobs `quality`, `security`, `robustness`,
   `performance-smoke`, `package`, `clean-install`, `docker`, and
-  `docs-delivery` pass.
+  `docs-delivery` passed twice; later Heads remain subject to the same Gates.
 - [x] No `phase-14-complete`, release Tag, or GitHub Release is created before
   separate post-merge authorization.

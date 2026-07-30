@@ -198,9 +198,12 @@ def test_frontend_starts_with_truthful_api_unavailable_state(
     assert "Research prototype only" in rendered
     assert "AegisHunt 1.0.0" in rendered
     assert "Phase 13 checkpoint complete and immutable" in rendered
-    assert "Phase 14 final delivery: In progress" in rendered
+    assert (
+        "Phase 14 final delivery: Implementation complete — awaiting PR review"
+        in rendered
+    )
+    assert "PR #41 is open" in rendered
     assert "No Phase 14 completion or release Tag exists" in rendered
-    assert "awaiting PR review" not in rendered
     assert "phase-14-complete" not in rendered
     assert "authentication/RBAC not implemented" in rendered
 
