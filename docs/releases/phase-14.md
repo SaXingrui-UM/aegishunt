@@ -75,7 +75,7 @@ review.
 ## Post-merge verification
 
 - Merged-main Ruff passed; strict mypy passed 239 source files; all 550 tests
-  passed with no failures, skips, or xfails at 85.78% branch-aware coverage.
+  passed with no failures, skips, or xfails at 85.83% branch-aware coverage.
   Every one of the 17 declared core packages remained above 80%.
 - Phase 14 unit/release/E2E tests passed, including deterministic final
   samples, exact feature ordering, distribution inventory, full persisted

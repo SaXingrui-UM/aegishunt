@@ -35,8 +35,8 @@ retained as history, and the timeout is no longer a current blocker.
 | Local full-chain/API/frontend/restart | PASS | Both Phase 14 derivative samples completed through persisted flows, dual detection, fusion, alerts, correlation, hypothesis, case, note, verdict, feedback, report, API, frontend, audit, and restart |
 | Release bundle/database/demo artifacts | PASS | Exact-inventory bundle verified; generated database integrity/schema/rows and copied model identities were independently checked; collision rerun rejected |
 | Figures/tables manifest | PASS | `docs/assets/final-evidence-manifest.json` generated and checksum-bound |
-| Ruff/mypy/full pytest/coverage | PASS | Merged-main Ruff passed; strict mypy passed 239 source files; all 550 tests passed with no failures/skips/xfails; branch-aware coverage 85.78% |
-| Core-package coverage | PASS | Repository 85.78%; all 17 declared core packages exceed 80% |
+| Ruff/mypy/full pytest/coverage | PASS | Merged-main Ruff passed; strict mypy passed 239 source files; all 550 tests passed with no failures/skips/xfails; branch-aware coverage 85.83% |
+| Core-package coverage | PASS | Repository 85.83%; all 17 declared core packages exceed 80% |
 | Security/robustness/performance gates | PASS | 128 dependencies/0 advisories; 0 secret candidates; 54 Low and 0 blocking Bandit findings; robustness smoke 1/1; performance smoke completed |
 | Requirement traceability | PASS | Matrix is evidence-backed; packaging, clean install, Docker, full-chain demo, and documentation delivery are independently gated |
 
