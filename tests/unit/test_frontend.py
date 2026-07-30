@@ -196,8 +196,11 @@ def test_frontend_starts_with_truthful_api_unavailable_state(
         for item in collection
     )
     assert "Research prototype only" in rendered
-    assert "Phase 13 hardening: Implementation complete — awaiting PR review" in rendered
+    assert "Phase 13 hardening: Complete" in rendered
+    assert "PR #39 merged" in rendered
+    assert "Checkpoint tag phase-13-complete verified" in rendered
     assert "Phase 14: Not started" in rendered
+    assert "awaiting PR review" not in rendered
     assert "authentication/RBAC not implemented" in rendered
 
 

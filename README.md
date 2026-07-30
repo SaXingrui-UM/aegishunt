@@ -18,12 +18,12 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–12 are complete and their annotated checkpoints remain immutable.
-Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35) is merged as
-`baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17`; annotated
-`phase-12-complete` peels to that canonical merge commit. Phase 13 hardening is
-**Implementation complete — awaiting PR review** on
-`phase/13-hardening`; Phase 14 is **Not started**. Validation PR
+Phases 0–13 are complete and their annotated checkpoints remain immutable.
+Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is merged as
+`38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; its final source-branch Head was
+`5b183a53d76aaa72807200e6d54793e9c0a4fcda`. Annotated
+`phase-13-complete` peels to the canonical Phase 13 merge commit. Phase 14 is
+**Not started**, and `phase/14-final-delivery` has not been created. Validation PR
 [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged. The
 subsequent Phase 12 demo-readiness corrective keeps global model pointers
 separate from immutable runtime-job effective models, exposes the effective

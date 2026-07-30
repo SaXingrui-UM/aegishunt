@@ -6,14 +6,18 @@ Harden the completed Phase 0–12 local research prototype, validate malformed
 input and artifact boundaries, establish reproducible performance/robustness
 evidence, and preserve the scientific and audit contracts of earlier phases.
 
-Status: **Implementation complete — awaiting PR review**.
+Status: **Phase complete**.
 
-- Branch: `phase/13-hardening`
+- Source branch: `phase/13-hardening`
 - Pull request: [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39),
   `[Phase 13] Hardening, performance, robustness, and security validation`
-  (Open, ready for review)
-- Merge commit: pending
-- Completion tag: pending; `phase-13-complete` must not be created before merge
+  (Merged)
+- Final source-branch Head:
+  `5b183a53d76aaa72807200e6d54793e9c0a4fcda`
+- Canonical squash merge:
+  `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`
+- Completion tag: annotated `phase-13-complete`
+- Tag target: `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`
 - Phase 14: Not started
 
 ## Completed scope
@@ -78,16 +82,28 @@ public dataset, or Phase 14 functionality was added.
 - `9322652` — `fix: emit reviewable phase 13 csv`
 - `a4c0cf9` — `docs: document phase 13 hardening evidence`
 - `11c0d4d` — `docs: record phase 13 implementation checkpoint`
+- `a29d657` — `ci: add phase 13 deterministic smoke gates`
+- `7e9e785` — `docs: record phase 13 final coverage evidence`
+- `f8d424e` — `fix: reject extreme json depth before decoding`
+- `dbff140` — `docs: record phase 13 review outcome`
 - `f44b71f` — `security: add auditable dependency secret and static gates`
 - `fcb5a2b` — `docs: disposition phase 13 security findings`
 - `d7ce725` — `test: preserve cli diagnostics across dependency upgrades`
 - `970471e` — `test: enforce per-package core coverage`
 - `3e8cda0` — `perf: correct percentile api and memory evidence`
 - `588de65` — `ci: add phase 13 security and audit gates`
+- `718c3b8` — `test: remove host-dependent anomaly score literals`
+- `7ebd844` — `docs: record phase 13 final remediation evidence`
+- `76af316` — `test: correct phase 13 status assertion`
+- `354baf2` — `docs: record phase 13 final local checks`
 - `6fcb415` — `ci: fix clean-linux phase 13 gates`
+- `3b130a2` — `docs: record phase 13 clean-linux remediation`
+- `5b183a53d76aaa72807200e6d54793e9c0a4fcda` —
+  `docs: align phase 13 security waiver evidence`
 
-The final documentation and exact-Head verification commits are also listed in
-PR #39.
+These are the source-branch commits retained by PR #39. GitHub squash-merged
+their content into the distinct canonical commit
+`38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`.
 
 ## Tests and coverage
 
@@ -153,13 +169,45 @@ PR #39.
   `pytest` console entry point did not put the repository root on `sys.path`;
   all CI pytest steps now use the portable `python -m pytest` form. The same
   clean environment passed the 53-test robustness/security selection. Three
-  dedicated CI-contract regressions preserve these corrections. Refreshed
-  exact-Head CI remains a merge gate.
+  dedicated CI-contract regressions preserve these corrections.
 - After installing the declared setuptools 83.x dependency into the primary
   development environment, the final full regression passed all 527 tests with
   0 failures, 0 skips, and 0 xfails in 1,555.14 seconds. Branch-aware repository
   coverage was 85.73%, and all 17 core packages retained their separate 80%
   pass status.
+- Final Head `5b183a53d76aaa72807200e6d54793e9c0a4fcda` passed eight GitHub
+  checks: two successful `quality`, two `security`, two `robustness`, and two
+  `performance-smoke` results. PR #39 was then squash-merged by the user.
+
+### Merged-main checkpoint verification
+
+- The initial bare-shell command attempt did not activate the project virtual
+  environment: `ruff` was absent from PATH and the system Python 3.13 mypy
+  lacked project dependencies. This environment failure was retained, and all
+  required checks were rerun with the declared `.venv`.
+- Ruff passed. Strict mypy passed all 237 source files.
+- The complete merged-main suite passed 527 tests with 0 failures, 0 skips,
+  and 0 xfails in 1,555.35 seconds. Branch-aware coverage was 85.79%.
+- The core coverage gate passed all 17 packages at or above 80%; `flows`
+  remained the lowest at 81.58%.
+- The focused security selection passed 17 tests; the 80-row ledger validator
+  passed. Bandit reported 45 Low and 0 blocking findings. `pip-audit` checked
+  114 Python 3.12 distributions with 0 advisories and `pip check` passed. The
+  longer merged history produced 1,293 unique scanned text blobs while still
+  disclosing one bounded oversized historical-blob exclusion; it reported 0
+  confirmed secrets, 0 unreviewed candidates, and 0 stale allowlist entries.
+  The committed PR-head evidence remains the earlier 1,264-historical-text-blob
+  snapshot and is not retroactively rewritten.
+- Robustness-focused tests passed 53/53. Its bounded smoke matrix passed 1/1
+  without network, root, or frozen-evidence regeneration.
+- Performance-tool tests passed 7/7, and the controlled offline performance
+  smoke completed. Its one-sample observations are execution evidence, not a
+  latency target, SLA, production-capacity result, or public benchmark.
+- After adding the durable checkpoint state and its direct status regressions,
+  the final checkpoint-branch suite passed all 528 tests with 0 failures,
+  0 skips, 0 xfails, and 18 warnings in 1,552.44 seconds at 85.73%
+  branch-aware coverage. Ruff and strict mypy for 237 source files remained
+  clean.
 
 ## Review outcome
 
@@ -178,10 +226,10 @@ remain in repository coverage.
 The formal repository-wide Codex Security rescan was prepared against the
 then-current exact Head and passed capability preflight, but it was canceled
 before discovery when refreshed CI exposed defects that required a new commit.
-The user subsequently explicitly removed the final formal rescan from this
-task. No formal rescan result is claimed, and Bandit, the secret-history gate,
-the dependency audit, and the baseline ledger are not represented as a
-substitute for that unexecuted scan.
+The final exact-head Codex Security rescan was explicitly waived by the user,
+was not executed, and no final-rescan result is claimed. Bandit, the
+secret-history gate, the dependency audit, and the baseline ledger are
+complementary controls and are not represented as a substitute result.
 
 ## Performance baseline
 
@@ -280,6 +328,11 @@ Not committed:
 
 Phase 14 — Final Integration and Delivery — is **Not started**.
 
-Before Phase 14, the Phase 13 PR must pass CI, be reviewed and merged by the
-user, synchronized to `main`, and receive a separately authorized annotated
-`phase-13-complete` checkpoint tag.
+Phase 14 startup must verify that the working tree is clean, `main` is
+fast-forward synchronized with `origin/main`, PR #39 and its eight final-head
+checks remain successful, annotated `phase-13-complete` still peels to
+`38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`, that commit is an ancestor of
+then-current `main`, the Phase 14 branch remains absent, merged-main baselines
+pass, and the user explicitly authorizes Phase 14. A later documentation-only
+`main` descendant does not invalidate the checkpoint and does not require
+another Phase 13 status-closure PR.
