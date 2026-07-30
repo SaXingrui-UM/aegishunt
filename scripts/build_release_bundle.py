@@ -22,6 +22,7 @@ from aegishunt.delivery.release_manifest import (
     verify_release_bundle,
     write_release_manifest,
 )
+from aegishunt.detection.config import load_risk_policy
 from aegishunt.metadata import __version__
 from aegishunt.storage import models as storage_models
 from aegishunt.storage.base import Base
@@ -205,6 +206,17 @@ def _demo_identities(root: Path) -> tuple[dict[str, str], ...]:
                 "manifest_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
             }
         )
+    risk_path = root / "configs/detection.yaml"
+    risk = load_risk_policy(risk_path)
+    records.append(
+        {
+            "kind": "risk",
+            "id": risk.policy.policy_id,
+            "version": risk.policy.policy_version,
+            "classification": "controlled_demo_only",
+            "manifest_sha256": risk.configuration_checksum,
+        }
+    )
     return tuple(records)
 
 
@@ -216,9 +228,14 @@ from pathlib import Path
 import sys
 from aegishunt.ml.supervised.bundle import load_bundle as load_supervised
 from aegishunt.ml.anomaly.bundle import load_bundle as load_anomaly
+from aegishunt.ml.fusion.artifacts import load_policy
+from aegishunt.detection.config import load_risk_policy
+from aegishunt.explainability.artifacts import load_explanation_artifact
 root = Path(sys.argv[1])
 supervised_root = root / "models/supervised"
 anomaly_root = root / "models/anomaly"
+fusion_root = root / "models/fusion"
+explanation_root = root / "models/explainability"
 assert load_supervised(
     supervised_root / "12.0.0", artifact_root=supervised_root
 ).manifest.pipeline_verification_only is True
@@ -227,6 +244,15 @@ anomaly = load_anomaly(
 )
 assert anomaly.manifest.pipeline_verification_only is True
 assert anomaly.manifest.status == "validation_qualified"
+assert load_policy(
+    fusion_root / "1.0.0", root=fusion_root
+).recommendation == "inconclusive"
+assert load_risk_policy(
+    root / "configs/detection.yaml"
+).policy.controlled_pipeline_only is True
+assert load_explanation_artifact(
+    explanation_root / "1.0.0", root=explanation_root
+).manifest.pipeline_verification_only is True
 """
     subprocess.run(
         [sys.executable, "-c", code, str(root)],

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -103,3 +104,48 @@ def test_release_copy_allows_only_named_reviewed_sample_pcap(tmp_path: Path) -> 
     build_release_bundle._copy_file(source, destination)
 
     assert destination.read_bytes() == source.read_bytes()
+
+
+def test_demo_identity_inventory_includes_verified_risk_policy(
+    tmp_path: Path,
+) -> None:
+    for relative, payload in (
+        (
+            "models/supervised/12.0.0/manifest.json",
+            {"model_id": "supervised", "model_version": "12.0.0"},
+        ),
+        (
+            "models/anomaly/1.1.0-candidate/manifest.json",
+            {"model_id": "anomaly", "model_version": "1.1.0-candidate"},
+        ),
+        (
+            "models/fusion/1.0.0/fusion_policy_manifest.json",
+            {"policy_id": "fusion", "policy_version": "1.0.0"},
+        ),
+        (
+            "models/explainability/1.0.0/manifest.json",
+            {"artifact_id": "explanation", "artifact_version": "1.0.0"},
+        ),
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    risk_path = tmp_path / "configs/detection.yaml"
+    risk_path.parent.mkdir(parents=True)
+    shutil.copyfile(
+        Path(__file__).parents[2] / "configs/models/detection.yaml",
+        risk_path,
+    )
+
+    identities = build_release_bundle._demo_identities(tmp_path)
+
+    assert [identity["kind"] for identity in identities] == [
+        "supervised",
+        "anomaly",
+        "fusion",
+        "explainability",
+        "risk",
+    ]
+    assert identities[-1]["manifest_sha256"] == (
+        build_release_bundle.load_risk_policy(risk_path).configuration_checksum
+    )
