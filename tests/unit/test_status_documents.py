@@ -1,4 +1,4 @@
-"""Regression tests for the durable Phase 13 post-merge checkpoint."""
+"""Regression tests for durable phase checkpoints and final project status."""
 
 from pathlib import Path
 
@@ -9,6 +9,15 @@ PHASE_13_CANONICAL_MERGE = "".join(
 PHASE_13_FINAL_HEAD = "".join(
     ("5b183a53", "d76aaa72", "807200e6", "d54793e9", "c0a4fcda")
 )
+PHASE_14_CANONICAL_MERGE = "".join(
+    ("c3422601", "62c3c389", "51207205", "59d73d33", "b172a7ef")
+)
+PHASE_14_FINAL_HEAD = "".join(
+    ("168a91ca", "ecd59fff", "7d66e923", "7a976538", "31cf024e")
+)
+PHASE_14_TAG_OBJECT = "".join(
+    ("06e393c7", "7918ef13", "ba66c0cd", "f2538000", "74bdd71a")
+)
 
 
 def _section(content: str, start: str, end: str) -> str:
@@ -16,25 +25,28 @@ def _section(content: str, start: str, end: str) -> str:
     return content.split(start, maxsplit=1)[1].split(end, maxsplit=1)[0]
 
 
-def test_readme_records_phase_fourteen_implementation_handoff() -> None:
+def test_readme_records_phase_fourteen_final_checkpoint() -> None:
     content = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
     current = _section(content, "## Current status", "## Planned architecture")
     normalized = " ".join(current.split())
 
-    assert "Phases 0–13 are complete" in current
+    assert "Phases 0–14 are complete" in current
     assert "Phase 13 PR [#39]" in current
     assert "is merged as" in normalized
     assert PHASE_13_CANONICAL_MERGE in current
     assert PHASE_13_FINAL_HEAD in current
     assert "phase-13-complete" in current
-    assert (
-        "Phase 14 final delivery is "
-        "**Implementation complete — awaiting PR review**"
-    ) in normalized
-    assert "phase/14-final-delivery" in normalized
+    assert "Phase 14 is **Phase complete**" in normalized
     assert "pull/41" in current
-    assert "Required implementation-Head" in normalized
-    assert "No Phase 14 completion or release Tag exists" in normalized
+    assert PHASE_14_CANONICAL_MERGE in current
+    assert PHASE_14_FINAL_HEAD in current
+    assert PHASE_14_TAG_OBJECT in current
+    assert "phase-14-complete" in current
+    assert "same Git tree" in normalized
+    assert "All 18 implementation-Head" in normalized
+    assert "No further implementation phase is planned" in normalized
+    assert "No GitHub Release" in normalized
+    assert "release Tag" in normalized and "was authorized or performed" in normalized
     assert "offline, rootless PCAP replay" in normalized
     assert "durable jobs" in normalized
     assert "verified artifact pinning" in normalized
@@ -59,27 +71,29 @@ def test_readme_records_phase_fourteen_implementation_handoff() -> None:
         "automatic recovery is enabled",
         "Phase 13 is **In progress**",
         "Phase 14 is **Not started**",
-        "Phase 14 complete",
-        "phase-14-complete",
+        "awaiting PR review",
+        "PR #41 is open",
+        "No Phase 14 completion or release Tag exists",
+        "Phase 15",
     ):
         assert transient not in current
     assert "No operation trains, activates, or replaces a model" in normalized
     assert "retraining_candidate" in normalized
 
 
-def test_frontend_records_phase_fourteen_implementation_handoff() -> None:
+def test_frontend_records_phase_fourteen_final_checkpoint() -> None:
     source = (
         PROJECT_ROOT / "src/aegishunt/frontend/app.py"
     ).read_text(encoding="utf-8")
 
     assert "Phase 13 checkpoint complete and immutable" in source
-    assert (
-        "Phase 14 final delivery: Implementation complete — awaiting PR review"
-        in source
-    )
-    assert "PR #41 is open" in source
-    assert "No Phase 14 completion or release Tag exists" in source
-    assert "phase-14-complete" not in source
+    assert "Phase 14 final delivery: Phase complete" in source
+    assert "PR #41 is merged" in source
+    assert "Annotated phase-14-complete" in source
+    assert "No further implementation phase is planned" in source
+    assert "No GitHub Release or release publication was performed" in source
+    assert "awaiting PR review" not in source
+    assert "Phase 15" not in source
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -97,7 +111,7 @@ def test_pm_def_001_is_resolved_without_erasing_history() -> None:
     assert "not public\n  benchmark or real-world performance evidence" in pm_def_001
 
 
-def test_progress_and_release_record_phase_fourteen_handoff_truthfully() -> None:
+def test_progress_and_release_record_phase_fourteen_final_checkpoint() -> None:
     progress = (PROJECT_ROOT / "docs/codex_progress.md").read_text(encoding="utf-8")
     release = (PROJECT_ROOT / "docs/releases/phase-14.md").read_text(encoding="utf-8")
 
@@ -113,34 +127,38 @@ def test_progress_and_release_record_phase_fourteen_handoff_truthfully() -> None
     )
     normalized_progress_current = " ".join(progress_current.split())
     assert "Current phase | Phase 14" in normalized_progress_current
-    assert (
-        "Status | Implementation complete — awaiting PR review"
-        in normalized_progress_current
-    )
+    assert "Status | Phase complete" in normalized_progress_current
     assert "Phase 10 status | Phase complete" in normalized_progress_current
     assert "Phase 11 status | Phase complete" in normalized_progress_current
     assert "Phase 12 status | Phase complete" in normalized_progress_current
     assert "Phase 13 status | Phase complete" in normalized_progress_current
-    assert (
-        "Phase 14 status | Implementation complete — awaiting PR review"
-        in normalized_progress_current
-    )
-    assert "phase/14-final-delivery" in normalized_progress_current
-    assert "based on synchronized main" in normalized_progress_current
+    assert "Phase 14 status | Phase complete" in normalized_progress_current
     assert "PR [#41]" in progress_current
-    assert "18/18 successful" in normalized_progress_current
+    assert PHASE_14_CANONICAL_MERGE in progress_current
+    assert PHASE_14_FINAL_HEAD in progress_current
+    assert PHASE_14_TAG_OBJECT in progress_current
+    assert "phase-14-complete" in progress_current
+    assert "All 18 PR #41 implementation-Head checks passed" in (
+        normalized_progress_current
+    )
     assert "Phase 13 PR #39" in normalized_progress_current
     assert "phase-13-complete" in normalized_progress_current
     assert "formal final Codex Security rescan remains explicitly waived" in (
         normalized_progress_current
     )
     assert "Next planned phase | None" in normalized_progress_current
+    assert "No additional Phase 14 status-closure PR is required" in (
+        normalized_progress_current
+    )
 
-    assert "Branch: `phase/14-final-delivery`" in release_current
-    assert "Status: Implementation complete — awaiting PR review" in release_current
+    assert "Implementation branch: `phase/14-final-delivery`" in release_current
+    assert "Status: Phase complete" in release_current
     assert "Pull request: [#41]" in release_current
     assert "pull/41" in release_current
-    assert "Completion Tag: not created" in release_current
+    assert PHASE_14_CANONICAL_MERGE in release_current
+    assert PHASE_14_FINAL_HEAD in release_current
+    assert PHASE_14_TAG_OBJECT in release_current
+    assert "Completion Tag: annotated `phase-14-complete`" in release_current
     assert "Release/GitHub Release: not created" in release_current
     assert "traffic_attack.pcap" in release
     assert "traffic_benign.pcap" in release
@@ -151,12 +169,12 @@ def test_progress_and_release_record_phase_fourteen_handoff_truthfully() -> None
     for transient in (
         "Implementation in progress",
         "Pull request: pending",
-        "phase-14-complete",
-        "Pull request: Merged",
+        "Implementation complete — awaiting PR review",
+        "Completion Tag: not created",
+        "Pull request: pending",
     ):
         assert transient not in progress_current
         assert transient not in release_current
-    assert "Phase complete" not in release_current
 
     acceptance = (
         PROJECT_ROOT / "docs/final_acceptance_report.md"
@@ -167,13 +185,15 @@ def test_progress_and_release_record_phase_fourteen_handoff_truthfully() -> None
     checklist = (
         PROJECT_ROOT / "docs/release_checklist.md"
     ).read_text(encoding="utf-8")
-    assert "ACCEPTED WITH LIMITATIONS for PR review" in acceptance
+    assert "ACCEPTED WITH LIMITATIONS — Phase complete" in acceptance
     assert "Docker build/Compose/full demo/restart | PASS" in acceptance
+    assert "fresh local arm64 no-cache build" in acceptance
     assert ",PASS," in next(
         line for line in traceability.splitlines() if line.startswith("P14-DOCKER,")
     )
-    assert "- [x] Phase 14 PR #41 is open" in checklist
+    assert "- [x] Phase 14 PR #41 is merged" in checklist
     assert "implementation-Head CI jobs" in checklist
+    assert "No further implementation phase is planned" in checklist
 
 
 def test_phase_eleven_gate_records_satisfied_stable_ancestor_invariant() -> None:
