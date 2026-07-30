@@ -138,11 +138,15 @@ def _validate_compose(root: Path) -> None:
             if not str(port).startswith("127.0.0.1:"):
                 raise Phase14ValidationError("published Compose ports must bind to loopback")
     networks = payload.get("networks")
-    if (
-        not isinstance(networks, dict)
-        or networks.get("aegishunt-internal", {}).get("internal") is not True
-    ):
-        raise Phase14ValidationError("Compose application network must be internal")
+    network = (
+        networks.get("aegishunt-internal")
+        if isinstance(networks, dict)
+        else None
+    )
+    if network != {"driver": "bridge"}:
+        raise Phase14ValidationError(
+            "Compose application network must be a dedicated bridge"
+        )
 
 
 def _validate_feature_schema(root: Path) -> None:

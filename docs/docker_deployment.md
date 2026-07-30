@@ -3,7 +3,7 @@
 ## Local research topology
 
 `compose.yaml` defines `init`, `api`, `worker`, and `frontend`. It uses one
-private bridge network and three named volumes (`data`, `artifacts`, `reports`).
+dedicated bridge network and three named volumes (`data`, `artifacts`, `reports`).
 The API and Streamlit ports publish to host loopback only. The deployment has no
 host networking, privileged container, added capability, Docker-socket mount,
 home-directory mount, external target, or automatic training.
@@ -26,7 +26,11 @@ Expected endpoints:
 `init` is idempotent and does not train, activate, ingest, create a case, or
 record feedback. `api` is one local process. `worker` is one SQLite writer with
 Phase 11 lease/heartbeat semantics. `frontend` calls `http://api:8000` on the
-private network and never opens the database.
+dedicated network and never opens the database. The bridge is not declared
+`internal` because that setting prevents published loopback ports from being
+reachable in supported Docker environments. Compose does not provide an egress
+firewall; AegisHunt runtime workflows remain offline and do not contact an
+external target.
 
 Run a demo explicitly:
 

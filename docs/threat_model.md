@@ -44,7 +44,7 @@ flowchart LR
 | ML/evidence | poisoning, leakage, test reuse, feedback poisoning | group/leakage gates, train/validation/test separation, frozen identity, provenance filtering, explicit retraining candidate only | controlled data, noisy analyst judgment, no external validation |
 | SQLite | contention, corruption, total outage | WAL, FK, busy timeout, transactions, integrity checks, single worker | DEF-004 and no independent control plane/HA |
 | Worker | lease theft, stale process, replay duplication | lease/heartbeat, preflight pinning, output ledger, explicit recovery, shutdown | restart-from-origin and local availability limits |
-| Docker | image compromise, shared-volume tampering, breakout | non-root UID 10001, read-only root, capabilities dropped, no-new-privileges, private network, loopback ports, no socket/host mounts | host Docker daemon trust and non-immutable base tag |
+| Docker | image compromise, shared-volume tampering, breakout | non-root UID 10001, read-only root, capabilities dropped, no-new-privileges, dedicated bridge, loopback ports, no socket/host mounts | host Docker daemon trust, non-immutable base tag, and no Compose egress firewall |
 | Logs/audit | secret/path/SQL leakage or deletion | sanitized messages, append-only repository APIs, bounded metadata | local owner can alter SQLite/files; no remote immutable audit sink |
 | Response | autonomous harm | no live capture, query execution, blocking, remediation, or automatic response | analyst may misinterpret scores/hypotheses |
 

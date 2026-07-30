@@ -98,7 +98,6 @@ services:
 networks:
   aegishunt-internal:
     driver: bridge
-    internal: true
 
 volumes:
   aegishunt-data:

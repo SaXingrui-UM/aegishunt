@@ -14,7 +14,7 @@ have independent contracts and must not be coupled to an application release.
 
 The local web configuration previously accepted loopback endpoints only.
 Separate Compose containers need the API process to bind the container
-wildcard and the frontend to call the private `api` service name. Those
+wildcard and the frontend to call the dedicated `api` service name. Those
 container-internal endpoints are not host exposure policy.
 
 ## Decision
@@ -28,7 +28,7 @@ The default deployment remains loopback-only. A frozen
 `web.container_network_enabled` setting allows exactly:
 
 - API bind host `0.0.0.0` inside a container; and
-- frontend API origin `http://api:<port>` on the private Compose network.
+- frontend API origin `http://api:<port>` on the dedicated Compose network.
 
 The Compose host publications remain `127.0.0.1` only. Containers run as UID
 10001, drop Linux capabilities, use a read-only root filesystem, and receive
@@ -52,6 +52,10 @@ only declared writable volumes.
   endpoints.
 - Container configuration is explicit and cannot be activated accidentally by
   changing only one hostname.
+- The dedicated bridge is not marked `internal`: exact-Head CI demonstrated
+  that Docker's internal-network isolation prevented the required published
+  loopback endpoints from being reached. Compose does not claim to enforce an
+  outbound egress policy.
 - No release Tag or GitHub Release is created by this decision.
 
 ## Risks
@@ -62,3 +66,6 @@ only declared writable volumes.
   threat model.
 - Compose is still a local single-node SQLite research deployment without
   authentication, authorization, TLS termination, or multi-host support.
+- The bridge permits outbound routing at the Docker network layer. Current
+  runtime workflows are offline and have no external target, but deployments
+  needing enforced egress denial require a platform network policy.

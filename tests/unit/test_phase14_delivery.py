@@ -49,7 +49,7 @@ def test_phase14_compose_keeps_application_non_root_and_loopback_only() -> None:
         assert service.get("network_mode") != "host"
     assert compose["services"]["api"]["ports"] == ["127.0.0.1:8000:8000"]
     assert compose["services"]["frontend"]["ports"] == ["127.0.0.1:8501:8501"]
-    assert compose["networks"]["aegishunt-internal"]["internal"] is True
+    assert compose["networks"]["aegishunt-internal"] == {"driver": "bridge"}
 
 
 def test_phase14_dockerfile_uses_wheel_and_non_root_runtime() -> None:
