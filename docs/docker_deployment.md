@@ -66,3 +66,24 @@ Its root filesystem is read-only. A pinned patch-level image tag is used, not
 an immutable digest; this residual supply-chain risk is recorded in the
 [Threat Model](threat_model.md). Compose is not a production isolation,
 authentication, high-availability, or multi-node design.
+
+## Post-merge diagnostic contract
+
+The final image exposes the existing named-volume-backed
+`runtime/artifacts` and `runtime/reports` paths through the foundation
+`artifacts` and `reports` names used by `aegishunt doctor`. With the initialized
+database, `doctor` reports loaded configuration, available database, all four
+foundation directories, and `healthy: true`. This does not add a new writable
+mount or broaden the container filesystem.
+
+Matplotlib uses `MPLCONFIGDIR=/tmp/matplotlib`. Compose already supplies `/tmp`
+as a bounded `rw,noexec,nosuid,nodev` tmpfs, so the library does not attempt to
+write the non-root user's read-only home. The root filesystem remains
+read-only; UID/GID `10001:10001`, `cap_drop: ALL`, and
+`no-new-privileges:true` remain unchanged.
+
+During final verification, the first Docker Hub authentication/base-image
+metadata request timed out. A later independent pull succeeded, followed by a
+fresh local arm64 no-cache build and the complete analyst/restart workflow.
+The timeout is retained as historical evidence rather than presented as a
+current deployment blocker.

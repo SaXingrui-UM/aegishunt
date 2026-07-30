@@ -2,13 +2,21 @@
 
 ## Objective and current status
 
-- Branch: `phase/14-final-delivery`
-- Status: Implementation complete — awaiting PR review
-- Base: Phase 13 post-merge `main`
-- Pull request: [#41](https://github.com/SaXingrui-UM/aegishunt/pull/41), open
-- Merge commit: pending
-- Completion Tag: not created
-- Release/GitHub Release: not created
+- Implementation branch: `phase/14-final-delivery`
+- Status: Phase complete
+- Pull request: [#41](https://github.com/SaXingrui-UM/aegishunt/pull/41),
+  merged on 2026-07-30
+- Final source-branch Head:
+  `168a91caecd59fff7d66e9237a97653831cf024e`
+- Canonical Squash merge:
+  `c342260162c3c3895120720559d73d33b172a7ef`
+- Shared source/merge tree:
+  `0749ac9b055341f7c792673ba0561bce42da9aa0`
+- Completion Tag: annotated `phase-14-complete`; object
+  `06e393c77918ef13ba66c0cdf253800074bdd71a`; locally and remotely verified
+  at the canonical Squash merge
+- Release/GitHub Release: not created; no `v1.0.0` release Tag, package
+  publication, registry publication, or release publication was authorized
 
 ## Declared scope
 
@@ -46,17 +54,52 @@ dependencies with no advisories, zero unreviewed secret candidates, 54 Low and
 zero blocking Bandit findings; robustness smoke passed 1/1 and performance
 smoke completed.
 
-Docker Compose validates, but the local image build could not retrieve pinned
-base-image metadata because the workstation Docker Hub credential/network path
-failed. No local Docker runtime pass is claimed. Exact-Head Linux CI independently
-built and exercised the non-root image twice, including health/OpenAPI,
-Streamlit, the 42-flow controlled demo, case/note/verdict/feedback, restart
-persistence, SQLite integrity, and cleanup. All 18 implementation-Head checks
-passed; every later docs-only PR Head must pass the same required workflow
-before merge.
+The first local Docker Hub authentication/base-image metadata request timed
+out. A subsequent independent pull succeeded; the merged canonical source then
+completed a fresh local arm64 no-cache build. The local non-root/read-only
+Compose deployment passed API health, OpenAPI/docs, Streamlit health/root,
+worker execution, and a 1,017-packet controlled demo producing 42 flows,
+42 alerts, one group, one hypothesis, one completed runtime job, and one case
+with analyst note, bounded verdict, and feedback. Restart preserved the job,
+case, note, feedback, and flows; schema v5, WAL, application-level foreign
+keys, and SQLite integrity `ok` were verified. API/frontend remained bound to
+loopback, UID/GID remained `10001:10001`, all capabilities were dropped,
+`no-new-privileges:true` remained set, and no host/home/Git/SSH/Docker-socket
+mount was introduced. Docker `doctor` is healthy after the existing runtime
+artifact/report volumes were exposed at the foundation paths. Matplotlib now
+uses `/tmp/matplotlib` under the bounded tmpfs instead of attempting to write
+the read-only home. All 18 PR #41 implementation-Head checks passed; the single
+checkpoint PR must independently pass its own exact-Head workflow before
+review.
+
+## Post-merge verification
+
+- Merged-main Ruff passed; strict mypy passed 239 source files; all 550 tests
+  passed with no failures, skips, or xfails at 85.83% branch-aware coverage.
+  Every one of the 17 declared core packages remained above 80%.
+- Phase 14 unit/release/E2E tests passed, including deterministic final
+  samples, exact feature ordering, distribution inventory, full persisted
+  chain, and restart.
+- Wheel/sdist, Twine metadata, distribution inventory, documentation delivery,
+  and the collision-safe exact-inventory release bundle passed. Fresh Python
+  3.11 and 3.12 wheel installations passed without editable installation or
+  `PYTHONPATH`.
+- Dependency audit, current/history secret controls, Bandit, security ledger,
+  robustness smoke, and performance smoke passed. The final formal Codex
+  Security rescan was explicitly waived, was not executed, and no result is
+  claimed; those independent gates are not represented as a substitute.
+- Generated wheels, sdists, release bundles, databases, model copies, upload
+  data, logs, and machine reports remain ignored and uncommitted.
 
 ## Known limitations
 
 See [Consolidated limitations](../limitations.md). Final formal Codex Security
 rescan was explicitly waived and is not claimed. Phase 14 remains a local
 single-user SQLite research delivery.
+
+## Next phase
+
+None. No further implementation phase is planned. Optional archival, thesis
+submission, GitHub Release/version publication, or deployment beyond the local
+research boundary requires separate user authorization. No additional Phase 14
+status-closure PR is required after the single checkpoint PR is merged.

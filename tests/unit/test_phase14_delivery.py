@@ -68,6 +68,9 @@ def test_phase14_dockerfile_uses_wheel_and_non_root_runtime() -> None:
     assert "pip install --no-cache-dir /tmp/*.whl" in dockerfile
     assert "USER 10001:10001" in dockerfile
     assert "PYTHONPATH" not in dockerfile
+    assert "MPLCONFIGDIR=/tmp/matplotlib" in dockerfile
+    assert "ln -s runtime/artifacts artifacts" in dockerfile
+    assert "ln -s runtime/reports reports" in dockerfile
 
 
 def test_phase14_docker_gate_runs_full_analyst_feedback_chain() -> None:
