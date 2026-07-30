@@ -90,9 +90,11 @@ def main() -> None:
     st.sidebar.caption(
         f"AegisHunt {__version__} · "
         "Phase 13 checkpoint complete and immutable. "
-        "Phase 14 final delivery: Implementation complete — awaiting PR review. "
-        "PR #41 is open; required implementation-Head CI gates passed. "
-        "No Phase 14 completion or release Tag exists. "
+        "Phase 14 final delivery: Phase complete. "
+        "PR #41 is merged; all required implementation-Head CI gates passed. "
+        "Annotated phase-14-complete is the final implementation checkpoint. "
+        "No further implementation phase is planned. "
+        "No GitHub Release or release publication was performed. "
         "FastAPI is the only business interface."
     )
     st.sidebar.caption(APPLICATION_DESCRIPTION)

@@ -7,7 +7,7 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 | Field | Value |
 | --- | --- |
 | Current phase | Phase 14 - Final Delivery, Deployment, Documentation, and Thesis Materials |
-| Status | Implementation complete — awaiting PR review |
+| Status | Phase complete |
 | Phase 8 implementation | Existing DetectionResult/SecurityAlert entities extended with complete score and identity evidence; configured risk/severity; threshold alerts; benign references; native/permutation importance; local reference replacement; reason catalog; immutable evidence; audited alert verdict; schema v2 migration; CLI; integration/E2E; truthful status shell |
 | Phase 9 implementation | Checksummed correlation policy; canonical entity/event-time index; separate injectable-clock lifecycle time; seven versioned rules; bounded scoring and stable groups; deterministic cautious templates; possible ATT&CK mappings; non-executed queries; schema v3 migration; repositories/audit; CLI; tests and documentation |
 | Phase 10 implementation | Deterministic hypothesis-to-case conversion; audited lifecycle, priority, assignment, notes, typed evidence, verdicts and alert feedback; versioned feedback export; explicit provenance-gated retraining candidates; deterministic reports; schema v4 migration; CLI; tests and documentation |
@@ -15,8 +15,8 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 | Phase 12 implementation | Complete typed FastAPI boundary; bounded pagination/filtering; request IDs and sanitized errors; streamed secure uploads; explicit audited mutations; API-only typed Streamlit client; nine modular pages; isolated controlled sample artifacts; real PCAP-to-case demo; tests and documentation |
 | Phase 13 implementation | Raw pre-multipart body limits; incremental bounded JSON/JSONL; bounded PCAPNG interfaces; deadline-indexed flow expiry; exact near-duplicate components; controlled-generator equivalence; verified fusion identities; reason-catalog enforcement; repository 85% and per-package 80% coverage gates; performance protocol 1.1; 21-scenario robustness matrix; real dependency/secret/Bandit gates; complete 80-finding disposition ledger |
 | Phase 14 implementation | Application version `1.0.0`; wheel/sdist; verified external Python 3.11/3.12 clean installs; non-root local Docker/Compose contract; payload-free final PCAP derivatives; exact release manifest/builder; full persisted demo/restart verification; source-backed figures/tables; install/deployment/demo/thesis/traceability/acceptance materials; final delivery tests and CI Gates |
-| Current activity | Phase 14 implementation is complete on `phase/14-final-delivery`, based on synchronized main `69cf7ec87734f036a7201ea563d0759965a4d2db`; PR [#41](https://github.com/SaXingrui-UM/aegishunt/pull/41) is open and awaiting user review. Required CI categories passed twice on implementation Head `305b479f523d745fa92d889c9d4134509754a3d7`, including the complete Docker analyst/restart workflow. Phase 13 PR #39 and documentation PR #40 are merged; annotated `phase-13-complete` remains unchanged. The formal final Codex Security rescan remains explicitly waived, was not executed, and no result is claimed |
-| Verification status | Ruff passed; strict mypy passed 239 source files; GitHub quality passed 550 pytest tests with 0 failed/skipped/xfailed and 18 warnings at 85.81% branch-aware coverage. The preceding local full run passed 549 tests at 85.83%; the additional test protects Docker restart readiness. All 17 declared core packages exceed 80%. External Python 3.11 and 3.12 wheel installs passed without editable mode or `PYTHONPATH`, including CLI, doctor, DB, demo, worker, API, frontend where applicable, and restart. Both final sample derivatives passed the full persisted chain. The exact-inventory release bundle/sample DB/copied controlled models verified and collision rerun failed closed. Python 3.12 `pip-audit` covered 128 distributions with 0 advisories and `pip check` passed; bounded history/current secret scanning reported 0 confirmed/unreviewed candidates and 0 stale allowlist entries; Bandit reported 54 Low and 0 blocking findings with 0 suppressions. Robustness smoke passed 1/1 and performance smoke completed. Local Compose validation passed while the workstation could not retrieve its pinned base image; exact-Head Linux Docker CI independently built the wheel-only image and passed health, controlled demo, case/note/verdict/feedback, restart persistence, SQLite integrity, and cleanup twice |
+| Current activity | Phase 14 PR [#41](https://github.com/SaXingrui-UM/aegishunt/pull/41) is merged. Canonical Squash merge `c342260162c3c3895120720559d73d33b172a7ef` and distinct final source Head `168a91caecd59fff7d66e9237a97653831cf024e` have the same tree. Annotated `phase-14-complete` (object `06e393c77918ef13ba66c0cdf253800074bdd71a`) peels to the canonical merge and is locally/remotely verified. No further implementation phase is planned. The formal final Codex Security rescan remains explicitly waived, was not executed, and no result is claimed |
+| Verification status | Merged-main Ruff passed; strict mypy passed 239 source files; all 550 pytest tests passed with 0 failed/skipped/xfailed at 85.78% branch-aware coverage; every one of the 17 declared core packages exceeds 80%. External Python 3.11 and 3.12 wheel installs passed without editable mode or `PYTHONPATH`. Wheel/sdist, Twine metadata, exact distribution inventory, documentation delivery, and release-bundle verification passed. Security, robustness, and performance gates passed; they are complementary controls rather than a formal Codex Security rescan. A fresh local arm64 no-cache Docker build passed after an initial historical Docker Hub metadata timeout. The final non-root/read-only Compose run passed health/OpenAPI/Streamlit, `doctor`, a 1,017-packet/42-flow controlled demo, 42 alerts, one group, one hypothesis, case/note/verdict/feedback, restart persistence, schema v5/WAL, and SQLite integrity `ok`. Matplotlib now uses explicit writable `/tmp/matplotlib`; no read-only-home warning remains |
 | Phase 13 canonical implementation merge commit | `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; PR #39 final source-branch Head is separately recorded as `5b183a53d76aaa72807200e6d54793e9c0a4fcda` |
 | PM-DEF-001 | Resolved by PR #14; original and corrective evidence remain separately versioned |
 | Original Phase 5 merge | `2510c295f9bf82d90e8c82a072187808651980dc` (PR #13) |
@@ -25,11 +25,11 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 | Phase 3 merge commit | `5df43bc6b994f846fd11e2e7221ef55f9b5610aa` |
 | Phase 4 implementation merge | `2ecaaae794684fd51aefbcd5f27f9c1eb70eadf0` |
 | GitHub remote | `origin` -> `git@github.com:SaXingrui-UM/aegishunt.git` (private) |
-| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, Phase 12 PR [#35](https://github.com/SaXingrui-UM/aegishunt/pull/35), validation PR #37, corrective PR #38, and Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) are merged; Phase 14 PR [#41](https://github.com/SaXingrui-UM/aegishunt/pull/41) is open and not merged |
+| Pull requests | Phase 5 PRs #13–#17, Phase 6 PRs #18–#20, Phase 7 PRs #21–#24, Phase 8 PRs #25–#27, Phase 9 PRs #28–#29, Phase 10 PR #31, Phase 11 PR #33, Phase 12 PR #35, validation PR #37, corrective PR #38, Phase 13 PR #39, and Phase 14 PR [#41](https://github.com/SaXingrui-UM/aegishunt/pull/41) are merged |
 | Phase 9 closure PR | [#29](https://github.com/SaXingrui-UM/aegishunt/pull/29), `[Docs] Record Phase 9 post-merge checkpoint`, merged into `main` as `8e18ae97d9710813a782182eebcfc55d0edcfed8` |
 | Metadata PR | [#15](https://github.com/SaXingrui-UM/aegishunt/pull/15) merged into `main` as `a8d2a3ad324b89e3d8b8d703d00e73e82a2e6574` |
 | Final status PR | [#16](https://github.com/SaXingrui-UM/aegishunt/pull/16) merged into `main` as `cc3b1ac52d93d786ab5552c4f9be4b08b3408696` |
-| CI status | Required `quality`, `security`, `robustness`, `performance-smoke`, `package`, Python 3.11/3.12 `clean-install`, `docker`, and `docs-delivery` categories all passed twice on implementation Head `305b479f523d745fa92d889c9d4134509754a3d7` (18/18 successful). Every later PR Head remains governed by the same required workflow and must not reuse an older Head result |
+| CI status | All 18 PR #41 implementation-Head checks passed: `quality`, `security`, `robustness`, `performance-smoke`, `package`, Python 3.11/3.12 `clean-install`, `docker`, and `docs-delivery`, each on both push and pull-request runs. The sole checkpoint PR must pass the same required workflow on its own exact final Head before review |
 | Phase 0 tag | Annotated `phase-00-complete`, unchanged at `097c01a` |
 | Phase 1 tag | Annotated `phase-01-complete`, pushed and remotely verified at `a240805` |
 | Phase 2 tag | Annotated `phase-02-complete`, pushed and remotely verified at merge commit `d5e1ba6` |
@@ -44,7 +44,8 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 | Phase 11 tag | Annotated `phase-11-complete` peels to the PR #33 merge commit `8f85949406e3db7d2fa2b3c48d04e832e84f3559` and is pushed for remote verification |
 | Phase 12 tag | Annotated `phase-12-complete` peels to the PR #35 merge commit `baac8e5ecf9f8a2ac66afe2873269bebcbbcbf17` and is pushed for remote verification |
 | Phase 13 tag | Annotated `phase-13-complete` peels to the PR #39 canonical merge commit `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; later documentation-only descendants must not move this Tag |
-| Stable branch | The canonical Phase 13 checkpoint is an ancestor of synchronized `main`; future documentation-only descendants do not change its stable target |
+| Phase 14 tag | Annotated `phase-14-complete` object `06e393c77918ef13ba66c0cdf253800074bdd71a` peels to PR #41 canonical merge `c342260162c3c3895120720559d73d33b172a7ef` and is locally/remotely verified |
+| Stable branch | The canonical Phase 14 checkpoint is an ancestor of later documentation-only descendants; those descendants must not move its stable target |
 | Working tree | Merged-main verification used temporary output directories outside the repository; generated databases, uploads, demo model binaries, coverage machine output, secrets, and formal evidence remain untracked |
 | Phase 7 status | Phase complete; implementation, checkpoint, metadata, and visible-status closures are merged and verified |
 | Phase 8 status | Phase complete |
@@ -53,12 +54,12 @@ Last updated: 2026-07-30 (Asia/Shanghai)
 | Phase 11 status | Phase complete |
 | Phase 12 status | Phase complete |
 | Phase 13 status | Phase complete |
-| Phase 14 status | Implementation complete — awaiting PR review |
+| Phase 14 status | Phase complete |
 | Phase 13 source branch | `phase/13-hardening` was merged through PR #39 |
-| Next planned phase | None; Phase 14 is the final implementation phase |
-| Next action | Confirm final current-Head CI remains successful, review PR #41, and let the user use Squash and merge only after every required check is successful; do not merge or create any Phase 14/release Tag |
+| Next planned phase | None |
+| Next action | Project implementation is complete. Optional archival, thesis submission, GitHub Release, version publication, or deployment beyond the local research boundary requires separate user authorization. No additional Phase 14 status-closure PR is required after the single checkpoint PR is merged |
 
-Phase 0 through Phase 13 are checkpointed and their Tags remain unchanged. Phase
+Phase 0 through Phase 14 are checkpointed and their Tags remain unchanged. Phase
 11 joins the immutable offline evidence pipeline through deterministic replay
 without changing its scientific claims: a risk or fusion score is not attack
 probability, an alert is not confirmation, and a hypothesis is not fact.
@@ -66,6 +67,49 @@ Recovery restarts from capture origin and verifies committed evidence; it is not
 exact packet-cursor resume. Phase 12 exposes complete explicit local API and
 frontend workflows without enabling live capture, automatic recovery, automatic
 training/activation, or response actions.
+
+## Phase 14 final implementation checkpoint
+
+- PR #41 was Squash and merge merged into `main` at
+  `c342260162c3c3895120720559d73d33b172a7ef`. The final source-branch Head was
+  `168a91caecd59fff7d66e9237a97653831cf024e`; both objects resolve to tree
+  `0749ac9b055341f7c792673ba0561bce42da9aa0`.
+- All 18 implementation-Head checks passed. Merged-main verification passed
+  Ruff, strict mypy for 239 source files, 550 tests with no failures, skips, or
+  xfails at 85.78% branch-aware coverage, and every declared core package
+  remained above 80%.
+- Annotated `phase-14-complete` object
+  `06e393c77918ef13ba66c0cdf253800074bdd71a` peels to the canonical merge and
+  was verified against the remote. It does not point to the source Head or a
+  later documentation descendant.
+- Wheel/sdist, Twine, exact distribution inventory, documentation delivery,
+  ignored release-bundle verification, and clean Python 3.11/3.12 wheel
+  installations passed. No GitHub Release, `v1.0.0` release Tag, registry
+  upload, PyPI publication, or Docker publication was authorized or executed.
+- The first local Docker base-image metadata request timed out. A later
+  independent pull/build succeeded; a fresh merged-main arm64 no-cache build
+  then passed the complete local Compose workflow. The image remained
+  UID/GID 10001, read-only, `ALL` capabilities dropped, and
+  `no-new-privileges:true`, with loopback-only published ports and no host,
+  home, Git, SSH, or Docker-socket mount.
+- The final controlled Docker run processed the 1,017-packet attack-like
+  derivative into 42 bidirectional flows and 42 alerts, one alert group, one
+  hypothesis, one completed runtime job, and an analyst case with note,
+  bounded verdict, and feedback. All evidence survived API/worker/frontend
+  restart; schema version 5, WAL, application-level foreign keys, and SQLite
+  integrity `ok` were verified.
+- Docker `doctor` is healthy after runtime artifact/report paths were made
+  visible through the existing named volumes. Matplotlib uses the explicit
+  writable `/tmp/matplotlib` cache under the existing bounded tmpfs; no
+  root-user or writable-root relaxation was introduced.
+- The formal exact-final-head Codex Security rescan was explicitly waived,
+  was not executed, and no result is claimed. Dependency audit, secret scan,
+  Bandit, ledger validation, and regression tests are complementary controls,
+  not a formal-rescan substitute.
+- No further implementation phase is planned. The single checkpoint PR is a
+  documentation/verification descendant of the immutable canonical
+  implementation checkpoint; it does not need its own future merge SHA in
+  durable status and must not trigger another status-closure PR.
 
 ## Phase 13 implementation checkpoint
 

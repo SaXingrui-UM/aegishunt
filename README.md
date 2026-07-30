@@ -18,17 +18,23 @@ demonstrate a complete threat-hunting lifecycle rather than only a classifier.
 
 ## Current status
 
-Phases 0–13 are complete and their annotated checkpoints remain immutable.
+Phases 0–14 are complete and their annotated checkpoints remain immutable.
 Phase 13 PR [#39](https://github.com/SaXingrui-UM/aegishunt/pull/39) is merged as
 `38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3`; its final source-branch Head was
 `5b183a53d76aaa72807200e6d54793e9c0a4fcda`. Annotated
-`phase-13-complete` peels to the canonical Phase 13 merge commit. Phase 14 final
-delivery is **Implementation complete — awaiting PR review** on
-`phase/14-final-delivery` in PR
-[#41](https://github.com/SaXingrui-UM/aegishunt/pull/41). Required
-implementation-Head quality, security, robustness, performance, package,
-Python 3.11/3.12 clean-install, documentation, and Docker gates passed. No
-Phase 14 completion or release Tag exists. Validation PR
+`phase-13-complete` peels to the canonical Phase 13 merge commit. Phase 14 is
+**Phase complete**. PR
+[#41](https://github.com/SaXingrui-UM/aegishunt/pull/41) was Squash and merge
+merged as canonical implementation commit
+`c342260162c3c3895120720559d73d33b172a7ef`; its distinct final source-branch
+Head was `168a91caecd59fff7d66e9237a97653831cf024e`. Both objects have the
+same Git tree. Annotated `phase-14-complete` (Tag object
+`06e393c77918ef13ba66c0cdf253800074bdd71a`) peels to the canonical merge and
+was verified locally and remotely. All 18 implementation-Head quality,
+security, robustness, performance, package, Python 3.11/3.12 clean-install,
+documentation, and Docker checks passed. No further implementation phase is
+planned. No GitHub Release, `v1.0.0` release Tag, registry publication, or
+package publication was authorized or performed. Validation PR
 [#37](https://github.com/SaXingrui-UM/aegishunt/pull/37) is merged. The
 subsequent Phase 12 demo-readiness corrective keeps global model pointers
 separate from immutable runtime-job effective models, exposes the effective
