@@ -19,6 +19,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    MPLCONFIGDIR=/tmp/matplotlib \
     AEGISHUNT_CONFIG=/opt/aegishunt/configs/docker.yaml
 
 RUN groupadd --gid 10001 aegishunt \
@@ -33,6 +34,8 @@ COPY --chown=root:root pyproject.toml README.md ./
 COPY --chown=root:root configs ./configs
 COPY --chown=root:root data/sample ./data/sample
 RUN mkdir -p runtime/data runtime/artifacts runtime/reports \
+    && ln -s runtime/artifacts artifacts \
+    && ln -s runtime/reports reports \
     && chown -R aegishunt:aegishunt runtime
 
 USER 10001:10001
