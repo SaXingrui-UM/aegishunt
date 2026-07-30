@@ -3,6 +3,12 @@
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[2]
+PHASE_13_CANONICAL_MERGE = "".join(
+    ("38e5b8b9", "05aba50f", "f9acfc7f", "84f850f0", "3eb3f2f3")
+)
+PHASE_13_FINAL_HEAD = "".join(
+    ("5b183a53", "d76aaa72", "807200e6", "d54793e9", "c0a4fcda")
+)
 
 
 def _section(content: str, start: str, end: str) -> str:
@@ -18,8 +24,8 @@ def test_readme_records_phase_thirteen_without_starting_phase_fourteen() -> None
     assert "Phases 0–13 are complete" in current
     assert "Phase 13 PR [#39]" in current
     assert "is merged as" in normalized
-    assert "38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3" in current
-    assert "5b183a53d76aaa72807200e6d54793e9c0a4fcda" in current
+    assert PHASE_13_CANONICAL_MERGE in current
+    assert PHASE_13_FINAL_HEAD in current
     assert "phase-13-complete" in current
     assert "Phase 14 is **Not started**" in normalized
     assert "phase/14-final-delivery" in normalized
@@ -119,8 +125,8 @@ def test_progress_and_release_record_phase_thirteen_without_phase_fourteen_scope
     assert "has not been created" in normalized_progress_current
     assert "PR [#39]" in normalized_progress_current
     assert "pull/39" in progress_current
-    assert "5b183a53d76aaa72807200e6d54793e9c0a4fcda" in progress_current
-    assert "38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3" in progress_current
+    assert PHASE_13_FINAL_HEAD in progress_current
+    assert PHASE_13_CANONICAL_MERGE in progress_current
     assert "phase-13-complete" in progress_current
     assert "complete 80-finding disposition ledger" in normalized_progress_current
     assert "80-row ledger validated" in normalized_progress_current
@@ -131,9 +137,9 @@ def test_progress_and_release_record_phase_thirteen_without_phase_fourteen_scope
     assert "pull/39" in release_current
     assert "(Merged)" in release_current
     assert "Final source-branch Head" in release_current
-    assert "5b183a53d76aaa72807200e6d54793e9c0a4fcda" in release_current
+    assert PHASE_13_FINAL_HEAD in release_current
     assert "Canonical squash merge" in release_current
-    assert "38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3" in release_current
+    assert PHASE_13_CANONICAL_MERGE in release_current
     assert "Completion tag: annotated `phase-13-complete`" in release_current
     assert "Phase 14: Not started" in normalized_release_current
     assert "pending" not in normalized_release_current.lower()
@@ -250,13 +256,12 @@ def test_phase_fourteen_gate_uses_stable_phase_thirteen_ancestor() -> None:
     normalized = " ".join(startup_gate.split())
 
     assert "PR #39 merge commit" in normalized
-    assert "38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3" in startup_gate
-    assert "5b183a53d76aaa72807200e6d54793e9c0a4fcda" in startup_gate
+    assert PHASE_13_CANONICAL_MERGE in startup_gate
+    assert PHASE_13_FINAL_HEAD in startup_gate
     assert "annotated `phase-13-complete` Tag" in normalized
     assert "git merge-base --is-ancestor" in startup_gate
     assert (
-        "38e5b8b905aba50ff9acfc7f84f850f03eb3f2f3 \\ main"
-        in normalized
+        f"{PHASE_13_CANONICAL_MERGE} \\ main" in normalized
     )
     assert "checks ancestry instead of requiring the live `main` HEAD" in normalized
     assert "does not need the number or future merge commit" in normalized
