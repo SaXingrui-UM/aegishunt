@@ -65,9 +65,12 @@ reports/cases/*
 !data/sample/phase2-benign.pcap
 !data/sample/phase12-demo.pcap
 !data/sample/phase12-presentation-demo.pcap
+!data/sample/phase14-attack-like.pcap
+!data/sample/phase14-benign-like.pcap
 !data/sample/phase2-flows.csv
 !data/sample/manifest.yaml
 !data/sample/README.md
+!data/sample/phase14-sample-provenance.json
 
 # Generated PR bodies and local scratch files
 .github/generated/

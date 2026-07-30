@@ -1,0 +1,55 @@
+{
+  "generator": "scripts/generate_phase14_samples.py",
+  "limitations": [
+    "profile names are not verified ground-truth labels",
+    "not a public benchmark or production validation",
+    "not used for model, calibration, threshold, or policy selection",
+    "does not preserve application payload or original network identities",
+    "controlled offline pipeline demonstration only"
+  ],
+  "outputs": {
+    "phase14-attack-like.pcap": {
+      "sha256": "efb3c6334ba5d484b1662fd34df748d90e5ee1208a5edda00adfbd76d7feaca8",
+      "size_bytes": 71214,
+      "synthetic": true
+    },
+    "phase14-benign-like.pcap": {
+      "sha256": "5c93e494e6ebca226d22f4a0b888bda20d2e178c92f6096b40df0dfa75f6a61a",
+      "size_bytes": 39994,
+      "synthetic": true
+    }
+  },
+  "schema_version": "1.0.0",
+  "sources": [
+    {
+      "filename": "traffic_attack.pcap",
+      "observed_duration_seconds": 59.0,
+      "observed_flow_count": 42,
+      "observed_packet_count": 1017,
+      "provenance": "user supplied; acquisition provenance and license not established",
+      "sha256": "5bf949b7bed450968d220d8da26dbeea2009c2e4b68772d3b45c00e760f68ad5",
+      "size_bytes": 89711
+    },
+    {
+      "filename": "traffic_benign.pcap",
+      "observed_duration_seconds": 88.0,
+      "observed_flow_count": 51,
+      "observed_packet_count": 571,
+      "provenance": "user supplied; acquisition provenance and license not established",
+      "sha256": "3ba50eb01e9727b7e23312e119d568f095616fb7fd504fb522b78f00ecde6800",
+      "size_bytes": 102675
+    }
+  ],
+  "transformation": {
+    "copies_source_addresses": false,
+    "copies_source_payload": false,
+    "documentation_addresses_only": true,
+    "generated_headers_only": true,
+    "preserved_aggregate_fields": [
+      "packet_count",
+      "flow_count",
+      "capture_duration",
+      "destination-port profile"
+    ]
+  }
+}

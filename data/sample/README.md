@@ -14,6 +14,13 @@ or contact any system. AegisHunt only reads the files locally.
   connections, periodic small flows, and a bounded asymmetric transfer-like
   flow. Its detailed safety and packet inventory is recorded in
   `phase12-presentation-demo.manifest.json`.
+- `phase14-attack-like.pcap` and `phase14-benign-like.pcap` are deterministic,
+  payload-free captures built from aggregate packet/flow profiles observed in
+  the two user-supplied final-delivery PCAPs. All addresses were replaced with
+  IANA documentation addresses and no original application payload was copied.
+  The names are presentation profiles, not verified labels or ground truth.
+  `phase14-sample-provenance.json` records source checksums, transformation
+  rules, limitations, and the exact output inventory.
 - `manifest.yaml` declares reviewed metadata and SHA-256 checksums.
 
 Regenerate the PCAP explicitly from the project root:
@@ -22,7 +29,10 @@ Regenerate the PCAP explicitly from the project root:
 python scripts/generate_phase2_samples.py --output data/sample/phase2-benign.pcap
 python scripts/generate_phase12_demo_pcap.py
 python scripts/generate_phase12_presentation_pcap.py
+python scripts/generate_phase14_samples.py
 ```
 
 These samples demonstrate ingestion mechanics only. They are not evidence of
 model quality, detection capability, or operational security performance.
+The original uploaded Phase 14 captures remain ignored, are not altered by the
+generator, and are not part of the distributable release.
