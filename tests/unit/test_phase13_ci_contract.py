@@ -14,7 +14,7 @@ def test_development_environment_pins_a_non_vulnerable_setuptools() -> None:
 def test_ci_uses_portable_pytest_module_invocation() -> None:
     workflow = (PROJECT_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
-    assert workflow.count("python -m pytest") == 4
+    assert workflow.count("python -m pytest") == 5
     assert "\n        run: pytest" not in workflow
 
 

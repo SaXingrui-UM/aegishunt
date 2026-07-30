@@ -120,6 +120,8 @@ def test_sample_registry_verifies_manifest_checksum(tmp_path: Path) -> None:
     assert {item.sample_id for item in descriptors} == {
         "phase12-demo-pcap",
         "phase12-presentation-demo-pcap",
+        "phase14-attack-like-pcap",
+        "phase14-benign-like-pcap",
         "phase2-benign-pcap",
         "phase2-flow-csv",
     }
