@@ -246,7 +246,7 @@ assert anomaly.manifest.pipeline_verification_only is True
 assert anomaly.manifest.status == "validation_qualified"
 assert load_policy(
     fusion_root / "1.0.0", root=fusion_root
-).recommendation == "inconclusive"
+).recommendation_status == "inconclusive"
 assert load_risk_policy(
     root / "configs/detection.yaml"
 ).policy.controlled_pipeline_only is True
