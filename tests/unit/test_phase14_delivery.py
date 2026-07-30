@@ -52,6 +52,15 @@ def test_phase14_compose_keeps_application_non_root_and_loopback_only() -> None:
     assert compose["networks"]["aegishunt-internal"] == {"driver": "bridge"}
 
 
+def test_phase14_docker_ci_waits_for_services_after_restart() -> None:
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert "restart api worker frontend" in workflow
+    assert "service health did not recover after restart" in workflow
+    assert '"http://127.0.0.1:8501/_stcore/health"' in workflow
+    assert "sleep 10" not in workflow
+
+
 def test_phase14_dockerfile_uses_wheel_and_non_root_runtime() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 

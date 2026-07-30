@@ -411,14 +411,34 @@ jobs:
           PY
           docker compose -p aegishunt-phase14-ci start worker
           docker compose -p aegishunt-phase14-ci restart api worker frontend
-          sleep 10
-          curl --fail --silent http://127.0.0.1:8000/health
-          test "$(curl --fail --silent http://127.0.0.1:8000/runtime/jobs | \
-            python -c 'import json,sys; print(json.load(sys.stdin)[\"total\"])')" = "1"
           PHASE14_DOCKER_CASE_ID="$(cat /tmp/phase14-docker-case-id)" python - <<'PY'
           import json
           import os
+          import time
           import urllib.request
+
+          for url in (
+              "http://127.0.0.1:8000/health",
+              "http://127.0.0.1:8501/_stcore/health",
+          ):
+              for _ in range(90):
+                  try:
+                      with urllib.request.urlopen(url, timeout=2) as response:
+                          assert response.status == 200
+                          break
+                  except OSError:
+                      time.sleep(1)
+              else:
+                  raise SystemExit(
+                      f"service health did not recover after restart: {url}"
+                  )
+
+          with urllib.request.urlopen(
+              "http://127.0.0.1:8000/runtime/jobs", timeout=30
+          ) as response:
+              jobs = json.load(response)
+          assert jobs["total"] == 1
+
           case_id = os.environ["PHASE14_DOCKER_CASE_ID"]
           with urllib.request.urlopen(
               f"http://127.0.0.1:8000/cases/{case_id}", timeout=30
