@@ -13,6 +13,7 @@ from aegishunt.delivery.release_manifest import (
     verify_release_bundle,
     write_release_manifest,
 )
+from scripts import build_release_bundle
 
 
 def _bundle(tmp_path: Path) -> Path:
@@ -82,3 +83,23 @@ def test_release_manifest_refuses_manifest_overwrite(tmp_path: Path) -> None:
     root = _bundle(tmp_path)
     with pytest.raises(ReleaseManifestError, match="already exists"):
         write_release_manifest(root, {})
+
+
+def test_release_copy_defaults_to_deny_for_unlisted_pcap(tmp_path: Path) -> None:
+    source = tmp_path / "traffic_attack.pcap"
+    destination = tmp_path / "release" / source.name
+    source.write_bytes(b"unreviewed source capture")
+
+    build_release_bundle._copy_file(source, destination)
+
+    assert not destination.exists()
+
+
+def test_release_copy_allows_only_named_reviewed_sample_pcap(tmp_path: Path) -> None:
+    source = tmp_path / "phase14-attack-like.pcap"
+    destination = tmp_path / "release" / source.name
+    source.write_bytes(b"reviewed controlled sample")
+
+    build_release_bundle._copy_file(source, destination)
+
+    assert destination.read_bytes() == source.read_bytes()

@@ -46,6 +46,7 @@ EXCLUDED_NAMES = {".DS_Store", "__pycache__"}
 EXCLUDED_SUFFIXES = {
     ".db",
     ".joblib",
+    ".pcap",
     ".pcapng",
     ".pkl",
     ".pyc",
