@@ -88,8 +88,9 @@ def main() -> None:
         st.rerun()
     st.sidebar.divider()
     st.sidebar.caption(
-        "Phase 12 complete · PR #35 merged · phase-12-complete verified. "
-        "Phase 13 hardening: Implementation complete — awaiting PR review. "
+        "Phase 13 hardening: Complete. "
+        "PR #39 merged. "
+        "Checkpoint tag phase-13-complete verified. "
         "Phase 14: Not started. "
         "FastAPI is the only business interface."
     )
