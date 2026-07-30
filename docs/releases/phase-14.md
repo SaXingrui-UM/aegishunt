@@ -32,9 +32,21 @@ Tag, or GitHub Release is introduced.
 
 ## Tests and acceptance
 
-Pending final execution. Exact commands, counts, coverage, clean-install,
-Docker, full-chain, bundle, security, robustness, performance, review, commits,
-PR, and CI status will be recorded before the PR is declared ready.
+Local verification is complete: Ruff passed; strict mypy passed 239 source
+files; 545 pytest tests passed with no failures, skips, or xfails at 85.78%
+branch-aware coverage; all 17 core packages remain above 80%. Python 3.11 and
+3.12 external clean-wheel environments passed without editable installation or
+`PYTHONPATH`. Both Phase 14 sample derivatives completed the full persisted
+demo/restart path. The exact-inventory ignored release bundle, sample database,
+and copied controlled demo models verified. Security reported 128 audited
+dependencies with no advisories, zero unreviewed secret candidates, 54 Low and
+zero blocking Bandit findings; robustness smoke passed 1/1 and performance
+smoke completed.
+
+Docker Compose validates, but the local image build could not retrieve pinned
+base-image metadata because the workstation Docker Hub credential/network path
+failed. No local Docker runtime pass is claimed. Required new-Head GitHub CI,
+including the Docker job, remains pending before the PR may be declared ready.
 
 ## Known limitations
 
