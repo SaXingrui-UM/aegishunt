@@ -1,4 +1,4 @@
-"""Data ingestion and replay-control page."""
+"""Data ingestion and replay-control view."""
 
 from __future__ import annotations
 

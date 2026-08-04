@@ -1,4 +1,4 @@
-"""System Health and runtime-control page."""
+"""System Health and runtime-control view."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Traffic Explorer page."""
+"""Traffic Explorer view."""
 
 from __future__ import annotations
 

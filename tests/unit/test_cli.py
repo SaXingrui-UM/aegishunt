@@ -213,7 +213,16 @@ def test_run_frontend_uses_current_python(monkeypatch: MonkeyPatch) -> None:
 
     assert result == 0
     assert captured[0][:4] == [cli.sys.executable, "-m", "streamlit", "run"]
-    assert captured[0][-2:] == ["--server.headless", "true"]
+    assert captured[0][-8:] == [
+        "--server.headless",
+        "true",
+        "--client.showSidebarNavigation",
+        "false",
+        "--client.toolbarMode",
+        "minimal",
+        "--browser.gatherUsageStats",
+        "false",
+    ]
 
 
 def test_init_db_is_repeatable_and_does_not_expose_database_url(tmp_path: Path) -> None:

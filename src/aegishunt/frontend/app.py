@@ -1,4 +1,4 @@
-"""API-only Streamlit application for the complete Phase 12 local workflow."""
+"""API-only Streamlit application for the local research workflow."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import streamlit as st
 from aegishunt.config import load_settings
 from aegishunt.frontend.client import AegisHuntApiClient
 from aegishunt.frontend.components import research_disclaimer
-from aegishunt.frontend.pages import (
+from aegishunt.frontend.views import (
     alerts,
     cases,
     evaluation,
@@ -20,7 +20,7 @@ from aegishunt.frontend.pages import (
     system,
     traffic,
 )
-from aegishunt.metadata import APPLICATION_DESCRIPTION, APPLICATION_NAME, __version__
+from aegishunt.metadata import APPLICATION_NAME, __version__
 
 PageRenderer = Callable[[AegisHuntApiClient], None]
 
@@ -35,6 +35,39 @@ PAGES: dict[str, PageRenderer] = {
     "Evaluation": evaluation.render,
     "System Health": system.render,
 }
+
+
+def _apply_theme() -> None:
+    """Apply a restrained local-only visual system without altering navigation."""
+
+    st.markdown(
+        """
+        <style>
+        :root {
+          --aegis-ink: #172033;
+          --aegis-muted: #5e6b82;
+          --aegis-line: #e3e8f0;
+          --aegis-teal: #087f8c;
+        }
+        .stApp { background: #ffffff; color: var(--aegis-ink); }
+        [data-testid="stSidebar"] { background: #f7f9fc; }
+        [data-testid="stMetric"] {
+          border: 1px solid var(--aegis-line);
+          border-radius: 12px;
+          padding: 0.75rem 0.9rem;
+          background: #fbfcfe;
+        }
+        [data-testid="stMetricLabel"] { color: var(--aegis-muted); }
+        [data-testid="stExpander"] {
+          border: 1px solid var(--aegis-line);
+          border-radius: 10px;
+        }
+        h1, h2, h3 { color: var(--aegis-ink); letter-spacing: -0.015em; }
+        a { color: var(--aegis-teal); }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _client(
@@ -57,7 +90,7 @@ def _client(
 
 
 def main() -> None:
-    """Render nine API-backed pages with explicit mutation forms."""
+    """Render one selected API-backed view into a stable page container."""
 
     settings = load_settings()
     st.session_state.setdefault("aegishunt_default_actor", settings.web.default_actor)
@@ -67,62 +100,29 @@ def main() -> None:
         layout="wide",
         initial_sidebar_state="expanded",
     )
+    _apply_theme()
     st.sidebar.title(APPLICATION_NAME)
     st.sidebar.caption("Autonomous Threat Hunting Research Prototype")
-    page_name = st.sidebar.radio("Navigation", tuple(PAGES), label_visibility="collapsed")
+    page_name = st.sidebar.radio(
+        "Navigation",
+        tuple(PAGES),
+        key="aegishunt-primary-navigation",
+        label_visibility="collapsed",
+    )
     st.sidebar.divider()
-    auto_refresh = st.sidebar.toggle(
-        "Auto-refresh current read view",
-        value=False,
-        disabled=not settings.web.auto_refresh_enabled,
-        help=(
-            "Refreshes GET-backed rendering only. It never triggers ingestion, replay, "
-            "training, activation, verdicts, cases, or demo work."
-        ),
-    )
-    st.sidebar.caption(
-        f"Configured interval: {settings.web.auto_refresh_seconds}s · "
-        "Local single-user mode · authentication/RBAC not implemented"
-    )
     if st.sidebar.button("Refresh now"):
         st.rerun()
     st.sidebar.divider()
-    st.sidebar.caption(
-        f"AegisHunt {__version__} · "
-        "Phase 13 checkpoint complete and immutable. "
-        "Phase 14 final delivery: Phase complete. "
-        "PR #41 is merged; all required implementation-Head CI gates passed. "
-        "Annotated phase-14-complete is the final implementation checkpoint. "
-        "No further implementation phase is planned. "
-        "No GitHub Release or release publication was performed. "
-        "FastAPI is the only business interface."
-    )
-    st.sidebar.caption(APPLICATION_DESCRIPTION)
+    st.sidebar.caption(f"AegisHunt {__version__} · Local research prototype")
     renderer = PAGES[page_name]
-    if auto_refresh:
-        def refreshed() -> None:
-            with _client(
-                settings.web.api_base_url,
-                settings.web.request_timeout_seconds,
-                page_size=settings.web.maximum_table_rows,
-                actor_header=settings.web.actor_header,
-                safe_download_types=settings.web.safe_download_types,
-            ) as client:
-                renderer(client)
-
-        refreshed_fragment: Callable[[], None] = st.fragment(
-            run_every=f"{settings.web.auto_refresh_seconds}s"
-        )(refreshed)
-        refreshed_fragment()
-    else:
-        with _client(
-            settings.web.api_base_url,
-            settings.web.request_timeout_seconds,
-            page_size=settings.web.maximum_table_rows,
-            actor_header=settings.web.actor_header,
-            safe_download_types=settings.web.safe_download_types,
-        ) as client:
-            renderer(client)
+    with _client(
+        settings.web.api_base_url,
+        settings.web.request_timeout_seconds,
+        page_size=settings.web.maximum_table_rows,
+        actor_header=settings.web.actor_header,
+        safe_download_types=settings.web.safe_download_types,
+    ) as client:
+        renderer(client)
     st.divider()
     research_disclaimer()
 

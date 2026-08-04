@@ -23,8 +23,14 @@ class PaginationMetadata(Protocol):
 
 
 def page_header(title: str, subtitle: str) -> None:
-    st.title(title)
+    st.title(title, anchor=title.casefold().replace(" ", "-"))
     st.caption(subtitle)
+
+
+def section_header(title: str) -> None:
+    """Render a rerun-safe section anchor instead of reusing prior-page links."""
+
+    st.subheader(title, anchor=title.casefold().replace(" ", "-"))
 
 
 def limitation(text: str) -> None:
@@ -45,9 +51,14 @@ def api_error(error: ApiClientError) -> None:
 
 
 def metrics(values: Mapping[str, object | None]) -> None:
-    columns = st.columns(len(values))
-    for column, (label, value) in zip(columns, values.items(), strict=True):
-        column.metric(label, "Unavailable" if value is None else str(value))
+    """Render compact metrics with no more than four columns per row."""
+
+    items = list(values.items())
+    for start in range(0, len(items), 4):
+        row = items[start : start + 4]
+        columns = st.columns(len(row))
+        for column, (label, value) in zip(columns, row, strict=True):
+            column.metric(label, "Unavailable" if value is None else str(value))
 
 
 def _safe_markdown_cell(value: object) -> str:
@@ -122,6 +133,8 @@ def paginated_table(
     """Render one bounded API page with stable previous/next controls."""
 
     table(rows, empty_message=empty_message)
+    if page.total == 0 or (page.offset == 0 and page.next_offset is None):
+        return
     total_pages = max(1, math.ceil(page.total / page.limit))
     current_page = min(total_pages, (page.offset // page.limit) + 1)
     previous_offset = max(0, page.offset - page.limit)
@@ -160,9 +173,7 @@ def explicit_actor_fields(prefix: str) -> tuple[str, str]:
 
 
 def research_disclaimer() -> None:
-    st.warning(
-        "Research prototype only. Controlled synthetic pipeline verification is not a "
-        "public benchmark, production validation, real-world performance result, or "
-        "proof of zero-day detection. Scores are not attack probabilities and no "
-        "automated response is performed."
+    st.caption(
+        "Controlled synthetic demonstration; not a public benchmark or production "
+        "validation."
     )

@@ -1,4 +1,4 @@
-"""Correlated alert groups and threat-hypothesis page."""
+"""Correlated alert groups and threat-hypothesis view."""
 
 from __future__ import annotations
 

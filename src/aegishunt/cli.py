@@ -185,6 +185,12 @@ def run_frontend(address: str, port: int, headless: bool) -> int:
         str(port),
         "--server.headless",
         str(headless).lower(),
+        "--client.showSidebarNavigation",
+        "false",
+        "--client.toolbarMode",
+        "minimal",
+        "--browser.gatherUsageStats",
+        "false",
     ]
     return subprocess.run(command, check=False).returncode
 

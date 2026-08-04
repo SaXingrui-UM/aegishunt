@@ -10,6 +10,8 @@ x-aegishunt-common: &aegishunt-common
   working_dir: /opt/aegishunt
   environment:
     AEGISHUNT_CONFIG: /opt/aegishunt/configs/docker.yaml
+    HOME: /tmp
+    XDG_CONFIG_HOME: /tmp/.config
   networks:
     - aegishunt-internal
   read_only: true

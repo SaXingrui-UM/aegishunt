@@ -24,6 +24,7 @@ from aegishunt.api.contracts import (
     EffectiveModelState,
     EvaluationDescriptor,
     EvaluationPage,
+    EvaluationSummary,
     FlowSummary,
     FusionEvaluationDiscovery,
     HypothesisDetail,
@@ -715,6 +716,9 @@ class AegisHuntApiClient:
 
     def evaluation(self, run_id: str) -> EvaluationDescriptor:
         return self._get(f"/evaluation/{run_id}", EvaluationDescriptor)
+
+    def evaluation_summary(self) -> EvaluationSummary:
+        return self._get("/evaluation/summary", EvaluationSummary)
 
     def fusion_evaluation_status(self) -> FusionEvaluationDiscovery:
         return self._get("/evaluation/fusion-status", FusionEvaluationDiscovery)
