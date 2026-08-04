@@ -133,7 +133,12 @@ def paginated_table(
     """Render one bounded API page with stable previous/next controls."""
 
     table(rows, empty_message=empty_message)
-    if page.total == 0 or (page.offset == 0 and page.next_offset is None):
+    if page.total == 0:
+        if page.offset > 0:
+            _set_pagination_offset(key, 0)
+            st.rerun()
+        return
+    if page.offset == 0 and page.next_offset is None:
         return
     total_pages = max(1, math.ceil(page.total / page.limit))
     current_page = min(total_pages, (page.offset // page.limit) + 1)

@@ -110,19 +110,34 @@ def main() -> None:
         label_visibility="collapsed",
     )
     st.sidebar.divider()
+    auto_refresh = st.sidebar.toggle(
+        "Auto-refresh",
+        value=False,
+        disabled=not settings.web.auto_refresh_enabled,
+        help="Refreshes the selected read view only; no operation is triggered.",
+    )
     if st.sidebar.button("Refresh now"):
         st.rerun()
     st.sidebar.divider()
     st.sidebar.caption(f"AegisHunt {__version__} · Local research prototype")
     renderer = PAGES[page_name]
-    with _client(
-        settings.web.api_base_url,
-        settings.web.request_timeout_seconds,
-        page_size=settings.web.maximum_table_rows,
-        actor_header=settings.web.actor_header,
-        safe_download_types=settings.web.safe_download_types,
-    ) as client:
-        renderer(client)
+    def render_selected_page() -> None:
+        with _client(
+            settings.web.api_base_url,
+            settings.web.request_timeout_seconds,
+            page_size=settings.web.maximum_table_rows,
+            actor_header=settings.web.actor_header,
+            safe_download_types=settings.web.safe_download_types,
+        ) as client:
+            renderer(client)
+
+    if auto_refresh:
+        refreshed_page: Callable[[], None] = st.fragment(
+            run_every=f"{settings.web.auto_refresh_seconds}s"
+        )(render_selected_page)
+        refreshed_page()
+    else:
+        render_selected_page()
     st.divider()
     research_disclaimer()
 

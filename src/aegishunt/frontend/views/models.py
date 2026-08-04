@@ -25,20 +25,7 @@ def _model_cards(
     client: AegisHuntApiClient,
 ) -> tuple[list[ModelDescriptor], EffectiveModelState]:
     effective = client.effective_models()
-    referenced_ids = dict.fromkeys(
-        (
-            *(item.model_id for item in effective.effective_models),
-            *effective.operations.eligible_activation_model_ids,
-        )
-    )
-    models: list[ModelDescriptor] = []
-    for model_id in referenced_ids:
-        try:
-            models.append(client.model(model_id))
-        except ApiClientError as error:
-            if error.status_code != 404:
-                raise
-    return models, effective
+    return list(effective.operations.eligible_activation_models), effective
 
 
 def _matching_supervised_bundle(
@@ -58,8 +45,7 @@ def _matching_supervised_bundle(
             item
             for item in models
             if supervised is not None
-            and item.model_id == supervised.model_id
-            and item.engine == "supervised"
+            and item.engine == supervised.engine_type
             and item.version == supervised.version
             and item.checksum == supervised.artifact_hash
             and item.artifact_available
@@ -141,6 +127,20 @@ def render(client: AegisHuntApiClient) -> None:
             st.write(
                 "No global model pointer is active; the completed job used immutable "
                 "runtime-pinned artifacts."
+            )
+        else:
+            st.markdown("**Global active model pointers**")
+            table(
+                (
+                    {
+                        "Engine": item.engine,
+                        "Version": item.version,
+                        "Status": _label(item.state),
+                        "Artifact hash": item.checksum,
+                    }
+                    for item in effective.global_active_models
+                ),
+                empty_message="No global model pointer is active.",
             )
         st.write(
             f"Latest runtime job: `{effective.latest_runtime_job_id}` · "

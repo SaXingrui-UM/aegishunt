@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 from uuid import UUID, uuid5
@@ -170,13 +171,17 @@ class ModelRegistryService:
     def active(self) -> list[ModelDescriptor]:
         return [item for item in self.list_models() if item.active]
 
-    def operation_capabilities(self) -> ModelOperationCapabilities:
+    def operation_capabilities(
+        self,
+        models: Sequence[ModelDescriptor] | None = None,
+    ) -> ModelOperationCapabilities:
         """Return read-only readiness for controls shown by the mentor UI."""
 
-        models = self.list_models()
-        eligible = tuple(
-            item.model_id for item in models if item.activation_eligible
+        verified_models = list(models) if models is not None else self.list_models()
+        eligible_models = tuple(
+            item for item in verified_models if item.activation_eligible
         )
+        eligible = tuple(item.model_id for item in eligible_models)
         required_inputs = (
             self._settings.datasets.processed_root / "train.jsonl",
             self._settings.datasets.processed_root / "validation.jsonl",
@@ -200,6 +205,7 @@ class ModelRegistryService:
             training_ready=training_ready,
             activation_ready=bool(eligible),
             eligible_activation_model_ids=eligible,
+            eligible_activation_models=eligible_models,
             training_message=(
                 "Controlled training prerequisites are ready."
                 if training_ready

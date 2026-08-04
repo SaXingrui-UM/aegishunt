@@ -77,8 +77,12 @@ def render(client: AegisHuntApiClient) -> None:
     primary_metrics[1].caption(f"{critical_alerts} critical")
     primary_metrics[2].metric("Open Hypotheses", open_hypotheses)
     primary_metrics[3].metric("Open Cases", open_cases)
+    st.caption(
+        "Current totals are cumulative across retained local analyses; the model "
+        "cards below describe the latest completed analysis."
+    )
 
-    section_header("Analysis pipeline")
+    section_header("Retained analysis pipeline")
     metrics(
         {
             "Packets": flows.total_packets,
@@ -91,8 +95,9 @@ def render(client: AegisHuntApiClient) -> None:
         }
     )
     st.caption(
-        "PCAP packets are aggregated into bidirectional flows, scored by the two "
-        "models and fusion policy, then correlated into reviewable hunting evidence."
+        "Cumulative API-backed evidence: PCAP packets are aggregated into "
+        "bidirectional flows, scored by the two models and fusion policy, then "
+        "correlated into reviewable hunting evidence."
     )
 
     section_header("Models used in latest analysis")

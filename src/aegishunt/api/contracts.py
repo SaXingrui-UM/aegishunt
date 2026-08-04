@@ -456,6 +456,7 @@ class ModelOperationCapabilities(ApiContract):
     training_ready: bool
     activation_ready: bool
     eligible_activation_model_ids: tuple[str, ...] = ()
+    eligible_activation_models: tuple[ModelDescriptor, ...] = ()
     training_message: str
     activation_message: str
 

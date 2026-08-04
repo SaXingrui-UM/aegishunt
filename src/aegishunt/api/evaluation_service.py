@@ -25,6 +25,7 @@ from aegishunt.api.contracts import (
     FusionEvaluationDiscovery,
     FusionPolicyDescriptor,
 )
+from aegishunt.api.demo_service import SampleDemoService
 from aegishunt.api.model_service import ModelRegistryService
 from aegishunt.api.runtime_model_service import EffectiveRuntimeModelService
 from aegishunt.config import ApplicationSettings
@@ -99,7 +100,9 @@ def _directory_hash(paths: tuple[Path, ...]) -> str:
     return digest.hexdigest()
 
 
-def _csv_value(value: str) -> object:
+def _csv_value(value: object) -> object:
+    if not isinstance(value, str):
+        raise ValueError("registered fusion evaluation CSV row is malformed")
     normalized = value.strip()
     if normalized == "":
         return None
@@ -118,13 +121,21 @@ def _csv_value(value: str) -> object:
 
 def _read_csv(path: Path) -> list[JsonObject]:
     with path.open(newline="", encoding="utf-8") as stream:
-        rows = [
-            cast(
-                JsonObject,
-                {name: _csv_value(value) for name, value in row.items()},
+        reader = csv.DictReader(stream)
+        if not reader.fieldnames or any(
+            not isinstance(name, str) or not name for name in reader.fieldnames
+        ):
+            raise ValueError("registered fusion evaluation CSV header is malformed")
+        rows = []
+        for row in reader:
+            if None in row or set(row) != set(reader.fieldnames):
+                raise ValueError("registered fusion evaluation CSV row is malformed")
+            rows.append(
+                cast(
+                    JsonObject,
+                    {name: _csv_value(value) for name, value in row.items()},
+                )
             )
-            for row in csv.DictReader(stream)
-        ]
     if not rows:
         raise ValueError("registered fusion evaluation CSV is empty")
     return rows
@@ -404,7 +415,19 @@ class DemoEvaluationSummaryService:
         self._settings = settings
 
     def read(self) -> EvaluationSummary:
-        runtime = EffectiveRuntimeModelService(self._database, self._settings).read()
+        try:
+            demo_job = SampleDemoService(
+                self._database,
+                self._settings,
+            ).latest_completed_runtime_job()
+        except (AegisHuntError, OSError, ValueError):
+            return self._invalid()
+        if demo_job is None:
+            return self._unavailable()
+        runtime = EffectiveRuntimeModelService(
+            self._database,
+            self._settings,
+        ).read_for_job(demo_job.job_id)
         effective = runtime.effective_fusion_policy
         if runtime.status != "available" or runtime.latest_runtime_job_id is None:
             return self._unavailable()

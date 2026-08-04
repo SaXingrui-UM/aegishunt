@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import shutil
+from datetime import timedelta
 from pathlib import Path
 from typing import cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import yaml
 from fastapi.testclient import TestClient
@@ -25,7 +26,16 @@ from aegishunt.config import (
     SupervisedSettings,
     WebSettings,
 )
+from aegishunt.runtime.contracts import (
+    RuntimeArtifactIdentity,
+    RuntimeJob,
+    runtime_snapshot_checksum,
+)
+from aegishunt.runtime.repositories import RuntimeJobRepository
+from aegishunt.schemas import TelemetrySource
+from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
 from aegishunt.storage import Database
+from aegishunt.storage.repositories import TelemetrySourceRepository
 
 ROOT = Path(__file__).parents[2]
 
@@ -191,6 +201,82 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             } == file_state_before
             assert _database_counts(database) == database_counts_before
 
+            demo_job_id = UUID(summary["provenance"]["runtime_job_id"])
+            unrelated_source_id = uuid4()
+            with database.session() as session, session.begin():
+                demo_job = RuntimeJobRepository(session).get(demo_job_id)
+                assert demo_job is not None
+                later = demo_job.updated_at + timedelta(seconds=1)
+                TelemetrySourceRepository(session).add(
+                    TelemetrySource(
+                        source_id=unrelated_source_id,
+                        source_type=SourceType.PCAP,
+                        filename_or_interface="unrelated-replay.pcap",
+                        ingestion_mode=IngestionMode.IMPORT,
+                        status=LifecycleStatus.COMPLETED,
+                        started_at=later,
+                        completed_at=later,
+                        records_processed=1,
+                        checksum="e" * 64,
+                    ),
+                    actor="phase14-test",
+                )
+                artifacts = tuple(
+                    RuntimeArtifactIdentity(
+                        artifact_type=item.artifact_type,
+                        artifact_id=(
+                            "unrelated-fusion-policy"
+                            if item.artifact_type == "fusion_policy"
+                            else item.artifact_id
+                        ),
+                        version=(
+                            "unrelated-version"
+                            if item.artifact_type == "fusion_policy"
+                            else item.version
+                        ),
+                        checksum=(
+                            "d" * 64
+                            if item.artifact_type == "fusion_policy"
+                            else item.checksum
+                        ),
+                    )
+                    for item in demo_job.snapshot.artifacts
+                )
+                unrelated_snapshot = demo_job.snapshot.model_copy(
+                    update={
+                        "source_id": unrelated_source_id,
+                        "source_checksum": "e" * 64,
+                        "stored_filename": "unrelated-replay.pcap",
+                        "capture_session_id": f"pcap:{unrelated_source_id}",
+                        "artifacts": artifacts,
+                    }
+                )
+                unrelated_job = RuntimeJob.model_validate(
+                    {
+                        **demo_job.model_dump(mode="python"),
+                        "job_id": uuid4(),
+                        "source_id": unrelated_source_id,
+                        "capture_session_id": unrelated_snapshot.capture_session_id,
+                        "snapshot": unrelated_snapshot,
+                        "snapshot_checksum": runtime_snapshot_checksum(unrelated_snapshot),
+                        "created_at": later,
+                        "started_at": later,
+                        "updated_at": later,
+                        "completed_at": later,
+                    }
+                )
+                RuntimeJobRepository(session).add(
+                    unrelated_job,
+                    actor="phase14-test",
+                )
+            after_unrelated_replay = client.get("/evaluation/summary")
+            assert after_unrelated_replay.status_code == 200
+            assert after_unrelated_replay.json()["status"] == "available"
+            assert (
+                after_unrelated_replay.json()["provenance"]["runtime_job_id"]
+                == str(demo_job_id)
+            )
+
             experiment = (
                 prepared_root
                 / "reports/fusion/phase-12-controlled-demo-fusion"
@@ -326,7 +412,7 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             assert case.json()["case"]["verdict"] == "needs_more_information"
             assert case.json()["notes"]
             assert case.json()["feedback"]
-            assert client.get("/runtime/jobs").json()["total"] == 2
+            assert client.get("/runtime/jobs").json()["total"] == 3
             assert client.get("/flows/summary").json()["total"] == 93
             previous_run = client.get("/demo/status").json()["previous_run"]
             assert previous_run["sample_id"] == "phase14-benign-like-pcap"

@@ -14,7 +14,7 @@ from aegishunt.config import ApplicationSettings
 from aegishunt.demo import DemoArtifactManager
 from aegishunt.ingestion.service import IngestionService
 from aegishunt.runtime.config import load_runtime_policy
-from aegishunt.runtime.contracts import RuntimeJobStatus
+from aegishunt.runtime.contracts import RuntimeJob, RuntimeJobStatus
 from aegishunt.runtime.repositories import RuntimeJobRepository
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.runtime.worker import RuntimeWorkerProcess
@@ -133,6 +133,30 @@ class SampleDemoService:
                     else "demo-only artifacts will be created only after confirmation"
                 ),
             ),
+        )
+
+    def latest_completed_runtime_job(self) -> RuntimeJob | None:
+        """Return the newest completed job belonging to an allowlisted demo sample."""
+
+        if not self._settings.web.sample_mode_enabled:
+            return None
+        descriptors = {item.sample_id: item for item in self._ingestion.list_samples()}
+        candidates: list[RuntimeJob] = []
+        with self._database.session() as session:
+            sources = TelemetrySourceRepository(session)
+            jobs = RuntimeJobRepository(session)
+            for sample_id in self._settings.web.demo_sample_ids:
+                descriptor = descriptors.get(sample_id)
+                if descriptor is None:
+                    continue
+                source = sources.get_by_checksum(descriptor.checksum)
+                job = None if source is None else jobs.get_by_source(source.source_id)
+                if job is not None and job.status is RuntimeJobStatus.COMPLETED:
+                    candidates.append(job)
+        return (
+            max(candidates, key=lambda item: (item.updated_at, str(item.job_id)))
+            if candidates
+            else None
         )
 
     @property
