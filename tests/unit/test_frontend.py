@@ -15,10 +15,12 @@ from fastapi.testclient import TestClient
 from streamlit.testing.v1 import AppTest
 
 from aegishunt.api.app import create_app
+from aegishunt.api.model_service import _writable_output_root
 from aegishunt.config import CaseFeedbackSettings
 from aegishunt.frontend import app
-from aegishunt.frontend.client import AegisHuntApiClient
+from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
 from aegishunt.frontend.components import markdown_table, page_header, section_header
+from aegishunt.frontend.views.models import _matching_supervised_bundle, _model_cards
 from aegishunt.frontend.views.overview import _active_alert_count, _demo_completed
 from aegishunt.storage import Database
 from tests.e2e.test_phase_12_api_frontend import _settings
@@ -226,6 +228,67 @@ def test_overview_only_labels_completed_runtime_as_demo_completed() -> None:
     assert not _demo_completed({"runtime_status": "failed"})
     assert not _demo_completed({"runtime_status": None})
     assert not _demo_completed(None)
+
+
+def test_model_cards_resolve_advertised_models_by_exact_id() -> None:
+    client = Mock(spec=AegisHuntApiClient)
+    effective = Mock()
+    effective.effective_models = [Mock(model_id="runtime-model")]
+    effective.operations.eligible_activation_model_ids = ("eligible-model-51",)
+    eligible = Mock(model_id="eligible-model-51")
+    client.effective_models.return_value = effective
+    client.model.side_effect = (
+        ApiClientError("not registered", status_code=404),
+        eligible,
+    )
+
+    models, resolved = _model_cards(cast(AegisHuntApiClient, client))
+
+    assert resolved is effective
+    assert models == [eligible]
+    assert client.model.call_args_list == [
+        call("runtime-model"),
+        call("eligible-model-51"),
+    ]
+    client.models.assert_not_called()
+
+
+def test_importance_bundle_requires_runtime_artifact_identity() -> None:
+    effective = Mock()
+    effective.effective_models = [
+        Mock(
+            model_id="supervised-model",
+            engine_type="supervised",
+            version="12.0.0",
+            artifact_hash="expected-hash",
+        )
+    ]
+    wrong = Mock(
+        model_id="supervised-model",
+        engine="supervised",
+        version="12.0.0",
+        checksum="different-hash",
+        artifact_available=True,
+    )
+    matching = Mock(
+        model_id="supervised-model",
+        engine="supervised",
+        version="12.0.0",
+        checksum="expected-hash",
+        artifact_available=True,
+    )
+
+    assert _matching_supervised_bundle([wrong], effective) is None
+    assert _matching_supervised_bundle([wrong, matching], effective) is matching
+
+
+def test_training_output_root_may_be_created_under_writable_ancestor(
+    tmp_path: Path,
+) -> None:
+    assert _writable_output_root(tmp_path / "missing" / "nested" / "reports")
+    occupied = tmp_path / "not-a-directory"
+    occupied.write_text("occupied", encoding="utf-8")
+    assert not _writable_output_root(occupied)
 
 
 def test_frontend_starts_with_truthful_api_unavailable_state(

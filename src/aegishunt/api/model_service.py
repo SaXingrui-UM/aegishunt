@@ -38,6 +38,22 @@ def model_identity(engine: str, version: str) -> UUID:
     return uuid5(_MODEL_NAMESPACE, f"{engine}:{version}")
 
 
+def _writable_output_root(path: Path) -> bool:
+    """Return whether an existing directory or its nearest ancestor is writable."""
+
+    candidate = path.absolute()
+    while not candidate.exists():
+        if candidate.is_symlink() or candidate == candidate.parent:
+            return False
+        candidate = candidate.parent
+    if candidate.is_symlink():
+        try:
+            candidate = candidate.resolve(strict=True)
+        except (OSError, RuntimeError):
+            return False
+    return candidate.is_dir() and os.access(candidate, os.W_OK | os.X_OK)
+
+
 class ModelRegistryService:
     """Verify bundles before listing, training, or explicit activation."""
 
@@ -179,10 +195,7 @@ class ModelRegistryService:
         )
         training_ready = all(
             path.is_file() and not path.is_symlink() for path in required_inputs
-        ) and all(
-            path.is_dir() and not path.is_symlink() and os.access(path, os.W_OK)
-            for path in output_roots
-        )
+        ) and all(_writable_output_root(path) for path in output_roots)
         return ModelOperationCapabilities(
             training_ready=training_ready,
             activation_ready=bool(eligible),

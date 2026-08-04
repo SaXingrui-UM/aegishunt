@@ -328,9 +328,9 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             assert case.json()["feedback"]
             assert client.get("/runtime/jobs").json()["total"] == 2
             assert client.get("/flows/summary").json()["total"] == 93
-            assert client.get("/demo/status").json()["previous_run"]["runtime_status"] == (
-                "completed"
-            )
+            previous_run = client.get("/demo/status").json()["previous_run"]
+            assert previous_run["sample_id"] == "phase14-benign-like-pcap"
+            assert previous_run["runtime_status"] == "completed"
         restarted.dispose()
     finally:
         database.dispose()

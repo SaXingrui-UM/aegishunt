@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -80,10 +81,10 @@ class SampleDemoService:
             for sample_id in self._settings.web.demo_sample_ids
             if sample_id in descriptors
         ]
-        previous: JsonObject | None = None
-        descriptor = descriptors.get(available_ids[0]) if available_ids else None
-        if descriptor is not None:
-            with self._database.session() as session:
+        previous_candidates: list[tuple[datetime, JsonObject]] = []
+        with self._database.session() as session:
+            for sample_id in available_ids:
+                descriptor = descriptors[sample_id]
                 source = TelemetrySourceRepository(session).get_by_checksum(
                     descriptor.checksum
                 )
@@ -92,9 +93,11 @@ class SampleDemoService:
                     if source is None
                     else RuntimeJobRepository(session).get_by_source(source.source_id)
                 )
-            if source is not None:
-                previous = {
+                if source is None:
+                    continue
+                payload: JsonObject = {
                     "namespace": self._namespace,
+                    "sample_id": sample_id,
                     "source_id": str(source.source_id),
                     "runtime_job_id": (
                         None if runtime_job is None else str(runtime_job.job_id)
@@ -103,6 +106,19 @@ class SampleDemoService:
                         None if runtime_job is None else runtime_job.status.value
                     ),
                 }
+                updated_at = (
+                    runtime_job.updated_at
+                    if runtime_job is not None
+                    else source.completed_at
+                    or source.started_at
+                    or datetime.min.replace(tzinfo=UTC)
+                )
+                previous_candidates.append((updated_at, payload))
+        previous = (
+            max(previous_candidates, key=lambda item: item[0])[1]
+            if previous_candidates
+            else None
+        )
         return DemoStatus(
             available=bool(available_ids),
             sample_ids=available_ids,

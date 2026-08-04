@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import streamlit as st
 
-from aegishunt.api.contracts import EffectiveModelState, ModelPage
+from aegishunt.api.contracts import EffectiveModelState, ModelDescriptor
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
 from aegishunt.frontend.components import (
     actor_input,
@@ -21,10 +23,49 @@ def _label(value: str) -> str:
 
 def _model_cards(
     client: AegisHuntApiClient,
-) -> tuple[ModelPage, EffectiveModelState]:
-    models = client.models(limit=50)
+) -> tuple[list[ModelDescriptor], EffectiveModelState]:
     effective = client.effective_models()
+    referenced_ids = dict.fromkeys(
+        (
+            *(item.model_id for item in effective.effective_models),
+            *effective.operations.eligible_activation_model_ids,
+        )
+    )
+    models: list[ModelDescriptor] = []
+    for model_id in referenced_ids:
+        try:
+            models.append(client.model(model_id))
+        except ApiClientError as error:
+            if error.status_code != 404:
+                raise
     return models, effective
+
+
+def _matching_supervised_bundle(
+    models: Sequence[ModelDescriptor],
+    effective: EffectiveModelState,
+) -> ModelDescriptor | None:
+    supervised = next(
+        (
+            item
+            for item in effective.effective_models
+            if item.engine_type == "supervised"
+        ),
+        None,
+    )
+    return next(
+        (
+            item
+            for item in models
+            if supervised is not None
+            and item.model_id == supervised.model_id
+            and item.engine == "supervised"
+            and item.version == supervised.version
+            and item.checksum == supervised.artifact_hash
+            and item.artifact_available
+        ),
+        None,
+    )
 
 
 def render(client: AegisHuntApiClient) -> None:
@@ -73,25 +114,7 @@ def render(client: AegisHuntApiClient) -> None:
             "but did not establish superiority."
         )
 
-    supervised = next(
-        (
-            item
-            for item in effective.effective_models
-            if item.engine_type == "supervised"
-        ),
-        None,
-    )
-    matching_bundle = next(
-        (
-            item
-            for item in models.items
-            if supervised is not None
-            and item.engine == "supervised"
-            and item.version == supervised.version
-            and item.artifact_available
-        ),
-        None,
-    )
+    matching_bundle = _matching_supervised_bundle(models, effective)
     if matching_bundle is not None:
         try:
             importance = client.model_importance(matching_bundle.model_id)
@@ -185,7 +208,7 @@ def render(client: AegisHuntApiClient) -> None:
 
     eligible = [
         item
-        for item in models.items
+        for item in models
         if item.model_id in effective.operations.eligible_activation_model_ids
         and item.activation_eligible
     ]
