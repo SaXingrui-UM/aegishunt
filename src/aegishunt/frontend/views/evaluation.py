@@ -169,6 +169,10 @@ def render(client: AegisHuntApiClient) -> None:
             "Evaluation artifact hash: "
             + summary.provenance.evaluation_artifact_hash
         )
+        st.caption(
+            "LOAO evidence checksum: "
+            + summary.provenance.loao_evidence_checksum
+        )
         if summary.confidence_intervals:
             table(
                 (

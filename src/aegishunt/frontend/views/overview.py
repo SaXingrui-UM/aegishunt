@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import streamlit as st
 
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
@@ -37,6 +39,10 @@ def _open_case_count(client: AegisHuntApiClient) -> int:
 
 def _label(value: str) -> str:
     return value.replace("_", " ").title()
+
+
+def _demo_completed(previous_run: Mapping[str, object] | None) -> bool:
+    return previous_run is not None and previous_run.get("runtime_status") == "completed"
 
 
 def render(client: AegisHuntApiClient) -> None:
@@ -121,7 +127,7 @@ def render(client: AegisHuntApiClient) -> None:
         st.caption(f"Decision: {_label(fusion.recommendation)}")
 
     with st.expander("Run or reset controlled demo", expanded=False):
-        if demo.previous_run is not None:
+        if _demo_completed(demo.previous_run):
             st.success("Demo completed")
         if not demo.available:
             st.info("No checksum-declared packaged sample is available.")

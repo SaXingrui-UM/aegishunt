@@ -173,6 +173,10 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             }
             assert fusion_loao["exfiltration"] == 0.0
             assert fusion_loao["reconnaissance"] == 0.0
+            assert (
+                summary["provenance"]["loao_evidence_checksum"]
+                == "57db0ddcf3f4984fdc9ced5443730e73196cc508203c419dd2ebf0fa0a056856"
+            )
             effective = client.get("/models/effective").json()
             assert effective["global_active_models"] == []
             assert client.get("/models/active").json() == []
@@ -206,6 +210,17 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             missing.unlink()
             failed_closed()
             missing.write_bytes(missing_bytes)
+
+            loao_bytes = missing.read_bytes()
+            loao_payload = loao_bytes.decode("utf-8").replace(
+                ",0.3333333333333333,0.5,",
+                ",0.9999,0.5,",
+                1,
+            )
+            assert loao_payload.encode("utf-8") != loao_bytes
+            missing.write_text(loao_payload, encoding="utf-8")
+            assert failed_closed()["status"] == "invalid"
+            missing.write_bytes(loao_bytes)
 
             extra = experiment / "unexpected-evidence.json"
             extra.write_text("{}\n", encoding="utf-8")

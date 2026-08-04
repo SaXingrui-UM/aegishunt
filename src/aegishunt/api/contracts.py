@@ -608,6 +608,7 @@ class EvaluationSummaryProvenance(ApiContract):
     policy_version: str
     policy_manifest_hash: str
     evaluation_artifact_hash: str
+    loao_evidence_checksum: str
     dataset_manifest_checksum: str
     split_manifest_checksum: str
     feature_schema_version: str

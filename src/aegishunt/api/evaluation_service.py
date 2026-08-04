@@ -83,6 +83,10 @@ _SUMMARY_UNAVAILABLE = (
     "No verified evaluation is available yet. Run the controlled demo from "
     "Overview to prepare the checked model and evaluation artifacts."
 )
+_DEMO_EVALUATION_CHECKSUM_MANIFEST = Path(
+    "configs/models/phase-12-demo-evaluation-checksums.json"
+)
+_LOAO_EVIDENCE_FILENAME = "leave_one_family_out.csv"
 
 
 def _directory_hash(paths: tuple[Path, ...]) -> str:
@@ -435,6 +439,9 @@ class DemoEvaluationSummaryService:
                 effective_policy=effective,
                 runtime_job_id=runtime.latest_runtime_job_id,
                 snapshot_created_at=runtime.snapshot_created_at,
+                checksum_manifest_path=(
+                    project_root / _DEMO_EVALUATION_CHECKSUM_MANIFEST
+                ),
             )
         except (
             AegisHuntError,
@@ -480,6 +487,7 @@ class DemoEvaluationSummaryService:
         effective_policy: FusionPolicyDescriptor,
         runtime_job_id: UUID,
         snapshot_created_at: datetime,
+        checksum_manifest_path: Path,
     ) -> EvaluationSummary:
         experiment_id = settings.runtime.fusion_evaluation_experiment_id
         experiment = settings.runtime.fusion_evaluation_root / experiment_id
@@ -523,6 +531,11 @@ class DemoEvaluationSummaryService:
             != effective_policy.artifact_hash
         ):
             raise ValueError("runtime policy and evaluation identities differ")
+        loao_evidence_checksum = self._verify_loao_checksum(
+            experiment,
+            experiment_id=experiment_id,
+            manifest_path=checksum_manifest_path,
+        )
         known = self._known_rows(experiment / "known_attack_metrics.csv")
         loao = self._loao_rows(
             experiment / "leave_one_family_out.csv",
@@ -566,6 +579,7 @@ class DemoEvaluationSummaryService:
                 policy_version=policy.policy_version,
                 policy_manifest_hash=effective_policy.artifact_hash,
                 evaluation_artifact_hash=artifact_hash,
+                loao_evidence_checksum=loao_evidence_checksum,
                 dataset_manifest_checksum=policy.dataset_manifest_checksum,
                 split_manifest_checksum=policy.split_manifest_checksum,
                 feature_schema_version=policy.feature_schema_version,
@@ -577,6 +591,43 @@ class DemoEvaluationSummaryService:
                 "fusion score is not attack probability",
             ),
         )
+
+    @staticmethod
+    def _verify_loao_checksum(
+        experiment: Path,
+        *,
+        experiment_id: str,
+        manifest_path: Path,
+    ) -> str:
+        if not manifest_path.is_file() or manifest_path.is_symlink():
+            raise ValueError("demo evaluation checksum manifest is unavailable")
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or set(payload) != {
+            "schema_version",
+            "experiment_id",
+            "file_inventory",
+            "checksums",
+        }:
+            raise ValueError("demo evaluation checksum manifest is invalid")
+        inventory = payload.get("file_inventory")
+        checksums = payload.get("checksums")
+        if (
+            payload.get("schema_version") != "1.0.0"
+            or payload.get("experiment_id") != experiment_id
+            or inventory != [_LOAO_EVIDENCE_FILENAME]
+            or not isinstance(checksums, dict)
+            or set(checksums) != {_LOAO_EVIDENCE_FILENAME}
+        ):
+            raise ValueError("demo evaluation checksum identity is invalid")
+        expected = checksums.get(_LOAO_EVIDENCE_FILENAME)
+        if (
+            not isinstance(expected, str)
+            or len(expected) != 64
+            or any(character not in "0123456789abcdef" for character in expected)
+            or sha256_file(experiment / _LOAO_EVIDENCE_FILENAME) != expected
+        ):
+            raise ValueError("demo LOAO evidence checksum failed")
+        return expected
 
     @staticmethod
     def _known_rows(path: Path) -> tuple[EvaluationComparisonRow, ...]:

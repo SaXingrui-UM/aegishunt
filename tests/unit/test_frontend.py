@@ -19,7 +19,7 @@ from aegishunt.config import CaseFeedbackSettings
 from aegishunt.frontend import app
 from aegishunt.frontend.client import AegisHuntApiClient
 from aegishunt.frontend.components import markdown_table, page_header, section_header
-from aegishunt.frontend.views.overview import _active_alert_count
+from aegishunt.frontend.views.overview import _active_alert_count, _demo_completed
 from aegishunt.storage import Database
 from tests.e2e.test_phase_12_api_frontend import _settings
 
@@ -220,6 +220,14 @@ def test_overview_active_alerts_include_open_and_acknowledged() -> None:
     ]
 
 
+def test_overview_only_labels_completed_runtime_as_demo_completed() -> None:
+    assert _demo_completed({"runtime_status": "completed"})
+    assert not _demo_completed({"runtime_status": "queued"})
+    assert not _demo_completed({"runtime_status": "failed"})
+    assert not _demo_completed({"runtime_status": None})
+    assert not _demo_completed(None)
+
+
 def test_frontend_starts_with_truthful_api_unavailable_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -351,6 +359,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert overview_metrics["Open Alerts"] == "2 open"
         assert overview_metrics["Open Hypotheses"] == "1"
         assert overview_metrics["Open Cases"] == "1"
+        assert any(item.value == "Demo completed" for item in test_app.success)
         assert "Observed runtime p95 (ms)" not in overview_metrics
         assert "Latency observations (n)" not in overview_metrics
 
