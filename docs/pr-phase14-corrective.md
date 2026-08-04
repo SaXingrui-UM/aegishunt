@@ -34,6 +34,9 @@ LOAO Recall of `0.8000` that did not match the verified experiment artifact.
 - Evaluation evidence fails closed. The reader requires the exact artifact
   inventory, non-symlink files, checksums, experiment identities, and effective
   runtime policy identity before returning a summary.
+- The one LOAO CSV not checksummed by the historical fusion policy is bound to
+  a source-controlled experiment checksum manifest before any family row is
+  projected. Schema-valid numeric substitution therefore fails closed.
 - The summary endpoint never prepares demo artifacts and is regression-tested
   not to change demo file timestamps or database row counts across repeated
   reads.
@@ -41,6 +44,10 @@ LOAO Recall of `0.8000` that did not match the verified experiment artifact.
   filesystem path disclosure.
 - Streamlit remains an API-only client. It does not import storage,
   repositories, SQLAlchemy, or artifact readers.
+- Automatic refresh is an explicit, default-off, GET-only control. Model
+  discovery is fetched once per render, stale page offsets recover safely, and
+  evaluation evidence is bound to the latest completed allowlisted demo even
+  when a newer unrelated replay exists.
 - The container keeps UID/GID 10001, read-only root, `cap_drop: ALL`,
   `no-new-privileges:true`, loopback-only ports, and existing named volumes.
   Writable Streamlit state is constrained to the existing `/tmp` tmpfs.
@@ -49,11 +56,21 @@ LOAO Recall of `0.8000` that did not match the verified experiment artifact.
 
 - `ruff check .` — passed.
 - `mypy src` — passed for 239 source files.
-- `pytest` — 554 passed, 0 failed, 18 warnings, 85.87% branch-aware coverage.
-- Focused API, evidence-integrity, status-document, CLI, and Streamlit AppTest
-  suites — passed.
+- `pytest` — 561 passed, 0 failed, 18 warnings, 85.84% branch-aware coverage.
+- Focused API, evidence-integrity, status-document, CLI, Streamlit AppTest, and
+  Phase 14 end-to-end suites — passed.
 - Evaluation regressions cover missing, extra, corrupt, symlinked,
-  checksum-mismatched, and identity-mismatched evidence plus no-mutation reads.
+  checksum-mismatched, schema-valid numerically substituted, and
+  identity-mismatched evidence plus no-mutation reads.
+- Codex review findings were resolved across four passes: LOAO checksum
+  anchoring; completed-demo semantics; runtime model/artifact identity;
+  creatable training roots; complete sample coverage; bounded model discovery;
+  default-off refresh; cumulative labels; malformed CSV rejection; global
+  active-pointer provenance; demo-job selection; and stale-page recovery.
+- Two suggestions to restore the old Overview latency/ingestion/timeline view
+  and show an evaluation-catalog fallback were not applied because the
+  corrective's explicit acceptance criteria require those details off Overview
+  and require one concise prompt when prepared demo evidence is unavailable.
 - Base-Compose final image — built and healthy; API summary and Streamlit
   production settings verified.
 - Real Browser flow — Overview → Model Lab → Evaluation → Overview → Model Lab,
