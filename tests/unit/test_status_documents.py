@@ -81,19 +81,22 @@ def test_readme_records_phase_fourteen_final_checkpoint() -> None:
     assert "retraining_candidate" in normalized
 
 
-def test_frontend_records_phase_fourteen_final_checkpoint() -> None:
+def test_frontend_omits_internal_phase_checkpoint_status() -> None:
     source = (
         PROJECT_ROOT / "src/aegishunt/frontend/app.py"
     ).read_text(encoding="utf-8")
 
-    assert "Phase 13 checkpoint complete and immutable" in source
-    assert "Phase 14 final delivery: Phase complete" in source
-    assert "PR #41 is merged" in source
-    assert "Annotated phase-14-complete" in source
-    assert "No further implementation phase is planned" in source
-    assert "No GitHub Release or release publication was performed" in source
-    assert "awaiting PR review" not in source
-    assert "Phase 15" not in source
+    for internal_status in (
+        "Phase 13 checkpoint complete and immutable",
+        "Phase 14 final delivery: Phase complete",
+        "PR #41 is merged",
+        "Annotated phase-14-complete",
+        "No further implementation phase is planned",
+        "No GitHub Release or release publication was performed",
+        "awaiting PR review",
+        "Phase 15",
+    ):
+        assert internal_status not in source
 
 
 def test_pm_def_001_is_resolved_without_erasing_history() -> None:
@@ -146,6 +149,10 @@ def test_progress_and_release_record_phase_fourteen_final_checkpoint() -> None:
     assert "formal final Codex Security rescan remains explicitly waived" in (
         normalized_progress_current
     )
+    assert (
+        "Corrective status | Implementation complete — awaiting PR review"
+        in normalized_progress_current
+    )
     assert "Next planned phase | None" in normalized_progress_current
     assert "No additional Phase 14 status-closure PR is required" in (
         normalized_progress_current
@@ -169,7 +176,6 @@ def test_progress_and_release_record_phase_fourteen_final_checkpoint() -> None:
     for transient in (
         "Implementation in progress",
         "Pull request: pending",
-        "Implementation complete — awaiting PR review",
         "Completion Tag: not created",
         "Pull request: pending",
     ):

@@ -97,6 +97,18 @@ See [Consolidated limitations](../limitations.md). Final formal Codex Security
 rescan was explicitly waived and is not claimed. Phase 14 remains a local
 single-user SQLite research delivery.
 
+## Mentor-demo corrective delivery
+
+The bounded `codex/frontend-demo-polish` correction keeps the Phase 14
+checkpoint and annotated `phase-14-complete` Tag unchanged. It removes the
+implicit Streamlit `pages/` navigation, presents effective runtime models
+instead of an empty global registry, adds a read-only typed demo evaluation
+summary, and aligns family-macro fusion LOAO Recall to the verified `0.3333`.
+The base Compose deployment retains UID/GID 10001, read-only root,
+`cap_drop: ALL`, `no-new-privileges`, loopback ports, and all named volumes.
+No model, threshold, fusion weight, risk policy, historical Tag, or automatic
+activation changes in this corrective PR.
+
 ## Next phase
 
 None. No further implementation phase is planned. Optional archival, thesis
