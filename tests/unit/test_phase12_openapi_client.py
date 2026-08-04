@@ -71,6 +71,7 @@ REQUIRED_ROUTES = {
     "/evaluation",
     "/evaluation/latest",
     "/evaluation/fusion-status",
+    "/evaluation/summary",
     "/evaluation/{run_id}",
     "/demo/status",
     "/demo/sample",

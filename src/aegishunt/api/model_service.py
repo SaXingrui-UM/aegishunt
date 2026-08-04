@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import cast
 from uuid import UUID, uuid5
@@ -10,6 +11,7 @@ from aegishunt.api.contracts import (
     ModelDescriptor,
     ModelImportance,
     ModelImportanceEntry,
+    ModelOperationCapabilities,
     ModelTrainRequest,
 )
 from aegishunt.api.errors import ApiError, conflict, not_found
@@ -151,6 +153,53 @@ class ModelRegistryService:
 
     def active(self) -> list[ModelDescriptor]:
         return [item for item in self.list_models() if item.active]
+
+    def operation_capabilities(self) -> ModelOperationCapabilities:
+        """Return read-only readiness for controls shown by the mentor UI."""
+
+        models = self.list_models()
+        eligible = tuple(
+            item.model_id for item in models if item.activation_eligible
+        )
+        required_inputs = (
+            self._settings.datasets.processed_root / "train.jsonl",
+            self._settings.datasets.processed_root / "validation.jsonl",
+            self._settings.datasets.reports_root / "dataset_manifest.json",
+            self._settings.datasets.reports_root / "split_manifest.json",
+            self._settings.supervised.training_config_path,
+            self._settings.anomaly.training_config_path,
+            Path("configs/models/supervised-corrective-pm-def-001.yaml"),
+            Path("configs/models/anomaly-lof-production-candidate.yaml"),
+        )
+        output_roots = (
+            self._settings.supervised.artifact_root,
+            self._settings.supervised.reports_root,
+            self._settings.anomaly.artifact_root,
+            self._settings.anomaly.reports_root,
+        )
+        training_ready = all(
+            path.is_file() and not path.is_symlink() for path in required_inputs
+        ) and all(
+            path.is_dir() and not path.is_symlink() and os.access(path, os.W_OK)
+            for path in output_roots
+        )
+        return ModelOperationCapabilities(
+            training_ready=training_ready,
+            activation_ready=bool(eligible),
+            eligible_activation_model_ids=eligible,
+            training_message=(
+                "Controlled training prerequisites are ready."
+                if training_ready
+                else "Training controls are hidden because the approved data, profiles, "
+                "or writable output roots are not all ready."
+            ),
+            activation_message=(
+                "Verified activation-eligible bundles are available."
+                if eligible
+                else "Activation controls are hidden because no verified eligible bundle "
+                "is available."
+            ),
+        )
 
     def train(self, request: ModelTrainRequest) -> ModelDescriptor:
         """Run an allowlisted existing pipeline; test evaluation and activation stay separate."""

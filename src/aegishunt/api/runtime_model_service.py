@@ -43,10 +43,12 @@ class EffectiveRuntimeModelService:
         self._settings = settings
 
     def read(self) -> EffectiveModelState:
-        global_active = ModelRegistryService(
+        registry = ModelRegistryService(
             self._database,
             self._settings,
-        ).active()
+        )
+        global_active = registry.active()
+        operations = registry.operation_capabilities()
         configured_policy = self._configured_policy()
         latest = self._latest_completed_job()
         if latest is None:
@@ -59,6 +61,7 @@ class EffectiveRuntimeModelService:
                 effective_models=[],
                 configured_fusion_policy=configured_policy,
                 effective_fusion_policy=None,
+                operations=operations,
                 unavailable_reason="no completed runtime job has a pinned model snapshot",
                 limitations=(
                     "global active pointers are not changed by demo execution",
@@ -105,6 +108,7 @@ class EffectiveRuntimeModelService:
             effective_models=models,
             configured_fusion_policy=configured_policy,
             effective_fusion_policy=effective_policy,
+            operations=operations,
             unavailable_reason=None,
             limitations=(
                 "runtime-job snapshots are immutable and do not imply global activation",

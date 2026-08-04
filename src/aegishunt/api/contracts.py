@@ -450,6 +450,16 @@ class FusionPolicyDescriptor(ApiContract):
     limitations: tuple[str, ...]
 
 
+class ModelOperationCapabilities(ApiContract):
+    """Presentation readiness for explicit model mutations."""
+
+    training_ready: bool
+    activation_ready: bool
+    eligible_activation_model_ids: tuple[str, ...] = ()
+    training_message: str
+    activation_message: str
+
+
 class EffectiveModelState(ApiContract):
     """Global pointers and latest-job effective artifacts with separate semantics."""
 
@@ -461,6 +471,7 @@ class EffectiveModelState(ApiContract):
     effective_models: list[EffectiveModelDescriptor]
     configured_fusion_policy: FusionPolicyDescriptor | None
     effective_fusion_policy: FusionPolicyDescriptor | None
+    operations: ModelOperationCapabilities
     unavailable_reason: str | None
     limitations: tuple[str, ...]
 
@@ -538,6 +549,110 @@ class FusionEvaluationDiscovery(ApiContract):
     dataset_reference: str | None
     split_reference: str | None
     limitations: tuple[str, ...]
+
+
+class EvaluationComparisonRow(ApiContract):
+    """One engine result on the identical known controlled comparison."""
+
+    engine: Literal["supervised", "anomaly", "fusion"]
+    mode: Literal["supervised_only", "anomaly_only", "dual_engine_fusion"]
+    recall: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    f1: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    macro_f1: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    pr_auc: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    false_positive_rate: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    tn: int = Field(ge=0)
+    fp: int = Field(ge=0)
+    fn: int = Field(ge=0)
+    tp: int = Field(ge=0)
+
+
+class EvaluationLoaoRow(ApiContract):
+    """One engine result for one held-out attack family."""
+
+    held_out_family: str
+    engine: Literal["supervised", "anomaly", "fusion"]
+    mode: Literal["supervised_only", "anomaly_only", "dual_engine_fusion"]
+    recall: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    false_positive_rate: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    evaluation_row_count: int = Field(ge=1)
+    evaluation_group_count: int = Field(ge=1)
+
+
+class EvaluationLoaoAggregate(ApiContract):
+    """Family-macro Recall calculated from verified LOAO rows."""
+
+    supervised_recall: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    anomaly_recall: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+    fusion_recall: float = Field(ge=0.0, le=1.0, allow_inf_nan=False)
+
+
+class EvaluationConfidenceInterval(ApiContract):
+    """Bounded summary of a verified whole-group confidence interval."""
+
+    comparison: Literal["fusion_minus_supervised", "fusion_minus_anomaly"]
+    metric: Literal["recall", "macro_f1", "pr_auc", "false_positive_rate"]
+    confidence_level: float = Field(gt=0.0, lt=1.0, allow_inf_nan=False)
+    lower: float = Field(allow_inf_nan=False)
+    upper: float = Field(allow_inf_nan=False)
+    requested_draws: int = Field(ge=1)
+    successful_draws: int = Field(ge=1)
+
+
+class EvaluationSummaryProvenance(ApiContract):
+    """Safe identities for the verified evaluation without filesystem paths."""
+
+    runtime_job_id: UUID
+    snapshot_created_at: datetime
+    policy_id: str
+    policy_version: str
+    policy_manifest_hash: str
+    evaluation_artifact_hash: str
+    dataset_manifest_checksum: str
+    split_manifest_checksum: str
+    feature_schema_version: str
+
+
+class EvaluationSummary(ApiContract):
+    """Typed presentation projection of the latest verified demo evaluation."""
+
+    status: Literal["available", "unavailable", "invalid"]
+    message: str
+    evidence_class: Literal["controlled_synthetic_evaluation"] | None = None
+    experiment_id: str | None = None
+    dataset_id: str | None = None
+    dataset_version: str | None = None
+    row_count: int | None = Field(default=None, ge=1)
+    group_count: int | None = Field(default=None, ge=1)
+    supervised_weight: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        allow_inf_nan=False,
+    )
+    anomaly_weight: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        allow_inf_nan=False,
+    )
+    selected_threshold: float | None = Field(
+        default=None,
+        gt=0.0,
+        lt=1.0,
+        allow_inf_nan=False,
+    )
+    recommendation: Literal[
+        "inconclusive",
+        "fusion_recommended",
+        "fusion_not_recommended",
+    ] | None = None
+    known_comparison: tuple[EvaluationComparisonRow, ...] = ()
+    loao_comparison: tuple[EvaluationLoaoRow, ...] = ()
+    loao_aggregate: EvaluationLoaoAggregate | None = None
+    confidence_intervals: tuple[EvaluationConfidenceInterval, ...] = ()
+    provenance: EvaluationSummaryProvenance | None = None
+    limitations: tuple[str, ...] = ()
 
 
 class DemoStatus(ApiContract):

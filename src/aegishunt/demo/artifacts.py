@@ -57,6 +57,7 @@ _ARTIFACT_LOCK = threading.Lock()
 _SUPERVISED_VERSION = "12.0.0"
 _ANOMALY_VERSION = "1.1.0-candidate"
 _FUSION_VERSION = "1.0.0"
+_FUSION_EXPERIMENT_ID = "phase-12-controlled-demo-fusion"
 _EXPLANATION_VERSION = "1.0.0"
 
 
@@ -222,12 +223,8 @@ class DemoArtifactManager:
                 "runtime": RuntimeSettings(
                     policy_path=paths.configs / "runtime.yaml",
                     fusion_policy_root=paths.fusion_models,
-                    fusion_evaluation_root=(
-                        self._settings.runtime.fusion_evaluation_root
-                    ),
-                    fusion_evaluation_experiment_id=(
-                        self._settings.runtime.fusion_evaluation_experiment_id
-                    ),
+                    fusion_evaluation_root=paths.fusion_reports,
+                    fusion_evaluation_experiment_id=_FUSION_EXPERIMENT_ID,
                 ),
             }
         )
@@ -376,7 +373,7 @@ class DemoArtifactManager:
         fusion = _read_yaml(self._project_root / "configs/models/fusion.yaml")
         fusion.update(
             {
-                "experiment_id": "phase-12-controlled-demo-fusion",
+                "experiment_id": _FUSION_EXPERIMENT_ID,
                 "policy_id": f"{self._settings.web.demo_namespace}-fusion",
                 "supervised_model_id": supervised.model_id,
                 "supervised_model_version": supervised.model_version,

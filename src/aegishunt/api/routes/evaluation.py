@@ -9,11 +9,15 @@ from fastapi import APIRouter, Depends
 from aegishunt.api.contracts import (
     EvaluationDescriptor,
     EvaluationPage,
+    EvaluationSummary,
     FusionEvaluationDiscovery,
 )
 from aegishunt.api.dependencies import PaginationDependency, get_database, get_settings
 from aegishunt.api.errors import not_found
-from aegishunt.api.evaluation_service import EvaluationCatalogService
+from aegishunt.api.evaluation_service import (
+    DemoEvaluationSummaryService,
+    EvaluationCatalogService,
+)
 from aegishunt.config import ApplicationSettings
 from aegishunt.storage import Database
 
@@ -79,6 +83,20 @@ def fusion_evaluation_discovery(
     """Distinguish missing artifacts from a verified inconclusive result."""
 
     return EvaluationCatalogService(database, settings).fusion_discovery()
+
+
+@router.get(
+    "/summary",
+    response_model=EvaluationSummary,
+    operation_id="get_evaluation_summary",
+)
+def evaluation_summary(
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> EvaluationSummary:
+    """Return a fail-closed projection of prepared controlled evidence."""
+
+    return DemoEvaluationSummaryService(database, settings).read()
 
 
 @router.get(

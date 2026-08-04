@@ -6,17 +6,29 @@ import csv
 import hashlib
 import json
 import math
+from datetime import datetime
 from pathlib import Path
-from typing import cast
+from statistics import fmean
+from typing import Literal, cast
+from uuid import UUID
 
 from pydantic import ValidationError
 
 from aegishunt.api.contracts import (
+    EvaluationComparisonRow,
+    EvaluationConfidenceInterval,
     EvaluationDescriptor,
+    EvaluationLoaoAggregate,
+    EvaluationLoaoRow,
+    EvaluationSummary,
+    EvaluationSummaryProvenance,
     FusionEvaluationDiscovery,
+    FusionPolicyDescriptor,
 )
 from aegishunt.api.model_service import ModelRegistryService
+from aegishunt.api.runtime_model_service import EffectiveRuntimeModelService
 from aegishunt.config import ApplicationSettings
+from aegishunt.demo import DemoArtifactManager
 from aegishunt.errors import AegisHuntError
 from aegishunt.ml.anomaly.service import AnomalyTrainingService
 from aegishunt.ml.fusion.artifacts import load_policy, sha256_file
@@ -62,6 +74,15 @@ _FUSION_LIMITATIONS = (
     "held-out exfiltration and reconnaissance misses are retained",
     "fusion score is not attack probability",
 )
+_MODE_ENGINES = {
+    "supervised_only": "supervised",
+    "anomaly_only": "anomaly",
+    "dual_engine_fusion": "fusion",
+}
+_SUMMARY_UNAVAILABLE = (
+    "No verified evaluation is available yet. Run the controlled demo from "
+    "Overview to prepare the checked model and evaluation artifacts."
+)
 
 
 def _directory_hash(paths: tuple[Path, ...]) -> str:
@@ -103,6 +124,30 @@ def _read_csv(path: Path) -> list[JsonObject]:
     if not rows:
         raise ValueError("registered fusion evaluation CSV is empty")
     return rows
+
+
+def _required_text(row: JsonObject, field: str) -> str:
+    value = row.get(field)
+    if not isinstance(value, str) or not value:
+        raise ValueError("fusion evaluation row has an invalid text field")
+    return value
+
+
+def _required_float(row: JsonObject, field: str) -> float:
+    value = row.get(field)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("fusion evaluation row has an invalid numeric field")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError("fusion evaluation row has a non-finite numeric field")
+    return result
+
+
+def _required_int(row: JsonObject, field: str) -> int:
+    value = row.get(field)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("fusion evaluation row has an invalid integer field")
+    return value
 
 
 class FusionEvaluationArtifactReader:
@@ -345,6 +390,354 @@ class FusionEvaluationArtifactReader:
             },
             limitations=_FUSION_LIMITATIONS,
         )
+
+
+class DemoEvaluationSummaryService:
+    """Project the latest runtime-pinned demo evaluation without mutation."""
+
+    def __init__(self, database: Database, settings: ApplicationSettings) -> None:
+        self._database = database
+        self._settings = settings
+
+    def read(self) -> EvaluationSummary:
+        runtime = EffectiveRuntimeModelService(self._database, self._settings).read()
+        effective = runtime.effective_fusion_policy
+        if runtime.status != "available" or runtime.latest_runtime_job_id is None:
+            return self._unavailable()
+        if (
+            effective is None
+            or effective.source != "runtime_job_snapshot"
+            or not effective.effective_for_latest_job
+            or effective.runtime_job_id != runtime.latest_runtime_job_id
+            or runtime.snapshot_created_at is None
+        ):
+            return self._invalid()
+        try:
+            project_root = self._settings.ingestion.sample_root.resolve().parent.parent
+            environment = DemoArtifactManager(
+                self._settings,
+                project_root=project_root,
+            ).read()
+        except (AegisHuntError, OSError, ValueError):
+            return self._invalid()
+        if environment is None:
+            return self._unavailable()
+        reader = FusionEvaluationArtifactReader(environment.settings)
+        descriptor, discovery = reader.read()
+        if discovery.status == "unavailable":
+            return self._unavailable()
+        if discovery.status != "available" or descriptor is None:
+            return self._invalid()
+        try:
+            return self._verified_summary(
+                environment.settings,
+                descriptor,
+                effective_policy=effective,
+                runtime_job_id=runtime.latest_runtime_job_id,
+                snapshot_created_at=runtime.snapshot_created_at,
+            )
+        except (
+            AegisHuntError,
+            KeyError,
+            OSError,
+            TypeError,
+            ValueError,
+            ValidationError,
+        ):
+            return self._invalid()
+
+    @staticmethod
+    def _unavailable() -> EvaluationSummary:
+        return EvaluationSummary(
+            status="unavailable",
+            message=_SUMMARY_UNAVAILABLE,
+            limitations=(
+                "page reads never prepare demo artifacts",
+                "no metric is shown without verified machine evidence",
+            ),
+        )
+
+    @staticmethod
+    def _invalid() -> EvaluationSummary:
+        return EvaluationSummary(
+            status="invalid",
+            message=(
+                "The prepared evaluation evidence failed integrity or identity "
+                "verification. Run the controlled demo again only after reviewing "
+                "the local artifact state."
+            ),
+            limitations=(
+                "invalid evidence fails closed",
+                "server filesystem paths are not disclosed",
+            ),
+        )
+
+    def _verified_summary(
+        self,
+        settings: ApplicationSettings,
+        descriptor: EvaluationDescriptor,
+        *,
+        effective_policy: FusionPolicyDescriptor,
+        runtime_job_id: UUID,
+        snapshot_created_at: datetime,
+    ) -> EvaluationSummary:
+        experiment_id = settings.runtime.fusion_evaluation_experiment_id
+        experiment = settings.runtime.fusion_evaluation_root / experiment_id
+        policy_directory = (
+            settings.runtime.fusion_policy_root / effective_policy.policy_version
+        )
+        policy = load_policy(policy_directory, root=settings.runtime.fusion_policy_root)
+        selection = FusionSelectionRecord.model_validate_json(
+            (experiment / "fusion_selection.json").read_text(encoding="utf-8")
+        )
+        dataset = Phase7DatasetManifest.model_validate_json(
+            (experiment / "phase_07_dataset_manifest.json").read_text(encoding="utf-8")
+        )
+        split = Phase7SplitManifest.model_validate_json(
+            (experiment / "phase_07_split_manifest.json").read_text(encoding="utf-8")
+        )
+        provenance = descriptor.provenance
+        if (
+            effective_policy.evaluation_source != experiment_id
+            or descriptor.run_id != f"fusion:{experiment_id}"
+            or descriptor.version != effective_policy.policy_version
+            or policy.policy_id != effective_policy.policy_id
+            or policy.policy_version != effective_policy.policy_version
+            or policy.experiment_id != experiment_id
+            or policy.recommendation_status != effective_policy.recommendation
+            or policy.feature_schema_version != effective_policy.feature_schema_version
+            or policy.selected_weights.supervised_weight
+            != effective_policy.supervised_weight
+            or policy.selected_weights.anomaly_weight != effective_policy.anomaly_weight
+            or policy.selected_threshold != effective_policy.fusion_threshold
+            or selection.selected_weights != policy.selected_weights
+            or selection.selected_threshold != policy.selected_threshold
+            or selection.recommendation_status != policy.recommendation_status
+            or dataset.dataset_id != policy.dataset_id
+            or dataset.dataset_version != policy.dataset_version
+            or split.dataset_id != dataset.dataset_id
+            or split.dataset_version != dataset.dataset_version
+            or provenance.get("policy_manifest_hash")
+            != effective_policy.artifact_hash
+            or sha256_file(policy_directory / "fusion_policy_manifest.json")
+            != effective_policy.artifact_hash
+        ):
+            raise ValueError("runtime policy and evaluation identities differ")
+        known = self._known_rows(experiment / "known_attack_metrics.csv")
+        loao = self._loao_rows(
+            experiment / "leave_one_family_out.csv",
+            expected_families=dataset.attack_families,
+        )
+        aggregates = {
+            engine: fmean(item.recall for item in loao if item.engine == engine)
+            for engine in ("supervised", "anomaly", "fusion")
+        }
+        confidence = self._confidence_summary(
+            experiment / "confidence_intervals.json"
+        )
+        artifact_hash = provenance.get("artifact_hash")
+        if not isinstance(artifact_hash, str):
+            raise ValueError("evaluation artifact identity is unavailable")
+        return EvaluationSummary(
+            status="available",
+            message="Verified controlled evaluation for the latest completed analysis.",
+            evidence_class="controlled_synthetic_evaluation",
+            experiment_id=experiment_id,
+            dataset_id=dataset.dataset_id,
+            dataset_version=dataset.dataset_version,
+            row_count=dataset.row_count,
+            group_count=dataset.group_count,
+            supervised_weight=policy.selected_weights.supervised_weight,
+            anomaly_weight=policy.selected_weights.anomaly_weight,
+            selected_threshold=policy.selected_threshold,
+            recommendation=policy.recommendation_status,
+            known_comparison=known,
+            loao_comparison=loao,
+            loao_aggregate=EvaluationLoaoAggregate(
+                supervised_recall=aggregates["supervised"],
+                anomaly_recall=aggregates["anomaly"],
+                fusion_recall=aggregates["fusion"],
+            ),
+            confidence_intervals=confidence,
+            provenance=EvaluationSummaryProvenance(
+                runtime_job_id=runtime_job_id,
+                snapshot_created_at=snapshot_created_at,
+                policy_id=policy.policy_id,
+                policy_version=policy.policy_version,
+                policy_manifest_hash=effective_policy.artifact_hash,
+                evaluation_artifact_hash=artifact_hash,
+                dataset_manifest_checksum=policy.dataset_manifest_checksum,
+                split_manifest_checksum=policy.split_manifest_checksum,
+                feature_schema_version=policy.feature_schema_version,
+            ),
+            limitations=(
+                "controlled synthetic evaluation; not a public benchmark",
+                "fusion matched but did not outperform supervised-only on known groups",
+                "fusion was weaker than anomaly-only on family-macro LOAO Recall",
+                "fusion score is not attack probability",
+            ),
+        )
+
+    @staticmethod
+    def _known_rows(path: Path) -> tuple[EvaluationComparisonRow, ...]:
+        rows = _read_csv(path)
+        if {row.get("mode") for row in rows} != set(_MODE_ENGINES) or len(rows) != 3:
+            raise ValueError("known comparison requires one row per engine")
+        output: list[EvaluationComparisonRow] = []
+        for row in rows:
+            mode = _required_text(row, "mode")
+            if mode not in _MODE_ENGINES:
+                raise ValueError("known comparison mode is invalid")
+            output.append(
+                EvaluationComparisonRow(
+                    engine=cast(
+                        Literal["supervised", "anomaly", "fusion"],
+                        _MODE_ENGINES[mode],
+                    ),
+                    mode=cast(
+                        Literal[
+                            "supervised_only",
+                            "anomaly_only",
+                            "dual_engine_fusion",
+                        ],
+                        mode,
+                    ),
+                    recall=_required_float(row, "recall"),
+                    f1=_required_float(row, "f1"),
+                    macro_f1=_required_float(row, "macro_f1"),
+                    pr_auc=_required_float(row, "pr_auc"),
+                    false_positive_rate=_required_float(
+                        row, "false_positive_rate"
+                    ),
+                    tn=_required_int(row, "tn"),
+                    fp=_required_int(row, "fp"),
+                    fn=_required_int(row, "fn"),
+                    tp=_required_int(row, "tp"),
+                )
+            )
+        order = {"supervised": 0, "anomaly": 1, "fusion": 2}
+        return tuple(sorted(output, key=lambda item: order[item.engine]))
+
+    @staticmethod
+    def _loao_rows(
+        path: Path,
+        *,
+        expected_families: tuple[str, ...],
+    ) -> tuple[EvaluationLoaoRow, ...]:
+        rows = _read_csv(path)
+        actual_families = {_required_text(row, "held_out_family") for row in rows}
+        if actual_families != set(expected_families) or len(rows) != 3 * len(
+            expected_families
+        ):
+            raise ValueError("LOAO comparison family inventory is invalid")
+        output: list[EvaluationLoaoRow] = []
+        identities: set[tuple[str, str]] = set()
+        for row in rows:
+            family = _required_text(row, "held_out_family")
+            mode = _required_text(row, "mode")
+            if mode not in _MODE_ENGINES or (family, mode) in identities:
+                raise ValueError("LOAO comparison engine inventory is invalid")
+            identities.add((family, mode))
+            output.append(
+                EvaluationLoaoRow(
+                    held_out_family=family,
+                    engine=cast(
+                        Literal["supervised", "anomaly", "fusion"],
+                        _MODE_ENGINES[mode],
+                    ),
+                    mode=cast(
+                        Literal[
+                            "supervised_only",
+                            "anomaly_only",
+                            "dual_engine_fusion",
+                        ],
+                        mode,
+                    ),
+                    recall=_required_float(row, "recall"),
+                    false_positive_rate=_required_float(
+                        row, "false_positive_rate"
+                    ),
+                    evaluation_row_count=_required_int(
+                        row, "evaluation_row_count"
+                    ),
+                    evaluation_group_count=_required_int(
+                        row, "evaluation_group_count"
+                    ),
+                )
+            )
+        engine_order = {"supervised": 0, "anomaly": 1, "fusion": 2}
+        family_order = {family: index for index, family in enumerate(expected_families)}
+        return tuple(
+            sorted(
+                output,
+                key=lambda item: (
+                    family_order[item.held_out_family],
+                    engine_order[item.engine],
+                ),
+            )
+        )
+
+    @staticmethod
+    def _confidence_summary(
+        path: Path,
+    ) -> tuple[EvaluationConfidenceInterval, ...]:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, list):
+            raise ValueError("confidence interval evidence is invalid")
+        known = next(
+            (
+                item
+                for item in payload
+                if isinstance(item, dict)
+                and item.get("experiment_kind") == "known_attack"
+            ),
+            None,
+        )
+        if not isinstance(known, dict):
+            raise ValueError("known comparison confidence interval is missing")
+        intervals = known.get("delta_intervals")
+        if not isinstance(intervals, dict):
+            raise ValueError("confidence interval deltas are invalid")
+        output: list[EvaluationConfidenceInterval] = []
+        metric_fields = {
+            "recall": "recall",
+            "macro_f1": "macro_f1",
+            "pr_auc": "pr_auc",
+            "false_positive_rate": "benign_false_positive_rate",
+        }
+        for comparison in ("fusion_minus_supervised", "fusion_minus_anomaly"):
+            for metric, source_metric in metric_fields.items():
+                record = intervals.get(f"{comparison}.{source_metric}")
+                if not isinstance(record, dict) or record.get(
+                    "unavailable_reason"
+                ) is not None:
+                    raise ValueError("required confidence interval is unavailable")
+                output.append(
+                    EvaluationConfidenceInterval(
+                        comparison=cast(
+                            Literal[
+                                "fusion_minus_supervised",
+                                "fusion_minus_anomaly",
+                            ],
+                            comparison,
+                        ),
+                        metric=cast(
+                            Literal[
+                                "recall",
+                                "macro_f1",
+                                "pr_auc",
+                                "false_positive_rate",
+                            ],
+                            metric,
+                        ),
+                        confidence_level=float(record["confidence_level"]),
+                        lower=float(record["lower"]),
+                        upper=float(record["upper"]),
+                        requested_draws=int(record["requested_draws"]),
+                        successful_draws=int(record["successful_draws"]),
+                    )
+                )
+        return tuple(output)
 
 
 class EvaluationCatalogService:
