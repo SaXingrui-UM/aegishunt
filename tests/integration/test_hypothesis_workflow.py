@@ -136,3 +136,35 @@ def test_correlation_hypothesis_restart_and_audited_status(tmp_path: Path) -> No
             assert status_event.details["status"] == "under_review"
     finally:
         database.dispose()
+
+
+def test_correlation_can_be_bounded_to_one_runtime_job(tmp_path: Path) -> None:
+    database = _database(tmp_path / "bounded-correlation.sqlite3")
+    selected = [
+        alert(10, source_ip="192.0.2.10", destination_ip="198.51.100.10"),
+        alert(11, source_ip="192.0.2.10", destination_ip="198.51.100.11"),
+    ]
+    unrelated = [
+        alert(12, source_ip="192.0.2.20", destination_ip="198.51.100.20"),
+        alert(13, source_ip="192.0.2.20", destination_ip="198.51.100.21"),
+    ]
+    seed_alerts(database, [*selected, *unrelated])
+    try:
+        with database.session() as session, session.begin():
+            groups = AlertCorrelationService(
+                session,
+                correlation_policy(),
+                clock=lambda: GROUP_GENERATED_AT,
+            ).correlate(
+                actor="bounded-runtime-correlation",
+                alert_ids={item.alert_id for item in selected},
+            )
+        assert len(groups) == 1
+        assert set(groups[0].alert_ids) == {
+            str(item.alert_id) for item in selected
+        }
+        assert not set(groups[0].alert_ids) & {
+            str(item.alert_id) for item in unrelated
+        }
+    finally:
+        database.dispose()

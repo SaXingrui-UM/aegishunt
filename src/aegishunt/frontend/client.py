@@ -85,6 +85,7 @@ class AegisHuntApiClient:
         base_url: str,
         *,
         timeout_seconds: float = 15.0,
+        runtime_worker_timeout_seconds: float = 600.0,
         page_size: int = 50,
         actor_header: str = "X-AegisHunt-Actor",
         safe_download_types: tuple[str, ...] = ("case_report",),
@@ -92,6 +93,8 @@ class AegisHuntApiClient:
     ) -> None:
         if not 1 <= page_size <= 100:
             raise ValueError("frontend page size must be between 1 and 100")
+        if timeout_seconds <= 0.0 or runtime_worker_timeout_seconds <= 0.0:
+            raise ValueError("frontend request timeouts must be positive")
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout_seconds,
@@ -99,6 +102,7 @@ class AegisHuntApiClient:
             follow_redirects=False,
         )
         self._page_size = page_size
+        self._runtime_worker_timeout_seconds = runtime_worker_timeout_seconds
         self._actor_header = actor_header
         self._safe_download_types = frozenset(safe_download_types)
 
@@ -127,6 +131,7 @@ class AegisHuntApiClient:
         json: Mapping[str, object] | None = None,
         files: Mapping[str, Any] | None = None,
         data: Mapping[str, object] | None = None,
+        timeout_seconds: float | None = None,
     ) -> ResponseT:
         clean_params = {
             key: str(value)
@@ -140,15 +145,16 @@ class AegisHuntApiClient:
             else None
         )
         try:
-            response = self._client.request(
-                method,
-                path,
-                params=clean_params,
-                json=json,
-                files=files,
-                data=data,
-                headers=headers,
-            )
+            request_options: dict[str, Any] = {
+                "params": clean_params,
+                "json": json,
+                "files": files,
+                "data": data,
+                "headers": headers,
+            }
+            if timeout_seconds is not None:
+                request_options["timeout"] = timeout_seconds
+            response = self._client.request(method, path, **request_options)
         except httpx.RequestError as exc:
             raise ApiClientError("AegisHunt API is unavailable") from exc
         if response.is_error:
@@ -235,6 +241,7 @@ class AegisHuntApiClient:
                 "reason": reason,
                 "confirm": True,
             },
+            timeout_seconds=self._runtime_worker_timeout_seconds,
         )
 
     def ingestion_jobs(

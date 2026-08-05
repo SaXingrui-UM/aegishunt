@@ -59,6 +59,7 @@ _ANOMALY_VERSION = "1.1.0-candidate"
 _FUSION_VERSION = "1.0.0"
 _FUSION_EXPERIMENT_ID = "phase-12-controlled-demo-fusion"
 _EXPLANATION_VERSION = "1.0.0"
+_DEMO_MAXIMUM_ALERTS_PER_GROUP = 5_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -426,6 +427,7 @@ class DemoArtifactManager:
                 "policy_id": f"{self._settings.web.demo_namespace}-correlation",
                 "group_score_threshold": 0.0,
                 "hypothesis_generation_threshold": 0.0,
+                "maximum_alerts_per_group": _DEMO_MAXIMUM_ALERTS_PER_GROUP,
             }
         )
         _write_yaml(paths.configs / "correlation.yaml", correlation)
@@ -575,5 +577,12 @@ class DemoArtifactManager:
             root=paths.explanations,
         )
         load_runtime_policy(settings.runtime.policy_path)
-        load_correlation_policy(settings.correlation.policy_path)
+        correlation = load_correlation_policy(settings.correlation.policy_path)
+        if (
+            correlation.policy.maximum_alerts_per_group
+            != _DEMO_MAXIMUM_ALERTS_PER_GROUP
+        ):
+            raise DataArtifactError(
+                "demo correlation capacity differs from the operation contract"
+            )
         return settings

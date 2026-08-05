@@ -317,9 +317,12 @@ class RuntimeJobStore:
         """Persist only evidence counters committed by the caller's transaction."""
 
         row = self._owned(job_id, worker_id)
-        if row.status is not RuntimeJobStatus.RUNNING:
+        if row.status not in {
+            RuntimeJobStatus.RUNNING,
+            RuntimeJobStatus.PAUSE_REQUESTED,
+        }:
             raise RuntimeStateError(
-                "durable progress can update only for a running replay"
+                "durable progress can update only for a live replay"
             )
         if not math.isfinite(progress) or not 0.0 <= progress <= 1.0:
             raise RuntimeStateError("durable progress must be finite and within [0, 1]")
@@ -362,8 +365,11 @@ class RuntimeJobStore:
         actor: str,
     ) -> RuntimeJob:
         row = self._owned(job_id, worker_id)
-        if row.status is not RuntimeJobStatus.RUNNING:
-            raise RuntimeStateError("runtime stage can change only while running")
+        if row.status not in {
+            RuntimeJobStatus.RUNNING,
+            RuntimeJobStatus.PAUSE_REQUESTED,
+        }:
+            raise RuntimeStateError("runtime stage can change only for a live replay")
         previous = row.current_stage
         row.current_stage = stage
         row.updated_at = now

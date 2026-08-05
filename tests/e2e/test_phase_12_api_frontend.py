@@ -23,6 +23,7 @@ from aegishunt.config import (
     SupervisedSettings,
     WebSettings,
 )
+from aegishunt.correlation.config import load_correlation_policy
 from aegishunt.detection.config import load_risk_policy
 from aegishunt.frontend.client import AegisHuntApiClient
 from aegishunt.ml.fusion.config import FusionExperimentConfig
@@ -415,8 +416,10 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         assert presentation.json()["alert_ids"] == repeated_presentation.json()["alert_ids"]
         assert len(presentation.json()["flow_ids"]) == 9
         assert len(presentation.json()["alert_ids"]) == 9
-        assert len(presentation.json()["group_ids"]) == 3
-        assert len(presentation.json()["hypothesis_ids"]) == 3
+        # Runtime correlation is intentionally isolated to alerts created or
+        # reused by this replay job; earlier demo alerts cannot amplify it.
+        assert len(presentation.json()["group_ids"]) == 1
+        assert len(presentation.json()["hypothesis_ids"]) == 1
         assert presentation.json()["case_id"] is None
         combined_summary = client.get("/flows/summary").json()
         assert combined_summary["total"] == 11
@@ -454,6 +457,9 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
     fusion_config = FusionExperimentConfig.load(demo_root / "configs/fusion.yaml")
     risk = load_risk_policy(demo_root / "configs/detection.yaml").policy
     runtime = load_runtime_policy(demo_root / "configs/runtime.yaml").policy
+    correlation = load_correlation_policy(
+        demo_root / "configs/correlation.yaml"
+    ).policy
     assert supervised_config.model_version == "12.0.0"
     assert (
         supervised_config.selection_policy_version
@@ -477,6 +483,7 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
     assert risk.required_fusion_policy_version == fusion_config.policy_version
     assert runtime.supervised_model_version == selection.model_version
     assert runtime.fusion_policy_version == fusion_config.policy_version
+    assert correlation.maximum_alerts_per_group == 5_000
     database.dispose()
     if demo_root.is_dir() and not demo_root.is_symlink():
         shutil.rmtree(demo_root)

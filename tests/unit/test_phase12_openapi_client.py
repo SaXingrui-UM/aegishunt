@@ -191,6 +191,40 @@ def test_runtime_worker_run_once_is_explicit_bounded_and_audited(
     assert audit[0].details["claimed_job"] is False
 
 
+def test_frontend_worker_run_once_uses_the_dedicated_long_timeout() -> None:
+    observed_timeouts: list[dict[str, float]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed_timeouts.append(request.extensions["timeout"])
+        return httpx.Response(
+            200,
+            json={
+                "claimed_job": False,
+                "worker": {
+                    "worker_id": "phase12-test-worker-timeout",
+                    "status": "stopped",
+                },
+                "execution_semantics": "claim_at_most_one_then_stop",
+            },
+        )
+
+    with AegisHuntApiClient(
+        "http://127.0.0.1:8000",
+        timeout_seconds=15.0,
+        runtime_worker_timeout_seconds=600.0,
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        result = client.run_runtime_worker_once(
+            actor="phase12-test",
+            reason="verify the bounded worker-specific timeout",
+        )
+
+    assert result.claimed_job is False
+    assert observed_timeouts == [
+        {"connect": 600.0, "read": 600.0, "write": 600.0, "pool": 600.0}
+    ]
+
+
 def test_web_configuration_rejects_unsafe_or_incoherent_values() -> None:
     invalid_values = (
         {"api_host": "0.0.0.0"},
@@ -201,6 +235,7 @@ def test_web_configuration_rejects_unsafe_or_incoherent_values() -> None:
         {"auto_refresh_seconds": 5, "minimum_refresh_seconds": 10},
         {"safe_download_types": ("arbitrary_file",)},
         {"demo_sample_ids": ()},
+        {"request_timeout_seconds": 30.0, "runtime_worker_timeout_seconds": 15.0},
     )
     for update in invalid_values:
         try:

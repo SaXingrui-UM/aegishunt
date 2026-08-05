@@ -74,6 +74,7 @@ def _client(
     base_url: str,
     timeout_seconds: float,
     *,
+    runtime_worker_timeout_seconds: float = 600.0,
     page_size: int = 50,
     actor_header: str = "X-AegisHunt-Actor",
     safe_download_types: tuple[str, ...] = ("case_report",),
@@ -83,6 +84,7 @@ def _client(
     return AegisHuntApiClient(
         base_url,
         timeout_seconds=timeout_seconds,
+        runtime_worker_timeout_seconds=runtime_worker_timeout_seconds,
         page_size=page_size,
         actor_header=actor_header,
         safe_download_types=safe_download_types,
@@ -125,6 +127,9 @@ def main() -> None:
         with _client(
             settings.web.api_base_url,
             settings.web.request_timeout_seconds,
+            runtime_worker_timeout_seconds=(
+                settings.web.runtime_worker_timeout_seconds
+            ),
             page_size=settings.web.maximum_table_rows,
             actor_header=settings.web.actor_header,
             safe_download_types=settings.web.safe_download_types,

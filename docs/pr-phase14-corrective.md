@@ -1,6 +1,6 @@
 ## Phase
 
-Phase 14 corrective — mentor-demo frontend and evidence presentation only.
+Phase 14 corrective — mentor-demo frontend, replay, and evidence presentation.
 
 ## Summary
 
@@ -10,8 +10,11 @@ fusion weight, risk policy, active pointer, historical evidence, merge, or Tag.
 
 The original problems were duplicate implicit Streamlit navigation, developer
 chrome in the demo shell, an empty global model registry presented as the main
-model state, a raw/incomplete evaluation view, and a documented family-macro
-LOAO Recall of `0.8000` that did not match the verified experiment artifact.
+model state, a raw/incomplete evaluation view, a disabled upload submission,
+a 15-second generic frontend timeout applied to long-running worker cycles,
+cross-job alert correlation, a pause-request race, and a documented
+family-macro LOAO Recall of `0.8000` that did not match the verified experiment
+artifact.
 
 ## Requirements Completed
 
@@ -28,6 +31,19 @@ LOAO Recall of `0.8000` that did not match the verified experiment artifact.
   experiment summary and model cards, with a cross-document regression test.
 - Preserved the base-Compose named volumes and all existing model, threshold,
   fusion, and risk settings.
+- Made telemetry upload submission depend on server validation after submit,
+  rather than the stale pre-submit value of Streamlit's file widget.
+- Kept ordinary frontend API calls at 15 seconds while giving the explicit,
+  synchronous `Run one worker` operation a separately validated 600-second
+  bound.
+- Scoped runtime correlation to the current replay job's alerts so retained
+  evidence from an earlier job cannot amplify a later replay. The controlled
+  demo artifact operation is versioned `1.0.1`; its capacity-only correlation
+  limit supports large real PCAP jobs without changing risk, fusion, model, or
+  decision thresholds.
+- Allowed an in-flight atomic batch to finish recording stage and durable
+  progress after a concurrent pause request, preserving the documented
+  `pause_requested` boundary instead of failing the job.
 
 ## Architecture Decisions
 
@@ -56,7 +72,7 @@ LOAO Recall of `0.8000` that did not match the verified experiment artifact.
 
 - `ruff check .` — passed.
 - `mypy src` — passed for 239 source files.
-- `pytest` — 561 passed, 0 failed, 18 warnings, 85.84% branch-aware coverage.
+- `pytest` — 564 passed, 0 failed, 18 warnings, 85.91% branch-aware coverage.
 - Focused API, evidence-integrity, status-document, CLI, Streamlit AppTest, and
   Phase 14 end-to-end suites — passed.
 - Evaluation regressions cover missing, extra, corrupt, symlinked,
@@ -76,6 +92,15 @@ LOAO Recall of `0.8000` that did not match the verified experiment artifact.
 - Real Browser flow — Overview → Model Lab → Evaluation → Overview → Model Lab,
   with no stale cross-page content, duplicate disclaimer, fresh console errors,
   or horizontal overflow at the captured 1280 px desktop viewport.
+- A real 42,888,106-byte PCAP worker request remained connected for 96.13
+  seconds, completed its runtime job, and produced 449 flows, 449 detections,
+  449 alerts, 94 groups, and 94 hypotheses. This directly regresses the former
+  15-second false `AegisHunt API is unavailable` state.
+- The exact security gate reported the locally installed `wheel 0.45.1` under
+  CVE-2026-24049. Build and development dependencies now require the fixed
+  `wheel >= 0.46.2,<0.47`; the dependency, secret-history, Bandit, and ledger
+  gates pass on that environment with zero dependency findings, zero confirmed
+  secrets, and zero blocking Bandit findings.
 
 ## Commands Executed
 

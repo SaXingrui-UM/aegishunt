@@ -284,7 +284,7 @@ def _build_sample_database(
             "AEGISHUNT_DATABASE_URL": f"sqlite:///{database}",
             "AEGISHUNT_WEB__DEMO_ARTIFACT_ROOT": relative_root.as_posix(),
             "AEGISHUNT_WEB__DEMO_NAMESPACE": "phase14-controlled-demo",
-            "AEGISHUNT_WEB__DEMO_OPERATION_VERSION": "1.0.0",
+            "AEGISHUNT_WEB__DEMO_OPERATION_VERSION": "1.0.1",
         }
         process_environment = {**os.environ, **environment}
         for sample_id in (
@@ -327,7 +327,7 @@ def _build_sample_database(
         built_demo = (
             project
             / relative_root
-            / "phase14-controlled-demo-1.0.0"
+            / "phase14-controlled-demo-1.0.1"
         )
         if not built_demo.is_dir():
             raise ReleaseManifestError("controlled demo artifacts were not generated")

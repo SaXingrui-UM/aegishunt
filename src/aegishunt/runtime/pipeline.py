@@ -564,15 +564,18 @@ class RuntimePipelineRunner:
                 groups_repository = AlertGroupRepository(session)
                 hypotheses_repository = ThreatHypothesisRepository(session)
                 job_alert_ids = {
-                    str(item.alert_id)
+                    item.alert_id
                     for item in RuntimeOutputLedgerRepository(session).list_for_job(
                         job.job_id
                     )
                     if item.alert_id is not None
                 }
+                serialized_job_alert_ids = {
+                    str(alert_id) for alert_id in job_alert_ids
+                }
                 before_groups = _groups_for_job(
                     groups_repository.list(),
-                    job_alert_ids,
+                    serialized_job_alert_ids,
                 )
                 before_group_ids = {item.group_id for item in before_groups}
                 before_hypothesis_ids = {
@@ -598,8 +601,11 @@ class RuntimePipelineRunner:
                         session,
                         loaded.correlation_policy,
                         clock=self._clock.now,
-                    ).correlate(actor=self._worker_id),
-                    job_alert_ids,
+                    ).correlate(
+                        actor=self._worker_id,
+                        alert_ids=job_alert_ids,
+                    ),
+                    serialized_job_alert_ids,
                 )
                 group_ids = {item.group_id for item in groups}
                 hypotheses = _hypotheses_for_groups(

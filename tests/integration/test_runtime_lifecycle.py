@@ -14,6 +14,7 @@ from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.runtime.contracts import (
     RuntimeCounters,
     RuntimeJobStatus,
+    RuntimeStage,
     RuntimeWorker,
     RuntimeWorkerStatus,
 )
@@ -135,6 +136,27 @@ def test_job_lifecycle_pause_resume_interrupt_and_explicit_recovery(
                 claimed.job_id,
                 actor="operator",
                 now=NOW + timedelta(seconds=5),
+            )
+            stage_change = repository.set_stage(
+                claimed.job_id,
+                worker_id="worker-a",
+                stage=RuntimeStage.CORRELATION,
+                actor="worker-a",
+                now=NOW + timedelta(seconds=5),
+            )
+            assert stage_change.status is RuntimeJobStatus.PAUSE_REQUESTED
+            assert stage_change.current_stage is RuntimeStage.CORRELATION
+            durable_during_pause_request = repository.update_durable_progress(
+                claimed.job_id,
+                worker_id="worker-a",
+                counters=RuntimeCounters(),
+                progress_current=0,
+                progress=0.0,
+                now=NOW + timedelta(seconds=5),
+            )
+            assert (
+                durable_during_pause_request.status
+                is RuntimeJobStatus.PAUSE_REQUESTED
             )
             paused = repository.mark_paused(
                 claimed.job_id,

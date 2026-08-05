@@ -93,7 +93,7 @@ def _settings(tmp_path: Path, artifact_root: Path) -> ApplicationSettings:
                 "phase14-benign-like-pcap",
             ),
             demo_namespace="phase14-controlled-demo",
-            demo_operation_version="1.0.0",
+            demo_operation_version="1.0.1",
             demo_worker_id="phase14-e2e-worker",
         ),
     )

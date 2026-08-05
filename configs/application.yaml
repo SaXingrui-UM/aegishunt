@@ -84,6 +84,7 @@ web:
   default_page_size: 50
   maximum_page_size: 100
   request_timeout_seconds: 15.0
+  runtime_worker_timeout_seconds: 600.0
   upload_chunk_size_bytes: 65536
   auto_refresh_enabled: true
   auto_refresh_seconds: 5
