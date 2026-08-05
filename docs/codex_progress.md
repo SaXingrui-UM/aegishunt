@@ -110,7 +110,9 @@ training/activation, or response actions.
 - No further implementation phase is planned. The single checkpoint PR is a
   documentation/verification descendant of the immutable canonical
   implementation checkpoint; it does not need its own future merge SHA in
-  durable status and must not trigger another status-closure PR.
+  durable status and must not trigger another status-closure PR. No additional
+  Phase 14 status-closure PR is required after the authorized corrective is
+  merged.
 
 ## Phase 13 implementation checkpoint
 
