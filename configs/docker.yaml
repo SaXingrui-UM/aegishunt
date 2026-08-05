@@ -61,7 +61,7 @@ correlation:
   policy_path: configs/correlation.yaml
 
 case_feedback:
-  policy_path: configs/case_feedback.yaml
+  policy_path: configs/case_feedback.docker.yaml
 
 runtime:
   policy_path: configs/runtime.yaml

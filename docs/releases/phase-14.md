@@ -117,6 +117,22 @@ The base Compose deployment retains UID/GID 10001, read-only root,
 No model, threshold, fusion weight, risk policy, historical Tag, or automatic
 activation changes in this corrective PR.
 
+## Docker case-artifact path corrective
+
+After PR #43 was merged, mentor-demo report generation exposed a deployment
+path conflict: the final Docker image retains `artifacts` and `reports` as
+compatibility symlinks, while the case artifact safety boundary intentionally
+rejects every configured root that traverses a symlink. The Docker settings now
+select a dedicated case/feedback policy whose three writable roots point
+directly to `runtime/artifacts/...` and `runtime/reports/...`. The base policy
+and the symlink-rejection control remain unchanged.
+
+Ruff and strict mypy passed. All 28 relevant test assertions passed, and the
+direct report/configuration subset passed 26 tests with a zero exit status.
+Using an isolated backup of the manual-recording database, the API generated
+and downloaded a versioned Markdown report with the exact four-file inventory;
+no production case, report version, or recording evidence was mutated.
+
 ## Next phase
 
 None. No further implementation phase is planned. Optional archival, thesis
