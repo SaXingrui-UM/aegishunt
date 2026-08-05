@@ -209,6 +209,42 @@ paginated_table(page, (), key="stale-page", empty_message="Nothing available.")
     assert not any(item.label in {"Previous", "Next"} for item in test_app.button)
 
 
+def test_telemetry_upload_submit_is_not_permanently_disabled_inside_form() -> None:
+    script = """
+from aegishunt.api.contracts import Page
+from aegishunt.frontend.views.ingestion import render
+
+class Client:
+    def samples(self):
+        return []
+
+    def telemetry_sources(self, *, offset):
+        return Page[object](
+            items=[], total=0, limit=50, offset=offset, next_offset=None
+        )
+
+    def ingestion_jobs(self, *, offset):
+        return Page[object](
+            items=[], total=0, limit=50, offset=offset, next_offset=None
+        )
+
+    def runtime_jobs(self, *, offset):
+        return Page[object](
+            items=[], total=0, limit=50, offset=offset, next_offset=None
+        )
+
+render(Client())
+"""
+    test_app = AppTest.from_string(script).run()
+    upload = _button(test_app, "Upload telemetry")
+    assert not upload.disabled
+
+    upload.click().run()
+
+    assert not test_app.exception
+    assert any("Choose a telemetry file" in item.value for item in test_app.warning)
+
+
 def test_evaluation_unavailable_is_one_actionable_state() -> None:
     script = """
 from aegishunt.api.contracts import EvaluationSummary
