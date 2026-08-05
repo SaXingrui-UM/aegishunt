@@ -1,4 +1,4 @@
-"""Data ingestion and replay-control page."""
+"""Data ingestion and replay-control view."""
 
 from __future__ import annotations
 
@@ -36,10 +36,13 @@ def render(client: AegisHuntApiClient) -> None:
             confirm = st.checkbox("Confirm bounded telemetry upload")
             submitted = st.form_submit_button(
                 "Upload telemetry",
-                disabled=uploaded is None,
                 type="primary",
             )
-        if submitted and confirm:
+        if submitted and uploaded is None:
+            st.warning("Choose a telemetry file before submitting the upload.")
+        elif submitted and not confirm:
+            st.warning("Confirm the bounded telemetry upload before submitting.")
+        elif submitted:
             assert uploaded is not None
             try:
                 job = client.upload(

@@ -43,12 +43,26 @@ class EffectiveRuntimeModelService:
         self._settings = settings
 
     def read(self) -> EffectiveModelState:
-        global_active = ModelRegistryService(
+        return self._read_job(self._latest_completed_job())
+
+    def read_for_job(self, job_id: UUID) -> EffectiveModelState:
+        """Resolve one explicit completed job without falling back to a newer replay."""
+
+        with self._database.session() as session:
+            job = RuntimeJobRepository(session).get(job_id)
+        return self._read_job(
+            job if job is not None and job.status is RuntimeJobStatus.COMPLETED else None
+        )
+
+    def _read_job(self, latest: RuntimeJob | None) -> EffectiveModelState:
+        registry = ModelRegistryService(
             self._database,
             self._settings,
-        ).active()
+        )
+        registry_models = registry.list_models()
+        global_active = [item for item in registry_models if item.active]
+        operations = registry.operation_capabilities(registry_models)
         configured_policy = self._configured_policy()
-        latest = self._latest_completed_job()
         if latest is None:
             return EffectiveModelState(
                 status="unavailable",
@@ -59,6 +73,7 @@ class EffectiveRuntimeModelService:
                 effective_models=[],
                 configured_fusion_policy=configured_policy,
                 effective_fusion_policy=None,
+                operations=operations,
                 unavailable_reason="no completed runtime job has a pinned model snapshot",
                 limitations=(
                     "global active pointers are not changed by demo execution",
@@ -105,6 +120,7 @@ class EffectiveRuntimeModelService:
             effective_models=models,
             configured_fusion_policy=configured_policy,
             effective_fusion_policy=effective_policy,
+            operations=operations,
             unavailable_reason=None,
             limitations=(
                 "runtime-job snapshots are immutable and do not imply global activation",

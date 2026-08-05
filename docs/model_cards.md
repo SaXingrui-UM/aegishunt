@@ -34,7 +34,7 @@ uses validation evidence with no untouched independent holdout. Phase 7 used a
 new controlled dataset and selected fusion before late/LOAO analysis. Fusion
 matched supervised-only on known late controlled groups but did not improve it.
 Family-macro LOAO recall was supervised `0.6000`, anomaly `0.9333`, fusion
-`0.8000`; held-out exfiltration and reconnaissance misses remain visible.
+`0.3333`; held-out exfiltration and reconnaissance misses remain visible.
 
 ## Intended use and exclusions
 

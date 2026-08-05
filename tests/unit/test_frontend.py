@@ -15,11 +15,14 @@ from fastapi.testclient import TestClient
 from streamlit.testing.v1 import AppTest
 
 from aegishunt.api.app import create_app
+from aegishunt.api.evaluation_service import _read_csv
+from aegishunt.api.model_service import _writable_output_root
 from aegishunt.config import CaseFeedbackSettings
 from aegishunt.frontend import app
 from aegishunt.frontend.client import AegisHuntApiClient
-from aegishunt.frontend.components import markdown_table
-from aegishunt.frontend.pages.overview import _active_alert_count
+from aegishunt.frontend.components import markdown_table, page_header, section_header
+from aegishunt.frontend.views.models import _matching_supervised_bundle, _model_cards
+from aegishunt.frontend.views.overview import _active_alert_count, _demo_completed
 from aegishunt.storage import Database
 from tests.e2e.test_phase_12_api_frontend import _settings
 
@@ -51,6 +54,10 @@ def test_frontend_exposes_nine_api_backed_pages() -> None:
     assert "repositories" not in source
     assert "Session" not in source
     assert "phase/13-hardening" not in source
+    assert "st.empty()" not in source
+    assert '"Auto-refresh"' in source
+    assert "value=False" in source
+    assert "st.fragment(" in source
 
 
 def test_streamlit_uses_only_the_explicit_nine_page_navigation() -> None:
@@ -58,6 +65,15 @@ def test_streamlit_uses_only_the_explicit_nine_page_navigation() -> None:
         Path(app.__file__).parents[3] / ".streamlit/config.toml"
     ).read_text(encoding="utf-8")
     assert "showSidebarNavigation = false" in configuration
+    assert 'toolbarMode = "minimal"' in configuration
+    assert "gatherUsageStats = false" in configuration
+    assert not tuple(Path(app.__file__).with_name("pages").glob("*.py"))
+    assert 'anchor=title.casefold().replace(" ", "-")' in inspect.getsource(
+        page_header
+    )
+    assert 'anchor=title.casefold().replace(" ", "-")' in inspect.getsource(
+        section_header
+    )
 
 
 def test_frontend_table_escapes_untrusted_markdown_without_arrow() -> None:
@@ -84,7 +100,7 @@ def test_frontend_table_escapes_untrusted_markdown_without_arrow() -> None:
 
 
 def test_frontend_page_modules_do_not_open_database_or_artifact_paths() -> None:
-    pages_root = Path(app.__file__).with_name("pages")
+    pages_root = Path(app.__file__).with_name("views")
     content = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted(pages_root.glob("*.py"))
@@ -107,20 +123,24 @@ def test_frontend_page_modules_do_not_open_database_or_artifact_paths() -> None:
 
 
 def test_all_primary_list_pages_use_bounded_pagination_controls() -> None:
-    pages_root = Path(app.__file__).with_name("pages")
+    pages_root = Path(app.__file__).with_name("views")
     for name in (
         "alerts.py",
         "cases.py",
-        "evaluation.py",
         "hunts.py",
         "ingestion.py",
-        "models.py",
         "system.py",
         "traffic.py",
     ):
         content = (pages_root / name).read_text(encoding="utf-8")
         assert "pagination_offset(" in content, name
         assert "paginated_table(" in content, name
+    assert "paginated_table(" not in (pages_root / "evaluation.py").read_text(
+        encoding="utf-8"
+    )
+    assert "paginated_table(" not in (pages_root / "models.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_pagination_controls_move_between_bounded_pages() -> None:
@@ -156,6 +176,101 @@ paginated_table(
     assert not previous.disabled
 
 
+def test_empty_page_omits_pagination_controls() -> None:
+    script = """
+from aegishunt.api.contracts import Page
+from aegishunt.frontend.components import paginated_table
+
+page = Page[int](items=[], total=0, limit=50, offset=0, next_offset=None)
+paginated_table(page, (), key="empty-test", empty_message="Nothing available.")
+"""
+    test_app = AppTest.from_string(script).run()
+    assert not test_app.exception
+    assert not any(item.label in {"Previous", "Next"} for item in test_app.button)
+
+
+def test_empty_stale_page_resets_to_first_page() -> None:
+    script = """
+import streamlit as st
+from aegishunt.api.contracts import Page
+from aegishunt.frontend.components import paginated_table, pagination_offset
+
+if "stale-page-initialized" not in st.session_state:
+    st.session_state["stale-page-initialized"] = True
+    st.session_state["aegishunt-page-stale-page-scope"] = ""
+    st.session_state["aegishunt-page-stale-page-offset"] = 50
+offset = pagination_offset("stale-page")
+page = Page[int](items=[], total=0, limit=50, offset=offset, next_offset=None)
+paginated_table(page, (), key="stale-page", empty_message="Nothing available.")
+"""
+    test_app = AppTest.from_string(script).run()
+    assert not test_app.exception
+    assert test_app.session_state["aegishunt-page-stale-page-offset"] == 0
+    assert not any(item.label in {"Previous", "Next"} for item in test_app.button)
+
+
+def test_telemetry_upload_submit_is_not_permanently_disabled_inside_form() -> None:
+    script = """
+from aegishunt.api.contracts import Page
+from aegishunt.frontend.views.ingestion import render
+
+class Client:
+    def samples(self):
+        return []
+
+    def telemetry_sources(self, *, offset):
+        return Page[object](
+            items=[], total=0, limit=50, offset=offset, next_offset=None
+        )
+
+    def ingestion_jobs(self, *, offset):
+        return Page[object](
+            items=[], total=0, limit=50, offset=offset, next_offset=None
+        )
+
+    def runtime_jobs(self, *, offset):
+        return Page[object](
+            items=[], total=0, limit=50, offset=offset, next_offset=None
+        )
+
+render(Client())
+"""
+    test_app = AppTest.from_string(script).run()
+    upload = _button(test_app, "Upload telemetry")
+    assert not upload.disabled
+
+    upload.click().run()
+
+    assert not test_app.exception
+    assert any("Choose a telemetry file" in item.value for item in test_app.warning)
+
+
+def test_evaluation_unavailable_is_one_actionable_state() -> None:
+    script = """
+from aegishunt.api.contracts import EvaluationSummary
+from aegishunt.frontend.views.evaluation import render
+
+class Client:
+    def evaluation_summary(self):
+        return EvaluationSummary(
+            status="unavailable",
+            message=(
+                "No verified evaluation is available yet. Run the controlled demo "
+                "from Overview to prepare the checked model and evaluation artifacts."
+            ),
+        )
+
+render(Client())
+"""
+    test_app = AppTest.from_string(script).run()
+    assert not test_app.exception
+    assert len(test_app.info) == 1
+    assert "Run the controlled demo from Overview" in test_app.info[0].value
+    assert not test_app.metric
+    assert not test_app.button
+    assert not test_app.get("json")
+
+
 def test_overview_active_alerts_include_open_and_acknowledged() -> None:
     client = Mock(spec=AegisHuntApiClient)
     client.alerts.side_effect = (Mock(total=2), Mock(total=3))
@@ -165,6 +280,87 @@ def test_overview_active_alerts_include_open_and_acknowledged() -> None:
         call(limit=1, alert_status="open"),
         call(limit=1, alert_status="acknowledged"),
     ]
+
+
+def test_overview_only_labels_completed_runtime_as_demo_completed() -> None:
+    assert _demo_completed({"runtime_status": "completed"})
+    assert not _demo_completed({"runtime_status": "queued"})
+    assert not _demo_completed({"runtime_status": "failed"})
+    assert not _demo_completed({"runtime_status": None})
+    assert not _demo_completed(None)
+
+
+def test_model_cards_resolve_advertised_models_by_exact_id() -> None:
+    client = Mock(spec=AegisHuntApiClient)
+    effective = Mock()
+    effective.effective_models = [Mock(model_id="runtime-manifest-model")]
+    effective.operations.eligible_activation_model_ids = ("eligible-model-51",)
+    eligible = Mock(model_id="eligible-model-51")
+    effective.operations.eligible_activation_models = (eligible,)
+    client.effective_models.return_value = effective
+
+    models, resolved = _model_cards(cast(AegisHuntApiClient, client))
+
+    assert resolved is effective
+    assert models == [eligible]
+    client.model.assert_not_called()
+    client.models.assert_not_called()
+
+
+def test_importance_bundle_requires_runtime_artifact_identity() -> None:
+    effective = Mock()
+    effective.effective_models = [
+        Mock(
+            model_id="supervised-model",
+            engine_type="supervised",
+            version="12.0.0",
+            artifact_hash="expected-hash",
+        )
+    ]
+    wrong = Mock(
+        model_id="registry-uuid",
+        engine="supervised",
+        version="12.0.0",
+        checksum="different-hash",
+        artifact_available=True,
+    )
+    matching = Mock(
+        model_id="different-registry-uuid",
+        engine="supervised",
+        version="12.0.0",
+        checksum="expected-hash",
+        artifact_available=True,
+    )
+
+    assert _matching_supervised_bundle([wrong], effective) is None
+    assert _matching_supervised_bundle([wrong, matching], effective) is matching
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        "engine,recall\nfusion,1.0,unexpected\n",
+        "engine,recall\nfusion\n",
+    ),
+)
+def test_evaluation_csv_reader_rejects_missing_or_extra_cells(
+    tmp_path: Path,
+    payload: str,
+) -> None:
+    path = tmp_path / "malformed.csv"
+    path.write_text(payload, encoding="utf-8")
+
+    with pytest.raises(ValueError, match="row is malformed"):
+        _read_csv(path)
+
+
+def test_training_output_root_may_be_created_under_writable_ancestor(
+    tmp_path: Path,
+) -> None:
+    assert _writable_output_root(tmp_path / "missing" / "nested" / "reports")
+    occupied = tmp_path / "not-a-directory"
+    occupied.write_text("occupied", encoding="utf-8")
+    assert not _writable_output_root(occupied)
 
 
 def test_frontend_starts_with_truthful_api_unavailable_state(
@@ -195,17 +391,19 @@ def test_frontend_starts_with_truthful_api_unavailable_state(
         )
         for item in collection
     )
-    assert "Research prototype only" in rendered
+    assert "Controlled synthetic demonstration" in rendered
+    assert rendered.count("Controlled synthetic demonstration") == 1
     assert "AegisHunt 1.0.0" in rendered
-    assert "Phase 13 checkpoint complete and immutable" in rendered
-    assert "Phase 14 final delivery: Phase complete" in rendered
-    assert "PR #41 is merged" in rendered
-    assert "Annotated phase-14-complete" in rendered
-    assert "No further implementation phase is planned" in rendered
-    assert "No GitHub Release or release publication was performed" in rendered
-    assert "awaiting PR review" not in rendered
-    assert "Phase 15" not in rendered
-    assert "authentication/RBAC not implemented" in rendered
+    for internal_status in (
+        "Phase 13",
+        "Phase 14",
+        "PR #41",
+        "CI gates",
+        "phase-14-complete",
+        "GitHub Release",
+        "authentication/RBAC",
+    ):
+        assert internal_status not in rendered
 
 
 def test_all_frontend_pages_render_real_populated_api_state(
@@ -292,12 +490,13 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.run(timeout=20.0)
         assert not test_app.exception
         overview_metrics = {item.label: item.value for item in test_app.metric}
-        assert overview_metrics["Processed flows"] == "2"
-        assert overview_metrics["Active alerts"] == "2"
-        assert overview_metrics["Open hypotheses"] == "1"
-        assert overview_metrics["Open cases"] == "1"
-        assert float(overview_metrics["Observed runtime p95 (ms)"]) >= 0
-        assert overview_metrics["Latency observations (n)"] == "1"
+        assert overview_metrics["Processed Flows"] == "2"
+        assert overview_metrics["Open Alerts"] == "2 open"
+        assert overview_metrics["Open Hypotheses"] == "1"
+        assert overview_metrics["Open Cases"] == "1"
+        assert any(item.value == "Demo completed" for item in test_app.success)
+        assert "Observed runtime p95 (ms)" not in overview_metrics
+        assert "Latency observations (n)" not in overview_metrics
 
         test_app.text_area[0].set_value("explicit idempotent demo rerun")
         test_app.checkbox[1].check()
@@ -324,7 +523,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
             "Detection",
             "Alert",
         } <= traffic_tabs
-        assert any("Page 1 of 1" in item.value for item in test_app.caption)
+        assert not any("Page 1 of 1" in item.value for item in test_app.caption)
 
         test_app.radio[0].set_value("Alerts").run(timeout=20.0)
         alert_tabs = {item.label for item in test_app.tabs}
@@ -407,16 +606,74 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert test_app.success
 
         test_app.radio[0].set_value("Model Lab").run(timeout=20.0)
-        test_app.text_input[0].set_value("9.9.9")
-        test_app.text_input[1].set_value("unapproved:9.9.9")
-        test_app.text_area[0].set_value("verify approved dataset gate")
-        test_app.checkbox[0].check()
-        _button(test_app, "Train verified candidate").click().run(timeout=20.0)
         assert not test_app.exception
-        assert any("approved" in item.value for item in test_app.error)
+        model_lab_text = "\n".join(
+            item.value
+            for collection in (
+                test_app.title,
+                test_app.header,
+                test_app.subheader,
+                test_app.markdown,
+                test_app.caption,
+                test_app.info,
+            )
+            for item in collection
+        )
+        assert "Random Forest" in model_lab_text
+        assert "Local Outlier Factor" in model_lab_text
+        assert "Fusion Policy" in model_lab_text
+        assert not any(
+            item.label in {"Train verified candidate", "Activate model"}
+            for item in test_app.button
+        )
+        assert "Critical alerts" not in model_lab_text
+        assert "Run controlled demo" not in model_lab_text
 
         test_app.radio[0].set_value("Evaluation").run(timeout=20.0)
         assert not test_app.exception
+        evaluation_text = "\n".join(
+            item.value
+            for collection in (
+                test_app.title,
+                test_app.header,
+                test_app.subheader,
+                test_app.markdown,
+                test_app.caption,
+                test_app.info,
+            )
+            for item in collection
+        )
+        assert "Known Controlled Comparison" in evaluation_text
+        evaluation_metrics = {item.label: item.value for item in test_app.metric}
+        assert evaluation_metrics["Supervised family-macro Recall"] == "0.6000"
+        assert evaluation_metrics["Anomaly family-macro Recall"] == "0.9333"
+        assert evaluation_metrics["Fusion family-macro Recall"] == "0.3333"
+        assert "Phase 7 Fusion Evaluation Discovery" not in evaluation_text
+        assert "missing_artifacts" not in evaluation_text
+        assert "Train verified candidate" not in evaluation_text
+        assert "Run controlled demo" not in evaluation_text
+
+        test_app.radio[0].set_value("Overview").run(timeout=20.0)
+        assert not test_app.exception
+        assert [item.value for item in test_app.title].count("Overview") == 1
+        overview_text = "\n".join(
+            item.value
+            for collection in (
+                test_app.title,
+                test_app.header,
+                test_app.subheader,
+                test_app.markdown,
+                test_app.caption,
+                test_app.info,
+            )
+            for item in collection
+        )
+        assert "Known Controlled Comparison" not in overview_text
+        assert "Technical provenance" not in overview_text
+
+        test_app.radio[0].set_value("Model Lab").run(timeout=20.0)
+        assert not test_app.exception
+        assert [item.value for item in test_app.title].count("Model Lab") == 1
         test_app.radio[0].set_value("System Health").run(timeout=20.0)
         assert not test_app.exception
 

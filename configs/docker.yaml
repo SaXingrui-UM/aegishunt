@@ -85,6 +85,7 @@ web:
   default_page_size: 50
   maximum_page_size: 100
   request_timeout_seconds: 15.0
+  runtime_worker_timeout_seconds: 600.0
   upload_chunk_size_bytes: 65536
   auto_refresh_enabled: true
   auto_refresh_seconds: 5
@@ -107,6 +108,6 @@ web:
   demo_replay_speed: 1000.0
   demo_artifact_root: runtime/artifacts/demo/phase14
   demo_namespace: phase14-controlled-demo
-  demo_operation_version: 1.0.0
+  demo_operation_version: 1.0.1
   demo_worker_id: phase14-demo-worker
   web_worker_id_prefix: phase14-web-worker

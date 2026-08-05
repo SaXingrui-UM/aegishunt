@@ -201,6 +201,11 @@ class WebSettings(BaseModel):
     default_page_size: int = Field(default=50, ge=1, le=100)
     maximum_page_size: int = Field(default=100, ge=1, le=100)
     request_timeout_seconds: float = Field(default=15.0, gt=0.0, le=120.0)
+    runtime_worker_timeout_seconds: float = Field(
+        default=600.0,
+        gt=0.0,
+        le=3_600.0,
+    )
     upload_chunk_size_bytes: int = Field(default=65_536, ge=1, le=1_048_576)
     auto_refresh_enabled: bool = True
     auto_refresh_seconds: int = Field(default=5, ge=1, le=300)
@@ -324,6 +329,10 @@ class WebSettings(BaseModel):
             raise ValueError("default page size must not exceed the maximum page size")
         if self.maximum_table_rows > self.maximum_page_size:
             raise ValueError("maximum table rows must not exceed the maximum page size")
+        if self.runtime_worker_timeout_seconds < self.request_timeout_seconds:
+            raise ValueError(
+                "runtime worker timeout must not be shorter than the request timeout"
+            )
         if self.minimum_refresh_seconds > self.maximum_refresh_seconds:
             raise ValueError("minimum refresh interval must not exceed the maximum")
         if not (

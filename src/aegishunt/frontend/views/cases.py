@@ -1,4 +1,4 @@
-"""Investigation Cases and analyst feedback page."""
+"""Investigation Cases and analyst feedback view."""
 
 from __future__ import annotations
 

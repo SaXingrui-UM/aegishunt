@@ -1,4 +1,4 @@
-"""Detection and SecurityAlert investigation page."""
+"""Detection and SecurityAlert investigation view."""
 
 from __future__ import annotations
 

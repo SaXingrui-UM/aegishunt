@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -13,7 +14,7 @@ from aegishunt.config import ApplicationSettings
 from aegishunt.demo import DemoArtifactManager
 from aegishunt.ingestion.service import IngestionService
 from aegishunt.runtime.config import load_runtime_policy
-from aegishunt.runtime.contracts import RuntimeJobStatus
+from aegishunt.runtime.contracts import RuntimeJob, RuntimeJobStatus
 from aegishunt.runtime.repositories import RuntimeJobRepository
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.runtime.worker import RuntimeWorkerProcess
@@ -80,10 +81,10 @@ class SampleDemoService:
             for sample_id in self._settings.web.demo_sample_ids
             if sample_id in descriptors
         ]
-        previous: JsonObject | None = None
-        descriptor = descriptors.get(available_ids[0]) if available_ids else None
-        if descriptor is not None:
-            with self._database.session() as session:
+        previous_candidates: list[tuple[datetime, JsonObject]] = []
+        with self._database.session() as session:
+            for sample_id in available_ids:
+                descriptor = descriptors[sample_id]
                 source = TelemetrySourceRepository(session).get_by_checksum(
                     descriptor.checksum
                 )
@@ -92,9 +93,11 @@ class SampleDemoService:
                     if source is None
                     else RuntimeJobRepository(session).get_by_source(source.source_id)
                 )
-            if source is not None:
-                previous = {
+                if source is None:
+                    continue
+                payload: JsonObject = {
                     "namespace": self._namespace,
+                    "sample_id": sample_id,
                     "source_id": str(source.source_id),
                     "runtime_job_id": (
                         None if runtime_job is None else str(runtime_job.job_id)
@@ -103,6 +106,19 @@ class SampleDemoService:
                         None if runtime_job is None else runtime_job.status.value
                     ),
                 }
+                updated_at = (
+                    runtime_job.updated_at
+                    if runtime_job is not None
+                    else source.completed_at
+                    or source.started_at
+                    or datetime.min.replace(tzinfo=UTC)
+                )
+                previous_candidates.append((updated_at, payload))
+        previous = (
+            max(previous_candidates, key=lambda item: item[0])[1]
+            if previous_candidates
+            else None
+        )
         return DemoStatus(
             available=bool(available_ids),
             sample_ids=available_ids,
@@ -117,6 +133,30 @@ class SampleDemoService:
                     else "demo-only artifacts will be created only after confirmation"
                 ),
             ),
+        )
+
+    def latest_completed_runtime_job(self) -> RuntimeJob | None:
+        """Return the newest completed job belonging to an allowlisted demo sample."""
+
+        if not self._settings.web.sample_mode_enabled:
+            return None
+        descriptors = {item.sample_id: item for item in self._ingestion.list_samples()}
+        candidates: list[RuntimeJob] = []
+        with self._database.session() as session:
+            sources = TelemetrySourceRepository(session)
+            jobs = RuntimeJobRepository(session)
+            for sample_id in self._settings.web.demo_sample_ids:
+                descriptor = descriptors.get(sample_id)
+                if descriptor is None:
+                    continue
+                source = sources.get_by_checksum(descriptor.checksum)
+                job = None if source is None else jobs.get_by_source(source.source_id)
+                if job is not None and job.status is RuntimeJobStatus.COMPLETED:
+                    candidates.append(job)
+        return (
+            max(candidates, key=lambda item: (item.updated_at, str(item.job_id)))
+            if candidates
+            else None
         )
 
     @property

@@ -42,7 +42,7 @@ state/version conflicts (409), oversized uploads (413), validation failures
 | Hunts | alert-group and hypothesis list/detail, safe hypothesis transition, idempotent case creation |
 | Cases/feedback | case lifecycle, notes, evidence references, feedback, report/export/candidate artifacts, bounded read-only audit history |
 | Models | verified list/detail/global-active/importance, runtime-job effective models and policy, controlled explicit train, verified explicit activate |
-| Evaluation | verified read-only run list/latest/detail and strict Phase 7 fusion discovery; unavailable artifacts remain typed and distinct from inconclusive results |
+| Evaluation | verified read-only run list/latest/detail, strict Phase 7 fusion discovery, and `/evaluation/summary`, a typed projection of the latest runtime-pinned controlled demo evidence; unavailable/invalid evidence fails closed |
 | Demo | read-only status and explicit allowlisted sample execution |
 
 The generated `/openapi.json`, `/docs`, and `/redoc` describe the same typed
@@ -69,9 +69,9 @@ errors into empty results, retry mutations, or fall back to direct storage.
 
 The nine pages are:
 
-1. **Overview** — server-side KPIs, separately labelled global-active and
-   runtime-job effective artifacts, measured Demo job latency, bounded
-   activity, and explicit research caveats.
+1. **Overview** — four mentor-facing KPIs, real packet-to-case pipeline counts,
+   runtime-job effective models/fusion, a collapsed controlled-demo action, and
+   one concise research boundary.
 2. **Data Ingestion** — uploads, sample selection, replay creation and controls,
    worker run-once, and separate observed versus durable progress.
 3. **Traffic Explorer** — server-paginated flow filters, bounded summaries,
@@ -84,20 +84,29 @@ The nine pages are:
 6. **Cases** — lifecycle, priority/assignment/verdict, append-only notes and
    typed evidence, feedback, bounded read-only Audit History, closure, and
    verified report export.
-7. **Model Lab** — verified model identities, separately labelled global and
-   runtime-effective state, the effective Fusion Policy, cards, thresholds,
-   schemas, non-causal importance, controlled training, and explicit
-   activation.
-8. **Evaluation** — verified metrics and comparisons plus strict Phase 7
-   artifact discovery; missing machine evidence is shown as unavailable while
-   the retained recommendation remains inconclusive.
+7. **Model Lab** — the two effective runtime-pinned models and evaluated fusion
+   policy first; hashes, schema, snapshot, and global-pointer semantics are
+   collapsed as provenance. Training and activation controls appear only when
+   their API-reported prerequisites are actually ready.
+8. **Evaluation** — a typed, presentation-oriented view of the prepared demo
+   comparison: evidence scope, known-group metrics, five-family LOAO Recall,
+   confidence-interval summary, provenance, and limitations. It never parses
+   arbitrary JSON in Streamlit and never prepares evidence on GET.
 9. **System Health** — API/database/schema, queue/workers, observed/durable
    replay state, measured process CPU/RSS/thread/PID snapshot, observed Demo
    job latency, policies, and disabled live capture.
 
-Pages provide explicit empty, loading, success, warning, and API-error states.
-No page uses untrusted unsafe HTML. Configurable auto-refresh is bounded and
-cannot repeat a mutation.
+Pages provide explicit empty, success, warning, and API-error states. A single
+radio navigation renders one page per rerun; the view modules live under
+`frontend/views/` so Streamlit cannot discover a second implicit multipage
+navigation. No page uses untrusted unsafe HTML.
+
+`GET /evaluation/summary` first resolves the latest completed runtime job and
+its immutable effective fusion policy, then calls `DemoArtifactManager.read()`
+only. It requires exact experiment inventory, regular non-symlink files,
+verified policy/checksums, matching experiment/dataset/split identities, and a
+policy manifest hash equal to the runtime snapshot. It returns only a typed
+available, unavailable, or invalid projection and never exposes absolute paths.
 
 ## Controlled sample demonstration
 

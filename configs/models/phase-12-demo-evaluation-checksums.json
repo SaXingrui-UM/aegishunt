@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "phase-12-controlled-demo-fusion",
+  "file_inventory": [
+    "leave_one_family_out.csv"
+  ],
+  "checksums": {
+    "leave_one_family_out.csv": "57db0ddcf3f4984fdc9ced5443730e73196cc508203c419dd2ebf0fa0a056856"
+  }
+}

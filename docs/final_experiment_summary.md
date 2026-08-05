@@ -37,7 +37,7 @@ no untouched independent holdout.
 Fusion selected supervised/anomaly weights `0.75/0.25` and threshold `0.7`.
 Known late controlled groups matched supervised-only, so fusion was not shown
 superior. Across five LOAO folds, family-macro recall was supervised `0.6000`,
-anomaly `0.9333`, fusion `0.8000`; held-out exfiltration and reconnaissance
+anomaly `0.9333`, fusion `0.3333`; held-out exfiltration and reconnaissance
 misses remain. The recommendation is **inconclusive**.
 
 ## Alerting, hunting, and analyst workflow

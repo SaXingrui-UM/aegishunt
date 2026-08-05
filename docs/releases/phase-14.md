@@ -97,6 +97,26 @@ See [Consolidated limitations](../limitations.md). Final formal Codex Security
 rescan was explicitly waived and is not claimed. Phase 14 remains a local
 single-user SQLite research delivery.
 
+## Mentor-demo corrective delivery
+
+The bounded `codex/frontend-demo-polish` correction keeps the Phase 14
+checkpoint and annotated `phase-14-complete` Tag unchanged. It removes the
+implicit Streamlit `pages/` navigation, presents effective runtime models
+instead of an empty global registry, adds a read-only typed demo evaluation
+summary, aligns family-macro fusion LOAO Recall to the verified `0.3333`, fixes
+telemetry upload submission, gives the explicit synchronous worker operation a
+separate 600-second timeout, isolates correlation to the current replay job,
+and permits in-flight durable progress to settle at a pause-request boundary.
+The controlled demo artifact operation advances to `1.0.1` for its
+capacity-only correlation setting. The final corrective suite passes all 564
+tests at 85.91% branch-aware coverage. A real 42,888,106-byte PCAP worker call
+remained connected for 96.13 seconds and completed with 449 flows, 449
+detections, 449 alerts, 94 groups, and 94 hypotheses.
+The base Compose deployment retains UID/GID 10001, read-only root,
+`cap_drop: ALL`, `no-new-privileges`, loopback ports, and all named volumes.
+No model, threshold, fusion weight, risk policy, historical Tag, or automatic
+activation changes in this corrective PR.
+
 ## Next phase
 
 None. No further implementation phase is planned. Optional archival, thesis

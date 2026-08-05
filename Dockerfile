@@ -19,6 +19,8 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    HOME=/tmp/aegishunt-home \
+    XDG_CONFIG_HOME=/tmp/aegishunt-home/.config \
     MPLCONFIGDIR=/tmp/matplotlib \
     AEGISHUNT_CONFIG=/opt/aegishunt/configs/docker.yaml
 
@@ -31,6 +33,7 @@ RUN python -m pip install --no-cache-dir /tmp/*.whl \
     && rm -f /tmp/*.whl
 
 COPY --chown=root:root pyproject.toml README.md ./
+COPY --chown=root:root .streamlit ./.streamlit
 COPY --chown=root:root configs ./configs
 COPY --chown=root:root data/sample ./data/sample
 RUN mkdir -p runtime/data runtime/artifacts runtime/reports \

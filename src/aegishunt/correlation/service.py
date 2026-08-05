@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -45,9 +46,19 @@ class AlertCorrelationService:
         payload["evidence"] = evidence
         return payload
 
-    def correlate(self, *, actor: str = "correlation-service") -> tuple[AlertGroup, ...]:
+    def correlate(
+        self,
+        *,
+        actor: str = "correlation-service",
+        alert_ids: set[UUID] | None = None,
+    ) -> tuple[AlertGroup, ...]:
+        """Correlate all eligible alerts or one explicitly bounded alert set."""
+
+        alerts = self._alerts.list()
+        if alert_ids is not None:
+            alerts = [item for item in alerts if item.alert_id in alert_ids]
         groups = correlate_alerts(
-            self._alerts.list(),
+            alerts,
             self._policy,
             generated_at=self._clock(),
         )

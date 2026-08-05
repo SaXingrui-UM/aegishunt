@@ -1,0 +1,167 @@
+## Phase
+
+Phase 14 corrective — mentor-demo frontend, replay, and evidence presentation.
+
+## Summary
+
+This bounded corrective makes the existing local research frontend suitable for
+a supervisor demonstration without changing any trained model, threshold,
+fusion weight, risk policy, active pointer, historical evidence, merge, or Tag.
+
+The original problems were duplicate implicit Streamlit navigation, developer
+chrome in the demo shell, an empty global model registry presented as the main
+model state, a raw/incomplete evaluation view, a disabled upload submission,
+a 15-second generic frontend timeout applied to long-running worker cycles,
+cross-job alert correlation, a pause-request race, and a documented
+family-macro LOAO Recall of `0.8000` that did not match the verified experiment
+artifact.
+
+## Requirements Completed
+
+- Moved the nine frontend modules from Streamlit's implicit `pages/` discovery
+  directory to explicit `views/` routing and reduced the sidebar to one concise
+  page selector plus one research disclaimer.
+- Reworked Overview, Model Lab, and Evaluation for a compact mentor narrative.
+  Effective runtime models and policy are shown before provenance details.
+- Added read-only model-operation readiness so unavailable training/activation
+  actions are omitted based on server-side prerequisites rather than UI guesses.
+- Added `GET /evaluation/summary`, a typed, read-only projection of the latest
+  completed demo run and the exact verified controlled fusion artifact.
+- Corrected family-macro LOAO Recall from `0.8000` to `0.3333` in the source
+  experiment summary and model cards, with a cross-document regression test.
+- Preserved the base-Compose named volumes and all existing model, threshold,
+  fusion, and risk settings.
+- Made telemetry upload submission depend on server validation after submit,
+  rather than the stale pre-submit value of Streamlit's file widget.
+- Kept ordinary frontend API calls at 15 seconds while giving the explicit,
+  synchronous `Run one worker` operation a separately validated 600-second
+  bound.
+- Scoped runtime correlation to the current replay job's alerts so retained
+  evidence from an earlier job cannot amplify a later replay. The controlled
+  demo artifact operation is versioned `1.0.1`; its capacity-only correlation
+  limit supports large real PCAP jobs without changing risk, fusion, model, or
+  decision thresholds.
+- Allowed an in-flight atomic batch to finish recording stage and durable
+  progress after a concurrent pause request, preserving the documented
+  `pause_requested` boundary instead of failing the job.
+
+## Architecture Decisions
+
+- Evaluation evidence fails closed. The reader requires the exact artifact
+  inventory, non-symlink files, checksums, experiment identities, and effective
+  runtime policy identity before returning a summary.
+- The one LOAO CSV not checksummed by the historical fusion policy is bound to
+  a source-controlled experiment checksum manifest before any family row is
+  projected. Schema-valid numeric substitution therefore fails closed.
+- The summary endpoint never prepares demo artifacts and is regression-tested
+  not to change demo file timestamps or database row counts across repeated
+  reads.
+- Missing or invalid evidence returns a bounded unavailable state with no local
+  filesystem path disclosure.
+- Streamlit remains an API-only client. It does not import storage,
+  repositories, SQLAlchemy, or artifact readers.
+- Automatic refresh is an explicit, default-off, GET-only control. Model
+  discovery is fetched once per render, stale page offsets recover safely, and
+  evaluation evidence is bound to the latest completed allowlisted demo even
+  when a newer unrelated replay exists.
+- The container keeps UID/GID 10001, read-only root, `cap_drop: ALL`,
+  `no-new-privileges:true`, loopback-only ports, and existing named volumes.
+  Writable Streamlit state is constrained to the existing `/tmp` tmpfs.
+
+## Tests
+
+- `ruff check .` — passed.
+- `mypy src` — passed for 239 source files.
+- `pytest` — 564 passed, 0 failed, 18 warnings, 85.91% branch-aware coverage.
+- Focused API, evidence-integrity, status-document, CLI, Streamlit AppTest, and
+  Phase 14 end-to-end suites — passed.
+- Evaluation regressions cover missing, extra, corrupt, symlinked,
+  checksum-mismatched, schema-valid numerically substituted, and
+  identity-mismatched evidence plus no-mutation reads.
+- Codex review findings were resolved across four passes: LOAO checksum
+  anchoring; completed-demo semantics; runtime model/artifact identity;
+  creatable training roots; complete sample coverage; bounded model discovery;
+  default-off refresh; cumulative labels; malformed CSV rejection; global
+  active-pointer provenance; demo-job selection; and stale-page recovery.
+- Two suggestions to restore the old Overview latency/ingestion/timeline view
+  and show an evaluation-catalog fallback were not applied because the
+  corrective's explicit acceptance criteria require those details off Overview
+  and require one concise prompt when prepared demo evidence is unavailable.
+- Base-Compose final image — built and healthy; API summary and Streamlit
+  production settings verified.
+- Real Browser flow — Overview → Model Lab → Evaluation → Overview → Model Lab,
+  with no stale cross-page content, duplicate disclaimer, fresh console errors,
+  or horizontal overflow at the captured 1280 px desktop viewport.
+- A real 42,888,106-byte PCAP worker request remained connected for 96.13
+  seconds, completed its runtime job, and produced 449 flows, 449 detections,
+  449 alerts, 94 groups, and 94 hypotheses. This directly regresses the former
+  15-second false `AegisHunt API is unavailable` state.
+- The exact security gate reported the locally installed `wheel 0.45.1` under
+  CVE-2026-24049. Build and development dependencies now require the fixed
+  `wheel >= 0.46.2,<0.47`; the dependency, secret-history, Bandit, and ledger
+  gates pass on that environment with zero dependency findings, zero confirmed
+  secrets, and zero blocking Bandit findings.
+
+## Commands Executed
+
+```text
+docker compose build --no-cache
+docker compose build
+docker compose up -d --force-recreate
+ruff check .
+mypy src
+pytest
+```
+
+The no-cache build validated the required base deployment; the later normal
+build recreated the exact final source image after presentation-only tweaks.
+Named volumes were never removed and `docker compose down -v` was not run.
+
+## Generated Artifacts
+
+Only review evidence screenshots are added:
+
+- [Baseline Overview](screenshots/frontend-demo/before-overview.png)
+- [Corrected Overview](screenshots/frontend-demo/after-overview.png)
+- [Corrected Model Lab](screenshots/frontend-demo/after-model-lab.png)
+- [Corrected Evaluation](screenshots/frontend-demo/after-evaluation.png)
+- [Corrected LOAO detail](screenshots/frontend-demo/after-evaluation-loao.png)
+
+No datasets, PCAPs, databases, model binaries, secrets, `.env` files, coverage
+machine output, or other generated runtime artifacts are included.
+
+## Security Considerations
+
+The new endpoint is read-only and rejects artifact substitution, inventory
+drift, symlinks, checksum mismatch, experiment/policy identity mismatch, and
+unsafe error detail. Container hardening and volume topology are unchanged
+apart from providing Streamlit a bounded writable HOME under `/tmp`.
+
+The formal final Codex Security rescan remains explicitly waived. This PR does
+not claim that the completed regression checks are a substitute for that scan.
+
+## Known Limitations
+
+- The product remains a local, single-user research demonstration; it is not a
+  multi-user SOC deployment and does not perform live capture or response.
+- Training and activation remain unavailable in the standard demo environment
+  unless all backend-declared prerequisites are present.
+- Screenshots document the in-app Browser's actual 1280×720 viewport. Wider
+  desktop behavior follows the same bounded responsive grid but was not
+  separately screenshot-emulated in that Browser session.
+- A fusion recommendation of `Inconclusive` and zero Recall for Exfiltration
+  and Reconnaissance are intentionally displayed as verified negative results.
+
+## Checklist
+
+- [x] Changes are limited to the declared Phase 14 corrective
+- [x] Ruff passes
+- [x] Mypy passes
+- [x] Pytest passes
+- [x] No secrets are committed
+- [x] No large generated artifacts are committed
+- [x] Documentation is updated
+- [x] `codex_progress.md` is updated
+- [x] No later-phase functionality was implemented prematurely
+- [x] No model, threshold, fusion/risk policy, historical merge, or Tag changed
+- [x] No named Docker volume was deleted

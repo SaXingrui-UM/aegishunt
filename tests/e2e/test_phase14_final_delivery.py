@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import shutil
+from datetime import timedelta
 from pathlib import Path
-from uuid import uuid4
+from typing import cast
+from uuid import UUID, uuid4
 
 import yaml
 from fastapi.testclient import TestClient
+from sqlalchemy import inspect as inspect_database
+from sqlalchemy import text
 
 from aegishunt.api.app import create_app
 from aegishunt.config import (
@@ -21,9 +26,29 @@ from aegishunt.config import (
     SupervisedSettings,
     WebSettings,
 )
+from aegishunt.runtime.contracts import (
+    RuntimeArtifactIdentity,
+    RuntimeJob,
+    runtime_snapshot_checksum,
+)
+from aegishunt.runtime.repositories import RuntimeJobRepository
+from aegishunt.schemas import TelemetrySource
+from aegishunt.schemas.enums import IngestionMode, LifecycleStatus, SourceType
 from aegishunt.storage import Database
+from aegishunt.storage.repositories import TelemetrySourceRepository
 
 ROOT = Path(__file__).parents[2]
+
+
+def _database_counts(database: Database) -> dict[str, int]:
+    tables = inspect_database(database.engine).get_table_names()
+    with database.session() as session:
+        return {
+            table: int(
+                session.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar_one()
+            )
+            for table in tables
+        }
 
 
 def _settings(tmp_path: Path, artifact_root: Path) -> ApplicationSettings:
@@ -68,7 +93,7 @@ def _settings(tmp_path: Path, artifact_root: Path) -> ApplicationSettings:
                 "phase14-benign-like-pcap",
             ),
             demo_namespace="phase14-controlled-demo",
-            demo_operation_version="1.0.0",
+            demo_operation_version="1.0.1",
             demo_worker_id="phase14-e2e-worker",
         ),
     )
@@ -112,6 +137,213 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             assert result["case_id"] is not None
             assert result["state"] == "completed"
             assert "not a public benchmark or production validation" in result["limitations"]
+
+            prepared_root = (
+                ROOT
+                / settings.web.demo_artifact_root
+                / (
+                    f"{settings.web.demo_namespace}-"
+                    f"{settings.web.demo_operation_version}"
+                )
+            )
+            file_state_before = {
+                path.relative_to(prepared_root).as_posix(): path.stat().st_mtime_ns
+                for path in prepared_root.rglob("*")
+                if path.is_file() and not path.is_symlink()
+            }
+            database_counts_before = _database_counts(database)
+            evaluation = client.get("/evaluation/summary")
+            repeated_evaluation = client.get("/evaluation/summary")
+            assert evaluation.status_code == 200, evaluation.text
+            assert repeated_evaluation.json() == evaluation.json()
+            summary = evaluation.json()
+            assert summary["status"] == "available"
+            assert summary["evidence_class"] == "controlled_synthetic_evaluation"
+            assert summary["experiment_id"] == "phase-12-controlled-demo-fusion"
+            assert summary["row_count"] == 144
+            assert summary["group_count"] == 72
+            assert summary["supervised_weight"] == 0.75
+            assert summary["anomaly_weight"] == 0.25
+            assert summary["selected_threshold"] == 0.7
+            assert summary["recommendation"] == "inconclusive"
+            known = {item["engine"]: item for item in summary["known_comparison"]}
+            assert known["supervised"]["recall"] == 1.0
+            assert known["anomaly"]["recall"] == 0.9333333333333333
+            assert known["fusion"]["recall"] == 1.0
+            assert known["fusion"]["false_positive_rate"] == 0.0
+            assert summary["loao_aggregate"] == {
+                "supervised_recall": 0.6,
+                "anomaly_recall": 0.9333333333333333,
+                "fusion_recall": 0.3333333333333333,
+            }
+            fusion_loao = {
+                item["held_out_family"]: item["recall"]
+                for item in summary["loao_comparison"]
+                if item["engine"] == "fusion"
+            }
+            assert fusion_loao["exfiltration"] == 0.0
+            assert fusion_loao["reconnaissance"] == 0.0
+            assert (
+                summary["provenance"]["loao_evidence_checksum"]
+                == "57db0ddcf3f4984fdc9ced5443730e73196cc508203c419dd2ebf0fa0a056856"
+            )
+            effective = client.get("/models/effective").json()
+            assert effective["global_active_models"] == []
+            assert client.get("/models/active").json() == []
+            assert (
+                summary["provenance"]["policy_manifest_hash"]
+                == effective["effective_fusion_policy"]["artifact_hash"]
+            )
+            assert {
+                path.relative_to(prepared_root).as_posix(): path.stat().st_mtime_ns
+                for path in prepared_root.rglob("*")
+                if path.is_file() and not path.is_symlink()
+            } == file_state_before
+            assert _database_counts(database) == database_counts_before
+
+            demo_job_id = UUID(summary["provenance"]["runtime_job_id"])
+            unrelated_source_id = uuid4()
+            with database.session() as session, session.begin():
+                demo_job = RuntimeJobRepository(session).get(demo_job_id)
+                assert demo_job is not None
+                later = demo_job.updated_at + timedelta(seconds=1)
+                TelemetrySourceRepository(session).add(
+                    TelemetrySource(
+                        source_id=unrelated_source_id,
+                        source_type=SourceType.PCAP,
+                        filename_or_interface="unrelated-replay.pcap",
+                        ingestion_mode=IngestionMode.IMPORT,
+                        status=LifecycleStatus.COMPLETED,
+                        started_at=later,
+                        completed_at=later,
+                        records_processed=1,
+                        checksum="e" * 64,
+                    ),
+                    actor="phase14-test",
+                )
+                artifacts = tuple(
+                    RuntimeArtifactIdentity(
+                        artifact_type=item.artifact_type,
+                        artifact_id=(
+                            "unrelated-fusion-policy"
+                            if item.artifact_type == "fusion_policy"
+                            else item.artifact_id
+                        ),
+                        version=(
+                            "unrelated-version"
+                            if item.artifact_type == "fusion_policy"
+                            else item.version
+                        ),
+                        checksum=(
+                            "d" * 64
+                            if item.artifact_type == "fusion_policy"
+                            else item.checksum
+                        ),
+                    )
+                    for item in demo_job.snapshot.artifacts
+                )
+                unrelated_snapshot = demo_job.snapshot.model_copy(
+                    update={
+                        "source_id": unrelated_source_id,
+                        "source_checksum": "e" * 64,
+                        "stored_filename": "unrelated-replay.pcap",
+                        "capture_session_id": f"pcap:{unrelated_source_id}",
+                        "artifacts": artifacts,
+                    }
+                )
+                unrelated_job = RuntimeJob.model_validate(
+                    {
+                        **demo_job.model_dump(mode="python"),
+                        "job_id": uuid4(),
+                        "source_id": unrelated_source_id,
+                        "capture_session_id": unrelated_snapshot.capture_session_id,
+                        "snapshot": unrelated_snapshot,
+                        "snapshot_checksum": runtime_snapshot_checksum(unrelated_snapshot),
+                        "created_at": later,
+                        "started_at": later,
+                        "updated_at": later,
+                        "completed_at": later,
+                    }
+                )
+                RuntimeJobRepository(session).add(
+                    unrelated_job,
+                    actor="phase14-test",
+                )
+            after_unrelated_replay = client.get("/evaluation/summary")
+            assert after_unrelated_replay.status_code == 200
+            assert after_unrelated_replay.json()["status"] == "available"
+            assert (
+                after_unrelated_replay.json()["provenance"]["runtime_job_id"]
+                == str(demo_job_id)
+            )
+
+            experiment = (
+                prepared_root
+                / "reports/fusion/phase-12-controlled-demo-fusion"
+            )
+
+            def failed_closed() -> dict[str, object]:
+                response = client.get("/evaluation/summary")
+                assert response.status_code == 200
+                payload = cast(dict[str, object], response.json())
+                assert payload["status"] in {"unavailable", "invalid"}
+                assert str(tmp_path) not in response.text
+                assert str(prepared_root) not in response.text
+                return payload
+
+            missing = experiment / "leave_one_family_out.csv"
+            missing_bytes = missing.read_bytes()
+            missing.unlink()
+            failed_closed()
+            missing.write_bytes(missing_bytes)
+
+            loao_bytes = missing.read_bytes()
+            loao_payload = loao_bytes.decode("utf-8").replace(
+                ",0.3333333333333333,0.5,",
+                ",0.9999,0.5,",
+                1,
+            )
+            assert loao_payload.encode("utf-8") != loao_bytes
+            missing.write_text(loao_payload, encoding="utf-8")
+            assert failed_closed()["status"] == "invalid"
+            missing.write_bytes(loao_bytes)
+
+            extra = experiment / "unexpected-evidence.json"
+            extra.write_text("{}\n", encoding="utf-8")
+            assert failed_closed()["status"] == "invalid"
+            extra.unlink()
+
+            known_path = experiment / "known_attack_metrics.csv"
+            known_bytes = known_path.read_bytes()
+            known_path.write_text("corrupt,evidence\n", encoding="utf-8")
+            assert failed_closed()["status"] == "invalid"
+            known_path.write_bytes(known_bytes)
+
+            external = tmp_path / "external-known.csv"
+            external.write_bytes(known_bytes)
+            known_path.unlink()
+            known_path.symlink_to(external)
+            failed_closed()
+            known_path.unlink()
+            known_path.write_bytes(known_bytes)
+
+            checksum_bytes = known_path.read_bytes()
+            known_path.write_bytes(checksum_bytes + b"\n")
+            assert failed_closed()["status"] == "invalid"
+            known_path.write_bytes(checksum_bytes)
+
+            fusion_config = experiment / "fusion_config.json"
+            fusion_config_bytes = fusion_config.read_bytes()
+            fusion_payload = yaml.safe_load(fusion_config_bytes)
+            fusion_payload["experiment_id"] = "mismatched-experiment"
+            fusion_config.write_text(
+                json.dumps(fusion_payload),
+                encoding="utf-8",
+            )
+            assert failed_closed()["status"] == "invalid"
+            fusion_config.write_bytes(fusion_config_bytes)
+            assert client.get("/evaluation/summary").json()["status"] == "available"
+            assert client.get("/models/active").json() == []
 
             case_id = result["case_id"]
             note = client.post(
@@ -180,11 +412,11 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             assert case.json()["case"]["verdict"] == "needs_more_information"
             assert case.json()["notes"]
             assert case.json()["feedback"]
-            assert client.get("/runtime/jobs").json()["total"] == 2
+            assert client.get("/runtime/jobs").json()["total"] == 3
             assert client.get("/flows/summary").json()["total"] == 93
-            assert client.get("/demo/status").json()["previous_run"]["runtime_status"] == (
-                "completed"
-            )
+            previous_run = client.get("/demo/status").json()["previous_run"]
+            assert previous_run["sample_id"] == "phase14-benign-like-pcap"
+            assert previous_run["runtime_status"] == "completed"
         restarted.dispose()
     finally:
         database.dispose()

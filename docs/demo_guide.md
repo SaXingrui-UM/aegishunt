@@ -35,31 +35,38 @@ initialized schema, one worker, and real process/resource status.
 
 ## Demonstration sequence
 
-1. **Data Ingestion:** inspect the available samples, then choose
+1. **Overview:** explain the real packet → flow → detection → alert → group →
+   hypothesis → case counts and the two effective runtime-pinned models. If the
+   environment is empty, open **Run or reset controlled demo**; execution still
+   requires actor, reason, and explicit confirmation.
+2. **Data Ingestion:** inspect the available samples, then choose
    `phase14-attack-like-pcap` or `phase14-benign-like-pcap`. Alternatively use
    the explicit Demo form/command. Confirm the mutation and record the returned
    source/job IDs; UUIDs are runtime values and must not be hard-coded.
-2. **Runtime:** create replay for the completed source. Observe live packet
+3. **Runtime:** create replay for the completed source. Observe live packet
    progress separately from durable committed progress. Wait for `completed`.
-3. **Traffic Explorer:** inspect at least one bidirectional flow and its ordered
+4. **Traffic Explorer:** inspect at least one bidirectional flow and its ordered
    43-feature vector.
-4. **Alerts:** inspect supervised probability, anomaly score, fusion/risk,
+5. **Alerts:** inspect supervised probability, anomaly score, fusion/risk,
    severity, reason codes, and non-causal explanation. Scores are not attack
    probabilities and an alert is not confirmation.
-5. **Threat Hunts:** inspect an AlertGroup and the proposed ThreatHypothesis.
+6. **Threat Hunts:** inspect an AlertGroup and the proposed ThreatHypothesis.
    Review facts, inferences, assumptions, benign alternatives, possible
    mappings, and query suggestions marked not executed.
-6. **Cases:** create a case from an eligible hypothesis. Add an analyst note,
+7. **Cases:** create a case from an eligible hypothesis. Add an analyst note,
    set a supported verdict with confidence/reason, and review audit history.
-7. **Feedback:** inspect persisted feedback and export/build a retraining
+8. **Feedback:** inspect persisted feedback and export/build a retraining
    candidate only with a new version and explicit confirmation. No training or
    activation occurs.
-8. **Cases:** export the case report with a new version.
-9. **Model Lab:** distinguish globally configured artifacts from runtime-job
-   effective pinned artifacts.
-10. **Evaluation:** review available evidence and unavailable fields. Fusion is
-    inconclusive; LOF is validation-qualified without an independent holdout.
-11. **System Health:** review durable jobs, worker/resource state, and measured
+9. **Cases:** export the case report with a new version.
+10. **Model Lab:** show Random Forest v12.0.0, validation-qualified LOF
+    v1.1.0-candidate, and the 75%/25% fusion policy pinned by the completed job.
+    The empty global pointer is valid and does not trigger activation.
+11. **Evaluation:** show the verified known comparison and the five-family LOAO
+    result. Family-macro Recall is supervised `0.6000`, anomaly `0.9333`, and
+    fusion `0.3333`; fusion Recall is `0.0000` for held-out exfiltration and
+    reconnaissance. The negative result is evidence, not a UI failure.
+12. **System Health:** review durable jobs, worker/resource state, and measured
     observations. Performance is not an SLA.
 
 The exact number of flows/alerts depends on the selected profile and current
@@ -93,7 +100,7 @@ checksum-verified in `artifacts/demo/phase14/` or the Compose artifact volume.
 - Group and hypothesis evidence/alternatives
 - Case note, verdict, evidence, and audit
 - Model Lab effective identity
-- Evaluation limitations
+- Evaluation known comparison and negative LOAO evidence
 - System Health worker/resource state
 
 ## Failure paths
@@ -105,8 +112,8 @@ checksum-verified in `artifacts/demo/phase14/` or the Compose artifact volume.
   creates data.
 - **Port conflict:** stop the conflicting process or change only the loopback
   host port.
-- **Stale Compose volume:** inspect data first, then use
-  `docker compose down --volumes` and reinitialize.
+- **Stale Compose volume:** inspect the named-volume evidence and configuration;
+  do not delete volumes as a troubleshooting shortcut.
 - **Corrupt sample/artifact:** do not bypass checksum or inventory validation;
   regenerate the reviewed sample or create a fresh demo namespace.
 - **No internet:** use the already built image/wheel. Runtime demo is offline.
