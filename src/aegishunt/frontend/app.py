@@ -77,7 +77,11 @@ def _client(
     runtime_worker_timeout_seconds: float = 600.0,
     page_size: int = 50,
     actor_header: str = "X-AegisHunt-Actor",
-    safe_download_types: tuple[str, ...] = ("case_report",),
+    safe_download_types: tuple[str, ...] = (
+        "case_report",
+        "feedback_export",
+        "retraining_candidate",
+    ),
 ) -> AegisHuntApiClient:
     """Create one HTTP client; no database or artifact access occurs."""
 

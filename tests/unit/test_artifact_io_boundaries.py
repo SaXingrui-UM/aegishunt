@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -10,6 +12,7 @@ import pytest
 from aegishunt.artifact_io import (
     CHECKSUMS_FILENAME,
     configured_artifact_root,
+    verified_data_artifact_zip,
     verify_data_artifact,
     write_data_artifact,
 )
@@ -121,6 +124,34 @@ def test_verifier_rejects_escape_symlink_and_nonregular_inventory(tmp_path: Path
     (path / "payload.json").symlink_to(outside, target_is_directory=True)
     with pytest.raises(DataArtifactError, match="regular files"):
         verify_data_artifact(path, root=root, exact_inventory=INVENTORY)
+
+
+def test_verified_zip_is_deterministic_and_preserves_exact_inventory(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "artifacts"
+    path = _write(root)
+
+    first = verified_data_artifact_zip(
+        path,
+        root=root,
+        exact_inventory=INVENTORY,
+    )
+    second = verified_data_artifact_zip(
+        path,
+        root=root,
+        exact_inventory=INVENTORY,
+    )
+    assert first == second
+    with zipfile.ZipFile(io.BytesIO(first)) as archive:
+        assert archive.namelist() == sorted(INVENTORY)
+        assert archive.read("payload.json") == b"{}\n"
+        checksums = json.loads(archive.read(CHECKSUMS_FILENAME))
+        assert set(checksums["checksums"]) == {"payload.json"}
+
+    (path / "payload.json").write_bytes(b"corrupt")
+    with pytest.raises(DataArtifactError, match="checksum verification failed"):
+        verified_data_artifact_zip(path, root=root, exact_inventory=INVENTORY)
 
 
 @pytest.mark.parametrize(

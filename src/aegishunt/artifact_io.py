@@ -6,7 +6,9 @@ import hashlib
 import json
 import os
 import re
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 from aegishunt.errors import DataArtifactError
 
@@ -150,3 +152,38 @@ def verify_data_artifact(
     if any(checksums[name] != sha256_bytes(payload) for name, payload in payloads.items()):
         raise DataArtifactError("artifact checksum verification failed")
     return payloads
+
+
+def verified_data_artifact_zip(
+    path: Path,
+    *,
+    root: Path,
+    exact_inventory: tuple[str, ...],
+) -> bytes:
+    """Return a deterministic ZIP only after the complete artifact verifies."""
+
+    payloads = verify_data_artifact(
+        path,
+        root=root,
+        exact_inventory=exact_inventory,
+    )
+    checksums = {
+        "checksum_schema_version": "1.0.0",
+        "checksums": {
+            name: sha256_bytes(payload) for name, payload in sorted(payloads.items())
+        },
+    }
+    complete = {**payloads, CHECKSUMS_FILENAME: json_bytes(checksums)}
+    archive_buffer = BytesIO()
+    with ZipFile(
+        archive_buffer,
+        mode="w",
+        compression=ZIP_DEFLATED,
+        compresslevel=9,
+    ) as archive:
+        for name in sorted(exact_inventory):
+            member = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            member.compress_type = ZIP_DEFLATED
+            member.external_attr = 0o640 << 16
+            archive.writestr(member, complete[name])
+    return archive_buffer.getvalue()

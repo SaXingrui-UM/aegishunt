@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi import Path as ApiPath
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from aegishunt.api.audit_service import list_case_audit_events
 from aegishunt.api.contracts import (
@@ -30,7 +30,10 @@ from aegishunt.api.contracts import (
 from aegishunt.api.dependencies import PaginationDependency, get_database, get_settings
 from aegishunt.api.errors import ApiError, not_found
 from aegishunt.api.repository import ApiReadRepository
-from aegishunt.artifact_io import configured_artifact_root
+from aegishunt.artifact_io import (
+    configured_artifact_root,
+    verified_data_artifact_zip,
+)
 from aegishunt.cases.config import LoadedCaseFeedbackPolicy, load_case_feedback_policy
 from aegishunt.cases.reports import CaseReportService
 from aegishunt.cases.service import InvestigationCaseService
@@ -530,6 +533,45 @@ def export_feedback(
     )
 
 
+@router.get(
+    "/feedback/exports/{version}/download",
+    response_class=Response,
+    operation_id="download_analyst_feedback_export",
+)
+def download_feedback_export(
+    version: Annotated[
+        str,
+        ApiPath(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"),
+    ],
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> Response:
+    """Download one checksum-verified, exact-inventory feedback ZIP."""
+
+    loaded = _policy(settings)
+    with database.session() as session:
+        FeedbackExportService(
+            session,
+            loaded,
+            project_root=Path.cwd(),
+        ).verify(version)
+    root = configured_artifact_root(Path.cwd(), loaded.policy.export_root)
+    archive = verified_data_artifact_zip(
+        root / version,
+        root=root,
+        exact_inventory=loaded.policy.feedback_export_inventory,
+    )
+    return Response(
+        content=archive,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="aegishunt-feedback-export-{version}.zip"'
+            )
+        },
+    )
+
+
 @router.post(
     "/feedback/retraining-candidates",
     response_model=ArtifactResult,
@@ -550,4 +592,43 @@ def build_retraining_candidates(
         artifact_type="retraining_candidates",
         version=payload.version,
         manifest=cast(JsonObject, manifest.model_dump(mode="json")),
+    )
+
+
+@router.get(
+    "/feedback/retraining-candidates/{version}/download",
+    response_class=Response,
+    operation_id="download_retraining_candidates",
+)
+def download_retraining_candidates(
+    version: Annotated[
+        str,
+        ApiPath(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"),
+    ],
+    database: DatabaseDependency,
+    settings: SettingsDependency,
+) -> Response:
+    """Download one verified review-only candidate ZIP without training."""
+
+    loaded = _policy(settings)
+    with database.session() as session:
+        RetrainingCandidateService(
+            session,
+            loaded,
+            project_root=Path.cwd(),
+        ).verify(version)
+    root = configured_artifact_root(Path.cwd(), loaded.policy.candidate_root)
+    archive = verified_data_artifact_zip(
+        root / version,
+        root=root,
+        exact_inventory=loaded.policy.candidate_dataset_inventory,
+    )
+    return Response(
+        content=archive,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="aegishunt-retraining-candidates-{version}.zip"'
+            )
+        },
     )

@@ -133,6 +133,17 @@ Using an isolated backup of the manual-recording database, the API generated
 and downloaded a versioned Markdown report with the exact four-file inventory;
 no production case, report version, or recording evidence was mutated.
 
+The same corrective now offers an allowlisted, checksum-verified ZIP download
+for reviewed feedback exports and review-only retraining-candidate proposals.
+The frontend shows the generated manifest and download button immediately, and
+also provides a separate existing-version form so retained artifacts can be
+downloaded after a refresh or restart. The preserved `demo-v2` feedback export
+downloaded with its exact four-file inventory. Ruff, strict mypy, and 48
+relevant unit, integration, API-client, and rendered frontend tests passed.
+Existing case-report versions also have a separate reverification/download form,
+so a retained report remains accessible without attempting to recreate its
+immutable version.
+
 ## Next phase
 
 None. No further implementation phase is planned. Optional archival, thesis

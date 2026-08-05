@@ -88,7 +88,11 @@ class AegisHuntApiClient:
         runtime_worker_timeout_seconds: float = 600.0,
         page_size: int = 50,
         actor_header: str = "X-AegisHunt-Actor",
-        safe_download_types: tuple[str, ...] = ("case_report",),
+        safe_download_types: tuple[str, ...] = (
+            "case_report",
+            "feedback_export",
+            "retraining_candidate",
+        ),
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         if not 1 <= page_size <= 100:
@@ -576,10 +580,16 @@ class AegisHuntApiClient:
         )
 
     def download_case_report(self, case_id: str, version: str) -> bytes:
-        if "case_report" not in self._safe_download_types:
-            raise ValueError("case-report downloads are disabled by configuration")
+        return self._download(
+            f"/cases/{case_id}/reports/{version}",
+            artifact_type="case_report",
+        )
+
+    def _download(self, path: str, *, artifact_type: str) -> bytes:
+        if artifact_type not in self._safe_download_types:
+            raise ValueError(f"{artifact_type} downloads are disabled by configuration")
         try:
-            response = self._client.get(f"/cases/{case_id}/reports/{version}")
+            response = self._client.get(path)
         except httpx.RequestError as exc:
             raise ApiClientError("AegisHunt API is unavailable") from exc
         if response.is_error:
@@ -599,6 +609,22 @@ class AegisHuntApiClient:
                 status_code=response.status_code,
             )
         return response.content
+
+    def download_data_artifact(
+        self,
+        version: str,
+        *,
+        retraining_candidates: bool = False,
+    ) -> bytes:
+        artifact_type = (
+            "retraining_candidate" if retraining_candidates else "feedback_export"
+        )
+        path = (
+            f"/feedback/retraining-candidates/{version}/download"
+            if retraining_candidates
+            else f"/feedback/exports/{version}/download"
+        )
+        return self._download(path, artifact_type=artifact_type)
 
     def export_feedback(
         self,

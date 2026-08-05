@@ -60,7 +60,9 @@ REQUIRED_ROUTES = {
     "/feedback/alerts/{alert_id}",
     "/feedback/cases/{case_id}",
     "/feedback/export",
+    "/feedback/exports/{version}/download",
     "/feedback/retraining-candidates",
+    "/feedback/retraining-candidates/{version}/download",
     "/models",
     "/models/{model_id}",
     "/models/active",
@@ -223,6 +225,41 @@ def test_frontend_worker_run_once_uses_the_dedicated_long_timeout() -> None:
     assert observed_timeouts == [
         {"connect": 600.0, "read": 600.0, "write": 600.0, "pool": 600.0}
     ]
+
+
+def test_frontend_data_artifact_download_uses_fixed_allowlisted_routes() -> None:
+    observed_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed_paths.append(request.url.path)
+        return httpx.Response(200, content=b"verified-zip")
+
+    with AegisHuntApiClient(
+        "http://127.0.0.1:8000",
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        assert client.download_data_artifact("demo-v2") == b"verified-zip"
+        assert (
+            client.download_data_artifact("candidate-v1", retraining_candidates=True)
+            == b"verified-zip"
+        )
+
+    assert observed_paths == [
+        "/feedback/exports/demo-v2/download",
+        "/feedback/retraining-candidates/candidate-v1/download",
+    ]
+
+    with AegisHuntApiClient(
+        "http://127.0.0.1:8000",
+        safe_download_types=("case_report",),
+        transport=httpx.MockTransport(handler),
+    ) as disabled:
+        try:
+            disabled.download_data_artifact("demo-v2")
+        except ValueError as error:
+            assert "disabled by configuration" in str(error)
+        else:
+            raise AssertionError("disabled feedback download was allowed")
 
 
 def test_web_configuration_rejects_unsafe_or_incoherent_values() -> None:

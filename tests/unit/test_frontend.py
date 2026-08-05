@@ -599,11 +599,23 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert test_app.get("download_button")
 
         test_app.text_input[11].set_value("1.0.0")
+        _button(test_app, "Prepare existing report download").click().run(timeout=20.0)
+        assert not test_app.exception
+        assert any(
+            item.label == "Download verified Markdown report"
+            for item in test_app.get("download_button")
+        )
+
+        test_app.text_input[12].set_value("1.0.0")
         test_app.text_area[10].set_value("create reviewed feedback export")
         test_app.checkbox[6].check()
         _button(test_app, "Create data-only artifact").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
+        assert any(
+            item.label == "Download verified data-only artifact (.zip)"
+            for item in test_app.get("download_button")
+        )
 
         test_app.radio[0].set_value("Model Lab").run(timeout=20.0)
         assert not test_app.exception
