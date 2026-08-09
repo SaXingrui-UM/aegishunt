@@ -247,6 +247,12 @@ def update_case(
             code="ambiguous_case_update",
             status_code=400,
         )
+    if payload.confirm_verdict_replacement and "verdict" not in requested:
+        raise ApiError(
+            "verdict replacement confirmation requires a verdict update",
+            code="invalid_case_verdict_confirmation",
+            status_code=400,
+        )
     with database.session() as session, session.begin():
         service = InvestigationCaseService(session, _policy(settings))
         if "status" in requested:
@@ -284,6 +290,7 @@ def update_case(
             confidence=payload.verdict_confidence,
             reason=payload.reason,
             actor=payload.actor,
+            allow_update=payload.confirm_verdict_replacement,
         )
 
 

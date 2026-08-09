@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
 
@@ -84,8 +84,9 @@ def get_model_importance(
     model_id: str,
     database: DatabaseDependency,
     settings: SettingsDependency,
+    kind: Literal["native", "permutation"] = "native",
 ) -> ModelImportance:
-    return _service(database, settings).importance(model_id)
+    return _service(database, settings).importance(model_id, kind=kind)
 
 
 @router.post("/train", response_model=ModelDescriptor, operation_id="train_controlled_model")

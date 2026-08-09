@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from types import TracebackType
-from typing import Any, BinaryIO, TypeVar
+from typing import Any, BinaryIO, Literal, TypeVar
 
 import httpx
 from pydantic import BaseModel
@@ -33,6 +33,7 @@ from aegishunt.api.contracts import (
     ModelImportance,
     ModelPage,
     NetworkFlowPage,
+    ReplayStatistics,
     RuntimeJobDetail,
     RuntimeJobPage,
     RuntimeOverview,
@@ -203,6 +204,12 @@ class AegisHuntApiClient:
 
     def runtime_job(self, job_id: str) -> RuntimeJobDetail:
         return self._get(f"/runtime/jobs/{job_id}", RuntimeJobDetail)
+
+    def replay_statistics(self, source_id: str) -> ReplayStatistics:
+        return self._get(
+            f"/runtime/replay-statistics/{source_id}",
+            ReplayStatistics,
+        )
 
     def runtime_workers(
         self, *, limit: int | None = None, offset: int = 0
@@ -690,8 +697,17 @@ class AegisHuntApiClient:
     def model(self, model_id: str) -> ModelDescriptor:
         return self._get(f"/models/{model_id}", ModelDescriptor)
 
-    def model_importance(self, model_id: str) -> ModelImportance:
-        return self._get(f"/models/{model_id}/importance", ModelImportance)
+    def model_importance(
+        self,
+        model_id: str,
+        *,
+        kind: Literal["native", "permutation"] = "native",
+    ) -> ModelImportance:
+        return self._get(
+            f"/models/{model_id}/importance",
+            ModelImportance,
+            {"kind": kind},
+        )
 
     def activate_model(
         self,

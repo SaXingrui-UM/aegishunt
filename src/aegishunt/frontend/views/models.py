@@ -102,25 +102,54 @@ def render(client: AegisHuntApiClient) -> None:
 
     matching_bundle = _matching_supervised_bundle(models, effective)
     if matching_bundle is not None:
+        section_header("Verified feature importance")
+        importance_label = st.radio(
+            "Importance method",
+            ("Native", "Permutation"),
+            horizontal=True,
+            help=(
+                "Native uses the fitted tree model's deterministic importance vector. "
+                "Permutation uses repeated validation-partition shuffles."
+            ),
+        )
         try:
-            importance = client.model_importance(matching_bundle.model_id)
+            importance = client.model_importance(
+                matching_bundle.model_id,
+                kind=importance_label.casefold(),
+            )
         except ApiClientError as error:
             api_error(error)
         else:
             if importance.available and importance.importance is not None:
-                section_header("Verified feature importance")
                 table(
                     (
                         {
                             "Feature": item.feature_name,
                             "Mean importance": f"{item.mean:.4f}",
-                            "Standard deviation": f"{item.standard_deviation:.4f}",
+                            "Standard deviation": (
+                                "N/A"
+                                if item.standard_deviation is None
+                                else f"{item.standard_deviation:.4f}"
+                            ),
                         }
                         for item in importance.importance
                     ),
                     empty_message="No verified importance entries are available.",
                 )
+                if importance_label == "Native":
+                    st.caption(
+                        "Native tree importance is one deterministic model vector; "
+                        "standard deviation is not applicable."
+                    )
+                else:
+                    st.caption(
+                        "Permutation importance uses the "
+                        f"{importance.source_partition} partition · scoring "
+                        f"{importance.scoring_metric} · {importance.repeats} repeats."
+                    )
                 st.caption("Feature importance is non-causal.")
+            else:
+                st.info(importance.message)
 
     with st.expander("Technical provenance", expanded=False):
         if not effective.global_active_models:

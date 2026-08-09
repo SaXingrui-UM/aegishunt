@@ -9,7 +9,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from aegishunt.runtime.contracts import RuntimeAttempt, RuntimeJob, RuntimeStatus, RuntimeWorker
+from aegishunt.runtime.contracts import (
+    RuntimeAttempt,
+    RuntimeJob,
+    RuntimeJobStatus,
+    RuntimeStatus,
+    RuntimeWorker,
+)
 from aegishunt.schemas import (
     AlertGroup,
     AnalystFeedback,
@@ -149,6 +155,48 @@ class RuntimeJobDetail(ApiContract):
     recovery_semantics: Literal["deterministic_restart_from_origin"] = (
         "deterministic_restart_from_origin"
     )
+
+
+class ReplayScoreBucket(ApiContract):
+    """One bounded score interval for a single replay job."""
+
+    label: str
+    lower_bound: float = Field(ge=0.0, le=1.0)
+    upper_bound: float = Field(ge=0.0, le=1.0)
+    count: int = Field(ge=0)
+
+
+class ReplayScoreDistribution(ApiContract):
+    """Job-scoped model-score evidence without ground-truth semantics."""
+
+    score: Literal["supervised", "anomaly", "fusion", "risk"]
+    available_count: int = Field(ge=0)
+    missing_count: int = Field(ge=0)
+    minimum: float | None = Field(default=None, ge=0.0, le=1.0)
+    mean: float | None = Field(default=None, ge=0.0, le=1.0)
+    maximum: float | None = Field(default=None, ge=0.0, le=1.0)
+    buckets: tuple[ReplayScoreBucket, ...]
+
+
+class ReplayStatistics(ApiContract):
+    """Operational evidence isolated to one source and its replay job."""
+
+    status: Literal["available", "unavailable"]
+    message: str
+    source_id: UUID
+    source_name: str
+    runtime_job_id: UUID | None
+    runtime_status: RuntimeJobStatus | None
+    flow_count: int = Field(ge=0)
+    detection_count: int = Field(ge=0)
+    alert_count: int = Field(ge=0)
+    alert_rate: float | None = Field(default=None, ge=0.0, le=1.0)
+    duration_ms: float | None = Field(default=None, ge=0.0)
+    throughput_flows_per_second: float | None = Field(default=None, ge=0.0)
+    score_distributions: tuple[ReplayScoreDistribution, ...]
+    limitation: Literal[
+        "operational inference statistics; not accuracy or ground truth"
+    ] = "operational inference statistics; not accuracy or ground truth"
 
 
 class RuntimeLatencySummary(ApiContract):
@@ -309,6 +357,7 @@ class CaseUpdateRequest(MutationRequest):
     assigned_to: str | None = Field(default=None, max_length=255)
     verdict: AnalystVerdict | None = None
     verdict_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    confirm_verdict_replacement: bool = False
 
 
 class CaseNoteRequest(MutationRequest):
@@ -502,7 +551,7 @@ class ModelImportanceEntry(ApiContract):
 
     feature_name: str
     mean: float
-    standard_deviation: float = Field(ge=0.0)
+    standard_deviation: float | None = Field(default=None, ge=0.0)
 
 
 class ModelImportance(ApiContract):
@@ -511,6 +560,9 @@ class ModelImportance(ApiContract):
     model_id: str
     available: bool
     method: str | None
+    source_partition: str | None = None
+    scoring_metric: str | None = None
+    repeats: int | None = Field(default=None, ge=1)
     importance: tuple[ModelImportanceEntry, ...] | None
     message: str
     limitation: Literal["feature importance is non-causal"] = (

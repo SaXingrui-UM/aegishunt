@@ -22,6 +22,7 @@ REQUIRED_ROUTES = {
     "/runtime/status",
     "/runtime/jobs",
     "/runtime/jobs/{job_id}",
+    "/runtime/replay-statistics/{source_id}",
     "/runtime/workers",
     "/runtime/workers/run-once",
     "/runtime/workers/{worker_id}",
