@@ -35,13 +35,13 @@ state/version conflicts (409), oversized uploads (413), validation failures
 
 | Area | Routes and capabilities |
 | --- | --- |
-| System/runtime | `/health`, `/system/status`, runtime status/jobs/workers, measured Demo job latency, process resource snapshot, pause/resume/recover, bounded run-once |
+| System/runtime | `/health`, `/system/status`, runtime status/jobs/workers, source-scoped `/runtime/replay-statistics/{source_id}`, measured job latency/throughput, process resource snapshot, pause/resume/recover, bounded run-once |
 | Ingestion | streamed PCAP/CSV/JSON upload, allowlisted samples, sources/jobs, source-ID replay |
 | Traffic | bounded flow list/detail/summary and detection list/detail |
 | Alerts | list/detail with immutable evidence and explicit analyst-verdict update |
 | Hunts | alert-group and hypothesis list/detail, safe hypothesis transition, idempotent case creation |
 | Cases/feedback | case lifecycle, notes, evidence references, feedback, report/export/candidate artifacts, bounded read-only audit history |
-| Models | verified list/detail/global-active/importance, runtime-job effective models and policy, controlled explicit train, verified explicit activate |
+| Models | verified list/detail/global-active, native and stored permutation importance, runtime-job effective models and policy, controlled explicit train, verified explicit activate |
 | Evaluation | verified read-only run list/latest/detail, strict Phase 7 fusion discovery, and `/evaluation/summary`, a typed projection of the latest runtime-pinned controlled demo evidence; unavailable/invalid evidence fails closed |
 | Demo | read-only status and explicit allowlisted sample execution |
 
@@ -81,15 +81,23 @@ The nine pages are:
 5. **Threat Hunts** — groups, hypotheses, facts/inferences/assumptions,
    benign alternatives, possible mappings, non-executed queries, transitions,
    and explicit case creation.
-6. **Cases** — lifecycle, priority/assignment/verdict, append-only notes and
-   typed evidence, feedback, bounded read-only Audit History, closure, and
+6. **Cases** — lifecycle, priority/assignment/verdict, an additional explicit
+   confirmation before an existing verdict can be replaced, append-only notes
+   and typed evidence, feedback, bounded read-only Audit History, closure, and
    verified report export.
 7. **Model Lab** — the two effective runtime-pinned models and evaluated fusion
-   policy first; hashes, schema, snapshot, and global-pointer semantics are
-   collapsed as provenance. Training and activation controls appear only when
-   their API-reported prerequisites are actually ready.
-8. **Evaluation** — a typed, presentation-oriented view of the prepared demo
-   comparison: evidence scope, known-group metrics, five-family LOAO Recall,
+   policy first; native feature importance reports standard deviation as not
+   applicable, while a Native/Permutation selector exposes the persisted
+   repeated-permutation means and deviations. Hashes, schema, snapshot, and
+   global-pointer semantics are collapsed as provenance. Training and
+   activation controls appear only when their API-reported prerequisites are
+   actually ready.
+8. **Evaluation** — source-selectable operational Replay Statistics first,
+   followed by the unchanged typed controlled model evaluation. Replay counts,
+   score distributions, duration, and throughput are joined through the
+   selected source's runtime job and output ledger, so they cannot mix another
+   PCAP's outputs. The controlled section remains a presentation-oriented view
+   of evidence scope, known-group metrics, five-family LOAO Recall,
    confidence-interval summary, provenance, and limitations. It never parses
    arbitrary JSON in Streamlit and never prepares evidence on GET.
 9. **System Health** — API/database/schema, queue/workers, observed/durable
@@ -107,6 +115,13 @@ only. It requires exact experiment inventory, regular non-symlink files,
 verified policy/checksums, matching experiment/dataset/split identities, and a
 policy manifest hash equal to the runtime snapshot. It returns only a typed
 available, unavailable, or invalid projection and never exposes absolute paths.
+
+`GET /runtime/replay-statistics/{source_id}` resolves the stored source's
+unique replay job, then counts distinct flow, detection, and alert identities
+from that job's immutable output ledger. Supervised, anomaly, fusion, and risk
+score summaries and ten fixed buckets are calculated only from detections
+referenced by the same ledger. A stored source without a replay job returns a
+typed unavailable state rather than falling back to global statistics.
 
 ## Controlled sample demonstration
 

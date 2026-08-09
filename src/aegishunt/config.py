@@ -215,7 +215,11 @@ class WebSettings(BaseModel):
     maximum_table_rows: int = Field(default=50, ge=1, le=100)
     default_actor: str = Field(default="local-analyst", min_length=1, max_length=128)
     page_title: str = Field(default="AegisHunt", min_length=1, max_length=128)
-    safe_download_types: tuple[str, ...] = ("case_report",)
+    safe_download_types: tuple[str, ...] = (
+        "case_report",
+        "feedback_export",
+        "retraining_candidate",
+    )
     maximum_pcap_upload_bytes: int = Field(default=52_428_800, ge=1)
     maximum_csv_upload_bytes: int = Field(default=10_485_760, ge=1)
     maximum_json_upload_bytes: int = Field(default=10_485_760, ge=1)

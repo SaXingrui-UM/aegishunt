@@ -45,6 +45,29 @@ def test_policy_is_complete_checksummed_and_has_no_hidden_critical_defaults() ->
     assert first.policy.candidate_dataset_inventory[-1] == "exclusions.json"
 
 
+def test_docker_policy_only_redirects_artifacts_to_direct_runtime_mounts() -> None:
+    root = Path(__file__).parents[2]
+    default_payload = _policy_payload()
+    docker_path = root / "configs" / "case_feedback.docker.yaml"
+    docker_payload = yaml.safe_load(docker_path.read_text(encoding="utf-8"))
+    assert isinstance(docker_payload, dict)
+
+    root_fields = ("export_root", "report_root", "candidate_root")
+    assert {field: docker_payload.pop(field) for field in root_fields} == {
+        "export_root": "runtime/artifacts/feedback",
+        "report_root": "runtime/reports/cases",
+        "candidate_root": "runtime/artifacts/retraining_candidates",
+    }
+    for field in root_fields:
+        default_payload.pop(field)
+    assert docker_payload == default_payload
+
+    loaded = load_case_feedback_policy(docker_path)
+    assert configured_artifact_root(root, loaded.policy.report_root) == (
+        root / "runtime" / "reports" / "cases"
+    )
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [

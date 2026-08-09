@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request
 
 from aegishunt.api.contracts import (
+    ReplayStatistics,
     RuntimeJobDetail,
     RuntimeJobPage,
     RuntimeMutationRequest,
@@ -25,6 +26,7 @@ from aegishunt.api.dependencies import (
     get_settings,
 )
 from aegishunt.api.errors import not_found
+from aegishunt.api.replay_statistics import ReplayStatisticsReader
 from aegishunt.api.runtime_observability import RuntimeObservabilityReader
 from aegishunt.config import ApplicationSettings
 from aegishunt.metadata import APPLICATION_NAME, __version__
@@ -119,6 +121,23 @@ def list_runtime_jobs(
 )
 def get_runtime_job(job_id: UUID, service: RuntimeDependency) -> RuntimeJobDetail:
     return RuntimeJobDetail(job=service.get(job_id), attempts=service.attempts(job_id))
+
+
+@router.get(
+    "/runtime/replay-statistics/{source_id}",
+    response_model=ReplayStatistics,
+    operation_id="get_replay_statistics",
+    summary="Get statistics isolated to one source replay",
+)
+def get_replay_statistics(
+    source_id: UUID,
+    database: DatabaseDependency,
+) -> ReplayStatistics:
+    with database.session() as session:
+        statistics = ReplayStatisticsReader(session).read(source_id)
+    if statistics is None:
+        not_found("telemetry source")
+    return statistics
 
 
 @router.get(

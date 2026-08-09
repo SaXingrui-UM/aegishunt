@@ -37,11 +37,133 @@ def _available_contract(summary: EvaluationSummary) -> bool:
     )
 
 
+def _optional_number(value: float | None, *, suffix: str = "") -> str:
+    return "Unavailable" if value is None else f"{value:.2f}{suffix}"
+
+
+def _render_replay_statistics(client: AegisHuntApiClient) -> None:
+    section_header("Replay Statistics")
+    st.caption(
+        "Operational inference statistics for one stored source and its replay job; "
+        "these values are not accuracy, Recall, or ground truth."
+    )
+    try:
+        sources = client.telemetry_sources(limit=100)
+    except ApiClientError as error:
+        api_error(error)
+        return
+    if not sources.items:
+        st.info("No stored telemetry source is available for replay statistics.")
+        return
+    labels = {
+        str(item.source_id): (
+            f"{item.filename_or_interface} · {item.source_type.value} · {item.source_id}"
+        )
+        for item in sources.items
+    }
+    selected_source = st.selectbox(
+        "Stored source / PCAP",
+        tuple(labels),
+        format_func=lambda source_id: labels[source_id],
+    )
+    try:
+        statistics = client.replay_statistics(selected_source)
+    except ApiClientError as error:
+        api_error(error)
+        return
+    if statistics.status == "unavailable":
+        st.info(statistics.message)
+        return
+
+    duration_seconds = (
+        None if statistics.duration_ms is None else statistics.duration_ms / 1_000.0
+    )
+    metrics(
+        {
+            "Flows": statistics.flow_count,
+            "Detections": statistics.detection_count,
+            "Alerts": statistics.alert_count,
+            "Alert rate": (
+                "Unavailable"
+                if statistics.alert_rate is None
+                else f"{statistics.alert_rate:.1%}"
+            ),
+            "Replay duration": _optional_number(duration_seconds, suffix=" s"),
+            "Throughput": _optional_number(
+                statistics.throughput_flows_per_second,
+                suffix=" flows/s",
+            ),
+        }
+    )
+    st.write(
+        f"Runtime job `{statistics.runtime_job_id}` · status "
+        f"`{statistics.runtime_status.value if statistics.runtime_status else 'unknown'}`"
+    )
+    if not statistics.score_distributions:
+        st.info("No committed detection scores are available for this replay job.")
+        return
+
+    score_tabs = st.tabs(
+        tuple(item.score.title() for item in statistics.score_distributions)
+    )
+    for score_tab, distribution in zip(
+        score_tabs,
+        statistics.score_distributions,
+        strict=True,
+    ):
+        with score_tab:
+            metrics(
+                {
+                    "Minimum": _optional_number(distribution.minimum),
+                    "Mean": _optional_number(distribution.mean),
+                    "Maximum": _optional_number(distribution.maximum),
+                    "Available scores": distribution.available_count,
+                    "Missing scores": distribution.missing_count,
+                }
+            )
+            chart_rows = [
+                {"Score range": item.label, "Flows": item.count}
+                for item in distribution.buckets
+            ]
+            st.vega_lite_chart(
+                {
+                    "data": {"values": chart_rows},
+                    "mark": {"type": "bar", "tooltip": True},
+                    "encoding": {
+                        "x": {
+                            "field": "Score range",
+                            "type": "ordinal",
+                            "sort": None,
+                            "title": "Score range",
+                        },
+                        "y": {
+                            "field": "Flows",
+                            "type": "quantitative",
+                            "scale": {
+                                "domain": [
+                                    0,
+                                    max(
+                                        1,
+                                        max(item.count for item in distribution.buckets),
+                                    ),
+                                ]
+                            },
+                            "title": "Flows",
+                        },
+                    },
+                },
+                use_container_width=True,
+            )
+
+
 def render(client: AegisHuntApiClient) -> None:
     page_header(
         "Evaluation",
         "Controlled model comparison and held-out-family results",
     )
+    _render_replay_statistics(client)
+    st.divider()
+    section_header("Controlled Model Evaluation")
     try:
         summary = client.evaluation_summary()
     except ApiClientError as error:

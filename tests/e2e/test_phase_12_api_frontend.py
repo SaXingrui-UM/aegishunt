@@ -167,13 +167,35 @@ def test_phase12_api_workflow_is_persistent_and_truthful(tmp_path: Path) -> None
             },
         )
         assert verdict.status_code == 200
+        denied_replacement = client.patch(
+            f"/cases/{case_id}",
+            json={
+                "actor": "phase12-analyst",
+                "reason": "replace bounded case judgment",
+                "verdict": "false_positive",
+                "verdict_confidence": 0.8,
+            },
+        )
+        assert denied_replacement.status_code == 409
+        replacement = client.patch(
+            f"/cases/{case_id}",
+            json={
+                "actor": "phase12-analyst",
+                "reason": "replace bounded case judgment",
+                "verdict": "false_positive",
+                "verdict_confidence": 0.8,
+                "confirm_verdict_replacement": True,
+            },
+        )
+        assert replacement.status_code == 200
+        assert replacement.json()["verdict"] == "false_positive"
         feedback = client.post(
             f"/feedback/cases/{case_id}",
             json={
                 "actor": "phase12-analyst",
                 "reason": "explicit human judgment",
-                "verdict": "needs_more_information",
-                "confidence": 0.6,
+                "verdict": "false_positive",
+                "confidence": 0.8,
                 "notes": "Human-supplied and potentially noisy.",
             },
         )
@@ -271,6 +293,19 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
             == "completed"
         )
         assert client.get("/detections").json()["total"] == 2
+        replay_statistics = client.get(
+            f"/runtime/replay-statistics/{first.json()['source_id']}"
+        )
+        assert replay_statistics.status_code == 200
+        assert replay_statistics.json()["runtime_job_id"] == first.json()[
+            "runtime_job_id"
+        ]
+        assert replay_statistics.json()["flow_count"] == 2
+        assert replay_statistics.json()["detection_count"] == 2
+        assert replay_statistics.json()["alert_count"] == 2
+        assert {
+            item["score"] for item in replay_statistics.json()["score_distributions"]
+        } == {"supervised", "anomaly", "fusion", "risk"}
         flow_detection = client.get(
             "/detections",
             params={"flow_id": first.json()["flow_ids"][0]},
@@ -376,6 +411,7 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         ) as frontend:
             assert frontend.system_status().phase == "12"
             assert frontend.runtime_status().status.latest_jobs[0].status.value == "completed"
+            assert frontend.replay_statistics(first.json()["source_id"]).flow_count == 2
             assert frontend.flows().total == 2
             assert frontend.detections().total == 2
             assert frontend.alerts().total == 2

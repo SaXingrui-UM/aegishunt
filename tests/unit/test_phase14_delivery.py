@@ -73,6 +73,20 @@ def test_phase14_dockerfile_uses_wheel_and_non_root_runtime() -> None:
     assert "ln -s runtime/reports reports" in dockerfile
 
 
+def test_phase14_docker_case_artifacts_bypass_compatibility_symlinks() -> None:
+    docker_config = load_settings(ROOT / "configs/docker.yaml")
+    assert docker_config.case_feedback.policy_path == Path(
+        "configs/case_feedback.docker.yaml"
+    )
+
+    policy = yaml.safe_load(
+        (ROOT / docker_config.case_feedback.policy_path).read_text(encoding="utf-8")
+    )
+    assert policy["export_root"] == "runtime/artifacts/feedback"
+    assert policy["report_root"] == "runtime/reports/cases"
+    assert policy["candidate_root"] == "runtime/artifacts/retraining_candidates"
+
+
 def test_phase14_docker_gate_runs_full_analyst_feedback_chain() -> None:
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 

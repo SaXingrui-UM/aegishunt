@@ -45,6 +45,12 @@ def _button(test_app: AppTest, label: str) -> Any:
     return matches[0]
 
 
+def _checkbox(test_app: AppTest, label: str) -> Any:
+    matches = [item for item in test_app.checkbox if item.label == label]
+    assert len(matches) == 1, f"expected one checkbox labelled {label!r}"
+    return matches[0]
+
+
 def test_frontend_exposes_nine_api_backed_pages() -> None:
     assert set(app.PAGES) == EXPECTED_PAGES
     source = inspect.getsource(app)
@@ -58,6 +64,16 @@ def test_frontend_exposes_nine_api_backed_pages() -> None:
     assert '"Auto-refresh"' in source
     assert "value=False" in source
     assert "st.fragment(" in source
+
+    model_source = inspect.getsource(
+        __import__(
+            "aegishunt.frontend.views.models",
+            fromlist=["render"],
+        ).render
+    )
+    assert '"Importance method"' in model_source
+    assert '("Native", "Permutation")' in model_source
+    assert '"N/A"' in model_source
 
 
 def test_streamlit_uses_only_the_explicit_nine_page_navigation() -> None:
@@ -247,10 +263,15 @@ render(Client())
 
 def test_evaluation_unavailable_is_one_actionable_state() -> None:
     script = """
-from aegishunt.api.contracts import EvaluationSummary
+from aegishunt.api.contracts import EvaluationSummary, Page
 from aegishunt.frontend.views.evaluation import render
 
 class Client:
+    def telemetry_sources(self, *, limit):
+        return Page[object](
+            items=[], total=0, limit=limit, offset=0, next_offset=None
+        )
+
     def evaluation_summary(self):
         return EvaluationSummary(
             status="unavailable",
@@ -264,8 +285,13 @@ render(Client())
 """
     test_app = AppTest.from_string(script).run()
     assert not test_app.exception
-    assert len(test_app.info) == 1
-    assert "Run the controlled demo from Overview" in test_app.info[0].value
+    assert len(test_app.info) == 2
+    assert any(
+        "No stored telemetry source" in item.value for item in test_app.info
+    )
+    assert any(
+        "Run the controlled demo from Overview" in item.value for item in test_app.info
+    )
     assert not test_app.metric
     assert not test_app.button
     assert not test_app.get("json")
@@ -554,7 +580,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
 
         test_app.text_area[1].set_value("Reviewed the controlled flow evidence.")
         test_app.text_area[2].set_value("append analyst note")
-        test_app.checkbox[1].check()
+        _checkbox(test_app, "Confirm append-only note").check()
         _button(test_app, "Add note").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
@@ -562,7 +588,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         test_app.text_input[3].set_value(demo_payload["flow_ids"][0])
         test_app.text_area[3].set_value("Controlled sample NetworkFlow reference.")
         test_app.text_area[4].set_value("append immutable evidence reference")
-        test_app.checkbox[2].check()
+        _checkbox(test_app, "Confirm immutable evidence reference").check()
         _button(test_app, "Add evidence reference").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
@@ -575,35 +601,71 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert not test_app.exception
         assert test_app.success
 
+        test_app.selectbox[1].set_value("verdict")
+        test_app.text_input[0].set_value("false_positive")
+        test_app.text_area[0].set_value("correct the existing case verdict")
+        _checkbox(test_app, "Confirm case lifecycle update").check()
+        _button(test_app, "Update case").click().run(timeout=20.0)
+        assert any(
+            "Confirm modification of existing Case verdict" in item.value
+            for item in test_app.error
+        )
+        _checkbox(
+            test_app,
+            "Confirm modification of existing Case verdict",
+        ).check()
+        _checkbox(test_app, "Confirm case lifecycle update").check()
+        _button(test_app, "Update case").click().run(timeout=20.0)
+        assert not test_app.exception
+        assert test_app.success, [item.value for item in test_app.error]
+
+        next(
+            item for item in test_app.selectbox if item.label == "Feedback verdict"
+        ).set_value("false_positive")
         test_app.text_area[5].set_value("Human-supplied controlled feedback.")
         test_app.text_area[6].set_value("record analyst feedback")
         test_app.slider[0].set_value(0.9)
-        test_app.checkbox[3].check()
+        _checkbox(test_app, "Confirm human-supplied feedback").check()
         _button(test_app, "Record feedback").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success, [item.value for item in test_app.error]
 
         test_app.text_area[7].set_value("Controlled case review completed.")
         test_app.text_area[8].set_value("explicit case closure")
-        test_app.checkbox[4].check()
+        _checkbox(test_app, "Confirm case closure").check()
         _button(test_app, "Close case").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
         test_app.text_input[9].set_value("1.0.0")
         test_app.text_area[9].set_value("generate versioned case report")
-        test_app.checkbox[5].check()
+        _checkbox(test_app, "Confirm versioned case report export").check()
         _button(test_app, "Generate verified report").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
         assert test_app.get("download_button")
 
         test_app.text_input[11].set_value("1.0.0")
+        _button(test_app, "Prepare existing report download").click().run(timeout=20.0)
+        assert not test_app.exception
+        assert any(
+            item.label == "Download verified Markdown report"
+            for item in test_app.get("download_button")
+        )
+
+        test_app.text_input[12].set_value("1.0.0")
         test_app.text_area[10].set_value("create reviewed feedback export")
-        test_app.checkbox[6].check()
+        _checkbox(
+            test_app,
+            "Confirm data-only export; this does not train or activate a model",
+        ).check()
         _button(test_app, "Create data-only artifact").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
+        assert any(
+            item.label == "Download verified data-only artifact (.zip)"
+            for item in test_app.get("download_button")
+        )
 
         test_app.radio[0].set_value("Model Lab").run(timeout=20.0)
         assert not test_app.exception
@@ -628,8 +690,22 @@ def test_all_frontend_pages_render_real_populated_api_state(
         )
         assert "Critical alerts" not in model_lab_text
         assert "Run controlled demo" not in model_lab_text
+        importance_methods = [
+            item for item in test_app.radio if item.label == "Importance method"
+        ]
+        if importance_methods:
+            assert "N/A" in model_lab_text
+            importance_methods[0].set_value("Permutation").run(timeout=20.0)
+            assert any(
+                "balanced_accuracy" in item.value and "5 repeats" in item.value
+                for item in test_app.caption
+            )
 
         test_app.radio[0].set_value("Evaluation").run(timeout=20.0)
+        assert not test_app.exception
+        [
+            item for item in test_app.selectbox if item.label == "Stored source / PCAP"
+        ][0].set_value(demo_payload["source_id"]).run(timeout=20.0)
         assert not test_app.exception
         evaluation_text = "\n".join(
             item.value
@@ -645,6 +721,9 @@ def test_all_frontend_pages_render_real_populated_api_state(
         )
         assert "Known Controlled Comparison" in evaluation_text
         evaluation_metrics = {item.label: item.value for item in test_app.metric}
+        assert evaluation_metrics["Flows"] == "2"
+        assert evaluation_metrics["Detections"] == "2"
+        assert evaluation_metrics["Alerts"] == "2"
         assert evaluation_metrics["Supervised family-macro Recall"] == "0.6000"
         assert evaluation_metrics["Anomaly family-macro Recall"] == "0.9333"
         assert evaluation_metrics["Fusion family-macro Recall"] == "0.3333"

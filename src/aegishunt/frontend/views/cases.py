@@ -76,25 +76,48 @@ def render(client: AegisHuntApiClient) -> None:
             actor = actor_input(key="case-update-actor")
             reason = st.text_area("Reason", key="case-update-reason")
             confirm = st.checkbox("Confirm case lifecycle update")
+            replace_existing_verdict = st.checkbox(
+                "Confirm modification of existing Case verdict",
+                disabled=detail.case.verdict is None,
+                help=(
+                    "Required only when the selected update replaces the Case verdict "
+                    f"currently recorded as {detail.case.verdict.value!r}."
+                    if detail.case.verdict is not None
+                    else "No Case verdict is currently recorded."
+                ),
+            )
             submitted = st.form_submit_button("Update case")
         if submitted and confirm:
-            update: dict[str, object]
-            if action == "assignment":
-                update = {"assigned_to": value or None}
-            elif action == "verdict":
-                update = {"verdict": value, "verdict_confidence": float(confidence)}
-            else:
-                update = {action: value}
-            try:
-                updated = client.update_case(
-                    selected,
-                    actor=actor,
-                    reason=reason,
-                    **update,
+            if (
+                action == "verdict"
+                and detail.case.verdict is not None
+                and not replace_existing_verdict
+            ):
+                st.error(
+                    "Confirm modification of existing Case verdict before replacing it."
                 )
-                st.success(f"Case updated: {updated.status.value}.")
-            except ApiClientError as error:
-                api_error(error)
+            else:
+                update: dict[str, object]
+                if action == "assignment":
+                    update = {"assigned_to": value or None}
+                elif action == "verdict":
+                    update = {
+                        "verdict": value,
+                        "verdict_confidence": float(confidence),
+                        "confirm_verdict_replacement": replace_existing_verdict,
+                    }
+                else:
+                    update = {action: value}
+                try:
+                    updated = client.update_case(
+                        selected,
+                        actor=actor,
+                        reason=reason,
+                        **update,
+                    )
+                    st.success(f"Case updated: {updated.status.value}.")
+                except ApiClientError as error:
+                    api_error(error)
     with notes_tab:
         table(
             (
@@ -311,6 +334,38 @@ def render(client: AegisHuntApiClient) -> None:
                     data=report_bytes,
                     file_name=f"aegishunt-case-{selected}-{version}.md",
                     mime="text/markdown",
+                    key="download-created-case-report",
+                    on_click="ignore",
+                )
+            except ApiClientError as error:
+                api_error(error)
+        st.markdown("#### Download an existing case report")
+        st.caption(
+            "The API verifies the case identity, report manifest, exact inventory, "
+            "and checksums before returning the Markdown file."
+        )
+        with st.form("existing-case-report-download"):
+            existing_report_version = st.text_input(
+                "Existing report version",
+                key="existing-case-report-version",
+            )
+            prepare_report = st.form_submit_button("Prepare existing report download")
+        if prepare_report:
+            try:
+                report_bytes = client.download_case_report(
+                    selected,
+                    existing_report_version,
+                )
+                st.success(f"Case report {existing_report_version} verified.")
+                st.download_button(
+                    "Download verified Markdown report",
+                    data=report_bytes,
+                    file_name=(
+                        f"aegishunt-case-{selected}-{existing_report_version}.md"
+                    ),
+                    mime="text/markdown",
+                    key="download-existing-case-report",
+                    on_click="ignore",
                 )
             except ApiClientError as error:
                 api_error(error)
@@ -335,5 +390,60 @@ def render(client: AegisHuntApiClient) -> None:
                     retraining_candidates=artifact_type.startswith("retraining"),
                 )
                 st.success(f"{result.artifact_type} {result.version} generated.")
+                with st.expander("View generated artifact manifest", expanded=True):
+                    st.json(result.manifest)
+                archive = client.download_data_artifact(
+                    version,
+                    retraining_candidates=artifact_type.startswith("retraining"),
+                )
+                st.download_button(
+                    "Download verified data-only artifact (.zip)",
+                    data=archive,
+                    file_name=(
+                        f"aegishunt-retraining-candidates-{version}.zip"
+                        if artifact_type.startswith("retraining")
+                        else f"aegishunt-feedback-export-{version}.zip"
+                    ),
+                    mime="application/zip",
+                    key="download-created-data-artifact",
+                    on_click="ignore",
+                )
+            except ApiClientError as error:
+                api_error(error)
+        st.markdown("#### Download an existing data-only artifact")
+        st.caption(
+            "The API verifies the declared inventory and checksums before preparing "
+            "the ZIP. Downloading never trains or activates a model."
+        )
+        with st.form("feedback-artifact-download"):
+            existing_version = st.text_input(
+                "Existing artifact version",
+                key="existing-feedback-artifact-version",
+            )
+            existing_type = st.selectbox(
+                "Existing artifact",
+                ("reviewed feedback export", "retraining candidate proposal"),
+                key="existing-feedback-artifact-type",
+            )
+            prepare_download = st.form_submit_button("Prepare verified download")
+        if prepare_download:
+            try:
+                archive = client.download_data_artifact(
+                    existing_version,
+                    retraining_candidates=existing_type.startswith("retraining"),
+                )
+                st.success(f"{existing_type} {existing_version} verified.")
+                st.download_button(
+                    "Download verified data-only artifact (.zip)",
+                    data=archive,
+                    file_name=(
+                        f"aegishunt-retraining-candidates-{existing_version}.zip"
+                        if existing_type.startswith("retraining")
+                        else f"aegishunt-feedback-export-{existing_version}.zip"
+                    ),
+                    mime="application/zip",
+                    key="download-existing-data-artifact",
+                    on_click="ignore",
+                )
             except ApiClientError as error:
                 api_error(error)

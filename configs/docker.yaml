@@ -61,7 +61,7 @@ correlation:
   policy_path: configs/correlation.yaml
 
 case_feedback:
-  policy_path: configs/case_feedback.yaml
+  policy_path: configs/case_feedback.docker.yaml
 
 runtime:
   policy_path: configs/runtime.yaml
@@ -97,6 +97,8 @@ web:
   page_title: AegisHunt
   safe_download_types:
     - case_report
+    - feedback_export
+    - retraining_candidate
   maximum_pcap_upload_bytes: 52428800
   maximum_csv_upload_bytes: 10485760
   maximum_json_upload_bytes: 10485760

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from types import TracebackType
-from typing import Any, BinaryIO, TypeVar
+from typing import Any, BinaryIO, Literal, TypeVar
 
 import httpx
 from pydantic import BaseModel
@@ -33,6 +33,7 @@ from aegishunt.api.contracts import (
     ModelImportance,
     ModelPage,
     NetworkFlowPage,
+    ReplayStatistics,
     RuntimeJobDetail,
     RuntimeJobPage,
     RuntimeOverview,
@@ -88,7 +89,11 @@ class AegisHuntApiClient:
         runtime_worker_timeout_seconds: float = 600.0,
         page_size: int = 50,
         actor_header: str = "X-AegisHunt-Actor",
-        safe_download_types: tuple[str, ...] = ("case_report",),
+        safe_download_types: tuple[str, ...] = (
+            "case_report",
+            "feedback_export",
+            "retraining_candidate",
+        ),
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         if not 1 <= page_size <= 100:
@@ -199,6 +204,12 @@ class AegisHuntApiClient:
 
     def runtime_job(self, job_id: str) -> RuntimeJobDetail:
         return self._get(f"/runtime/jobs/{job_id}", RuntimeJobDetail)
+
+    def replay_statistics(self, source_id: str) -> ReplayStatistics:
+        return self._get(
+            f"/runtime/replay-statistics/{source_id}",
+            ReplayStatistics,
+        )
 
     def runtime_workers(
         self, *, limit: int | None = None, offset: int = 0
@@ -576,10 +587,16 @@ class AegisHuntApiClient:
         )
 
     def download_case_report(self, case_id: str, version: str) -> bytes:
-        if "case_report" not in self._safe_download_types:
-            raise ValueError("case-report downloads are disabled by configuration")
+        return self._download(
+            f"/cases/{case_id}/reports/{version}",
+            artifact_type="case_report",
+        )
+
+    def _download(self, path: str, *, artifact_type: str) -> bytes:
+        if artifact_type not in self._safe_download_types:
+            raise ValueError(f"{artifact_type} downloads are disabled by configuration")
         try:
-            response = self._client.get(f"/cases/{case_id}/reports/{version}")
+            response = self._client.get(path)
         except httpx.RequestError as exc:
             raise ApiClientError("AegisHunt API is unavailable") from exc
         if response.is_error:
@@ -599,6 +616,22 @@ class AegisHuntApiClient:
                 status_code=response.status_code,
             )
         return response.content
+
+    def download_data_artifact(
+        self,
+        version: str,
+        *,
+        retraining_candidates: bool = False,
+    ) -> bytes:
+        artifact_type = (
+            "retraining_candidate" if retraining_candidates else "feedback_export"
+        )
+        path = (
+            f"/feedback/retraining-candidates/{version}/download"
+            if retraining_candidates
+            else f"/feedback/exports/{version}/download"
+        )
+        return self._download(path, artifact_type=artifact_type)
 
     def export_feedback(
         self,
@@ -664,8 +697,17 @@ class AegisHuntApiClient:
     def model(self, model_id: str) -> ModelDescriptor:
         return self._get(f"/models/{model_id}", ModelDescriptor)
 
-    def model_importance(self, model_id: str) -> ModelImportance:
-        return self._get(f"/models/{model_id}/importance", ModelImportance)
+    def model_importance(
+        self,
+        model_id: str,
+        *,
+        kind: Literal["native", "permutation"] = "native",
+    ) -> ModelImportance:
+        return self._get(
+            f"/models/{model_id}/importance",
+            ModelImportance,
+            {"kind": kind},
+        )
 
     def activate_model(
         self,

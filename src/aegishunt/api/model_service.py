@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 from uuid import UUID, uuid5
 
 from aegishunt.api.contracts import (
@@ -276,7 +276,12 @@ class ModelRegistryService:
             )
         return descriptor
 
-    def importance(self, model_id: str) -> ModelImportance:
+    def importance(
+        self,
+        model_id: str,
+        *,
+        kind: Literal["native", "permutation"] = "native",
+    ) -> ModelImportance:
         """Return exact verified global sensitivity evidence, never inferred values."""
 
         descriptor = self.get(model_id)
@@ -305,9 +310,13 @@ class ModelRegistryService:
                 importance=None,
                 message="verified global-importance artifact is unavailable",
             )
-        report = artifact.native_importance
+        report = (
+            artifact.native_importance
+            if kind == "native"
+            else artifact.permutation_importance
+        )
         if (
-            report.status != "available"
+            (kind == "native" and artifact.native_importance.status != "available")
             or report.model_version != descriptor.version
             or report.model_id != f"aegishunt-supervised-{descriptor.version}"
         ):
@@ -322,11 +331,28 @@ class ModelRegistryService:
             model_id=descriptor.model_id,
             available=True,
             method=report.method,
+            source_partition=(
+                artifact.permutation_importance.source_partition
+                if kind == "permutation"
+                else None
+            ),
+            scoring_metric=(
+                artifact.permutation_importance.scoring_metric
+                if kind == "permutation"
+                else None
+            ),
+            repeats=(
+                artifact.permutation_importance.repeats
+                if kind == "permutation"
+                else None
+            ),
             importance=tuple(
                 ModelImportanceEntry(
                     feature_name=item.feature_name,
                     mean=item.mean,
-                    standard_deviation=item.standard_deviation,
+                    standard_deviation=(
+                        item.standard_deviation if kind == "permutation" else None
+                    ),
                 )
                 for item in report.entries
             ),

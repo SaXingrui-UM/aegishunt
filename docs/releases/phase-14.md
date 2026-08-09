@@ -117,6 +117,58 @@ The base Compose deployment retains UID/GID 10001, read-only root,
 No model, threshold, fusion weight, risk policy, historical Tag, or automatic
 activation changes in this corrective PR.
 
+## Docker case-artifact path corrective
+
+After PR #43 was merged, mentor-demo report generation exposed a deployment
+path conflict: the final Docker image retains `artifacts` and `reports` as
+compatibility symlinks, while the case artifact safety boundary intentionally
+rejects every configured root that traverses a symlink. The Docker settings now
+select a dedicated case/feedback policy whose three writable roots point
+directly to `runtime/artifacts/...` and `runtime/reports/...`. The base policy
+and the symlink-rejection control remain unchanged.
+
+Ruff and strict mypy passed. All 28 relevant test assertions passed, and the
+direct report/configuration subset passed 26 tests with a zero exit status.
+Using an isolated backup of the manual-recording database, the API generated
+and downloaded a versioned Markdown report with the exact four-file inventory;
+no production case, report version, or recording evidence was mutated.
+
+The same corrective now offers an allowlisted, checksum-verified ZIP download
+for reviewed feedback exports and review-only retraining-candidate proposals.
+The frontend shows the generated manifest and download button immediately, and
+also provides a separate existing-version form so retained artifacts can be
+downloaded after a refresh or restart. The preserved `demo-v2` feedback export
+downloaded with its exact four-file inventory. Ruff, strict mypy, and 48
+relevant unit, integration, API-client, and rendered frontend tests passed.
+Existing case-report versions also have a separate reverification/download form,
+so a retained report remains accessible without attempting to recreate its
+immutable version.
+
+## Replay-statistics and evidence-clarity corrective
+
+The same bounded mentor-demo branch adds three presentation safeguards without
+changing model artifacts, replay outputs, decision thresholds, or the Phase 14
+checkpoint. Replacing an already assigned Case verdict now requires a second,
+explicit frontend confirmation in addition to the normal audited lifecycle
+confirmation. Native feature importance identifies standard deviation as not
+applicable; a Native/Permutation selector reads the repeated-permutation mean
+and standard deviation already stored in the verified model artifact.
+
+Evaluation now begins with a Replay Statistics section. The analyst selects a
+stored source/PCAP, the API resolves its replay job, and flow, detection, alert,
+score-distribution, duration, and throughput values are derived only through
+that job's immutable output ledger. The existing labelled controlled model
+evaluation remains a separate section and retains its original scientific
+scope and limitations.
+
+Final corrective verification passed Ruff, strict mypy for 240 source files,
+and all 570 pytest tests with zero failures at 85.95% branch-aware coverage.
+The Phase 12 API/Frontend E2E verifies that an unconfirmed verdict replacement
+is rejected, a confirmed replacement succeeds, and replay statistics remain
+isolated to the selected job. Browser QA against the retained Docker state
+switched between the 449-flow 2025 replay and 1,170-flow 2026 replay and
+rendered native and permutation importance separately.
+
 ## Next phase
 
 None. No further implementation phase is planned. Optional archival, thesis
