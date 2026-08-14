@@ -44,17 +44,13 @@ def _database_counts(database: Database) -> dict[str, int]:
     tables = inspect_database(database.engine).get_table_names()
     with database.session() as session:
         return {
-            table: int(
-                session.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar_one()
-            )
+            table: int(session.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar_one())
             for table in tables
         }
 
 
 def _settings(tmp_path: Path, artifact_root: Path) -> ApplicationSettings:
-    policy = yaml.safe_load(
-        (ROOT / "configs/case_feedback.yaml").read_text(encoding="utf-8")
-    )
+    policy = yaml.safe_load((ROOT / "configs/case_feedback.yaml").read_text(encoding="utf-8"))
     policy["export_root"] = (artifact_root / "feedback").as_posix()
     policy["report_root"] = (artifact_root / "reports").as_posix()
     policy["candidate_root"] = (artifact_root / "candidates").as_posix()
@@ -141,10 +137,7 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             prepared_root = (
                 ROOT
                 / settings.web.demo_artifact_root
-                / (
-                    f"{settings.web.demo_namespace}-"
-                    f"{settings.web.demo_operation_version}"
-                )
+                / (f"{settings.web.demo_namespace}-{settings.web.demo_operation_version}")
             )
             file_state_before = {
                 path.relative_to(prepared_root).as_posix(): path.stat().st_mtime_ns
@@ -235,9 +228,7 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
                             else item.version
                         ),
                         checksum=(
-                            "d" * 64
-                            if item.artifact_type == "fusion_policy"
-                            else item.checksum
+                            "d" * 64 if item.artifact_type == "fusion_policy" else item.checksum
                         ),
                     )
                     for item in demo_job.snapshot.artifacts
@@ -272,15 +263,9 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             after_unrelated_replay = client.get("/evaluation/summary")
             assert after_unrelated_replay.status_code == 200
             assert after_unrelated_replay.json()["status"] == "available"
-            assert (
-                after_unrelated_replay.json()["provenance"]["runtime_job_id"]
-                == str(demo_job_id)
-            )
+            assert after_unrelated_replay.json()["provenance"]["runtime_job_id"] == str(demo_job_id)
 
-            experiment = (
-                prepared_root
-                / "reports/fusion/phase-12-controlled-demo-fusion"
-            )
+            experiment = prepared_root / "reports/fusion/phase-12-controlled-demo-fusion"
 
             def failed_closed() -> dict[str, object]:
                 response = client.get("/evaluation/summary")
@@ -403,10 +388,21 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             assert benign.status_code == 200, benign.text
             assert len(benign.json()["flow_ids"]) == 51
             assert benign.json()["state"] == "completed"
+            benign_job_id = benign.json()["runtime_job_id"]
+            pinned_policy_hash = summary["provenance"]["policy_manifest_hash"]
 
         database.dispose()
-        restarted = Database(settings.database)
-        with TestClient(create_app(settings, restarted)) as client:
+        upgraded_settings = settings.model_copy(
+            update={"web": settings.web.model_copy(update={"demo_operation_version": "1.0.2"})}
+        )
+        restarted = Database(upgraded_settings.database)
+        artifact_state_before_restart = {
+            path.relative_to(prepared_root).as_posix(): path.stat().st_mtime_ns
+            for path in prepared_root.rglob("*")
+            if path.is_file() and not path.is_symlink()
+        }
+        counts_before_restart = _database_counts(restarted)
+        with TestClient(create_app(upgraded_settings, restarted)) as client:
             case = client.get(f"/cases/{case_id}")
             assert case.status_code == 200
             assert case.json()["case"]["verdict"] == "needs_more_information"
@@ -417,6 +413,19 @@ def test_phase14_uploaded_sample_full_chain_persists_across_restart(
             previous_run = client.get("/demo/status").json()["previous_run"]
             assert previous_run["sample_id"] == "phase14-benign-like-pcap"
             assert previous_run["runtime_status"] == "completed"
+            historical = client.get("/evaluation/summary").json()
+            assert historical["status"] == "available"
+            assert historical["provenance"]["runtime_job_id"] == benign_job_id
+            assert historical["provenance"]["policy_manifest_hash"] == pinned_policy_hash
+            effective = client.get("/models/effective").json()
+            assert effective["status"] == "available"
+            assert effective["effective_fusion_policy"]["artifact_hash"] == pinned_policy_hash
+            assert _database_counts(restarted) == counts_before_restart
+            assert {
+                path.relative_to(prepared_root).as_posix(): path.stat().st_mtime_ns
+                for path in prepared_root.rglob("*")
+                if path.is_file() and not path.is_symlink()
+            } == artifact_state_before_restart
         restarted.dispose()
     finally:
         database.dispose()

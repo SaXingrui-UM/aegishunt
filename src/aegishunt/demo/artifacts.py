@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from itertools import islice
 from pathlib import Path
 
 import yaml
@@ -60,6 +62,9 @@ _FUSION_VERSION = "1.0.0"
 _FUSION_EXPERIMENT_ID = "phase-12-controlled-demo-fusion"
 _EXPLANATION_VERSION = "1.0.0"
 _DEMO_MAXIMUM_ALERTS_PER_GROUP = 5_000
+_DEMO_ENVIRONMENT_LIMIT = 100
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_SEMVER_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,9 +138,8 @@ class DemoArtifactManager:
             self._project_root,
             settings.web.demo_artifact_root,
         )
-        versioned_name = (
-            f"{settings.web.demo_namespace}-{settings.web.demo_operation_version}"
-        )
+        self._base = base
+        versioned_name = f"{settings.web.demo_namespace}-{settings.web.demo_operation_version}"
         self._root = base / versioned_name
 
     def prepare(self) -> DemoArtifactEnvironment:
@@ -188,6 +192,108 @@ class DemoArtifactManager:
                 reused=True,
             )
 
+    def read_for_fusion_policy(
+        self,
+        *,
+        policy_id: str,
+        policy_version: str,
+        policy_checksum: str,
+    ) -> DemoArtifactEnvironment | None:
+        """Resolve historical demo evidence by one immutable runtime identity."""
+
+        if (
+            not 1 <= len(policy_id) <= 255
+            or not _SEMVER_PATTERN.fullmatch(policy_version)
+            or not _SHA256_PATTERN.fullmatch(policy_checksum)
+        ):
+            raise DataArtifactError("runtime fusion policy identity is invalid")
+        with _ARTIFACT_LOCK:
+            if not self._base.exists():
+                return None
+            if not self._base.is_dir() or self._base.is_symlink():
+                raise DataArtifactError("demo artifact root is invalid")
+            pattern = re.compile(
+                rf"^{re.escape(self._settings.web.demo_namespace)}-"
+                r"[0-9]+\.[0-9]+\.[0-9]+$"
+            )
+            try:
+                entries = tuple(islice(self._base.iterdir(), _DEMO_ENVIRONMENT_LIMIT + 1))
+            except OSError as exc:
+                raise DataArtifactError("demo artifact root could not be read") from exc
+            if len(entries) > _DEMO_ENVIRONMENT_LIMIT:
+                raise DataArtifactError("demo artifact history exceeds the safe scan limit")
+            candidates = sorted(
+                (entry for entry in entries if pattern.fullmatch(entry.name)),
+                key=lambda item: item.name,
+            )
+
+            matches: list[Path] = []
+            for candidate in candidates:
+                if candidate.is_symlink() or not candidate.is_dir():
+                    raise DataArtifactError("demo artifact environment is invalid")
+                policy_root = _paths(candidate).fusion_models
+                policy_directory = policy_root / policy_version
+                manifest = policy_directory / POLICY_MANIFEST_FILENAME
+                if any(
+                    path.is_symlink()
+                    for path in (
+                        candidate,
+                        candidate / "models",
+                        candidate / "models" / "fusion",
+                        policy_directory,
+                        manifest,
+                    )
+                ):
+                    raise DataArtifactError("demo artifact environment cannot traverse a symlink")
+                if not manifest.is_file():
+                    continue
+                if sha256_file(manifest) == policy_checksum:
+                    matches.append(candidate)
+
+            if not matches:
+                return None
+            if len(matches) != 1:
+                raise DataArtifactError("runtime fusion policy identity is ambiguous")
+            selected = matches[0]
+            self._reject_symlink_tree(selected)
+            settings = self._verify(
+                _paths(selected),
+                enforce_current_correlation_capacity=False,
+            )
+            policy_root = settings.runtime.fusion_policy_root
+            policy = load_policy(policy_root / policy_version, root=policy_root)
+            if (
+                policy.policy_id != policy_id
+                or policy.policy_version != policy_version
+                or sha256_file(policy_root / policy_version / POLICY_MANIFEST_FILENAME)
+                != policy_checksum
+            ):
+                raise DataArtifactError("runtime fusion policy identity does not match")
+            return DemoArtifactEnvironment(
+                settings=settings,
+                root=selected,
+                reused=True,
+            )
+
+    @staticmethod
+    def _reject_symlink_tree(root: Path) -> None:
+        def reject_read_error(error: OSError) -> None:
+            raise DataArtifactError("demo artifact environment could not be read") from error
+
+        try:
+            for directory, names, filenames in os.walk(
+                root,
+                followlinks=False,
+                onerror=reject_read_error,
+            ):
+                parent = Path(directory)
+                if parent.is_symlink() or any(
+                    (parent / name).is_symlink() for name in (*names, *filenames)
+                ):
+                    raise DataArtifactError("demo artifact environment cannot contain symlinks")
+        except OSError as exc:
+            raise DataArtifactError("demo artifact environment could not be read") from exc
+
     def _demo_settings(self, paths: _DemoPaths) -> ApplicationSettings:
         return self._settings.model_copy(
             update={
@@ -218,9 +324,7 @@ class DemoArtifactManager:
                         self._settings.detection.local_explanation_max_features
                     ),
                 ),
-                "correlation": CorrelationSettings(
-                    policy_path=paths.configs / "correlation.yaml"
-                ),
+                "correlation": CorrelationSettings(policy_path=paths.configs / "correlation.yaml"),
                 "runtime": RuntimeSettings(
                     policy_path=paths.configs / "runtime.yaml",
                     fusion_policy_root=paths.fusion_models,
@@ -255,16 +359,11 @@ class DemoArtifactManager:
         if (
             supervised_run.model_version != _SUPERVISED_VERSION
             or supervised_run.model_id != fusion_config.supervised_model_id
-            or supervised_run.selected_algorithm
-            != fusion_config.supervised_algorithm
-            or supervised_run.selection.hyperparameters
-            != fusion_config.supervised_hyperparameters
-            or supervised_run.selection.calibration_method
-            != fusion_config.supervised_calibration
+            or supervised_run.selected_algorithm != fusion_config.supervised_algorithm
+            or supervised_run.selection.hyperparameters != fusion_config.supervised_hyperparameters
+            or supervised_run.selection.calibration_method != fusion_config.supervised_calibration
         ):
-            raise DataArtifactError(
-                "portable demo selection differs from its fusion contract"
-            )
+            raise DataArtifactError("portable demo selection differs from its fusion contract")
         supervised.evaluate_test(allow_controlled_demo=True)
 
         anomaly = AnomalyTrainingService(
@@ -286,15 +385,12 @@ class DemoArtifactManager:
             supervised_config_path=settings.supervised.training_config_path,
             anomaly_config_path=settings.anomaly.training_config_path,
             label_mapping_path=(
-                self._project_root
-                / "configs/label_mappings/aegishunt-controlled-demo-v1.yaml"
+                self._project_root / "configs/label_mappings/aegishunt-controlled-demo-v1.yaml"
             ),
             experiment_root=paths.fusion_reports,
             policy_root=paths.fusion_models,
         ).evaluate(allow_controlled_demo=True)
-        fusion_checksum = sha256_file(
-            fusion_run.policy_directory / POLICY_MANIFEST_FILENAME
-        )
+        fusion_checksum = sha256_file(fusion_run.policy_directory / POLICY_MANIFEST_FILENAME)
         self._write_policies(
             paths,
             supervised_model_id=supervised_run.model_id,
@@ -337,25 +433,21 @@ class DemoArtifactManager:
             raise DataArtifactError("demo dataset identity or split validation differs")
 
         supervised = _read_yaml(
-            self._project_root
-            / "configs/models/supervised-corrective-pm-def-001.yaml"
+            self._project_root / "configs/models/supervised-corrective-pm-def-001.yaml"
         )
         supervised.update(
             {
                 "config_schema_version": "1.0.0",
                 "experiment_id": "phase-12-controlled-demo-supervised",
                 "model_version": _SUPERVISED_VERSION,
-                "selection_policy_version": (
-                    PORTABLE_DEMO_SELECTION_POLICY_VERSION
-                ),
+                "selection_policy_version": (PORTABLE_DEMO_SELECTION_POLICY_VERSION),
             }
         )
         supervised.pop("corrective_run", None)
         _write_yaml(paths.configs / "supervised.yaml", supervised)
 
         anomaly = _read_yaml(
-            self._project_root
-            / "configs/models/anomaly-lof-production-candidate.yaml"
+            self._project_root / "configs/models/anomaly-lof-production-candidate.yaml"
         )
         protocol = anomaly.get("corrective_protocol")
         if not isinstance(protocol, dict):
@@ -480,9 +572,7 @@ class DemoArtifactManager:
                 for index in benign_indices
             ),
             labels=tuple(0 for _ in benign_indices),
-            group_ids=tuple(
-                str(data.train.groups[index]) for index in benign_indices
-            ),
+            group_ids=tuple(str(data.train.groups[index]) for index in benign_indices),
             source_partition="train",
             git_commit_sha=supervised.manifest.git_commit_sha,
             created_at=created_at,
@@ -503,10 +593,7 @@ class DemoArtifactManager:
             model_version=supervised.manifest.model_version,
             feature_schema_version=FEATURE_SCHEMA_VERSION,
             feature_names=supervised.manifest.feature_names,
-            rows=tuple(
-                tuple(float(value) for value in row)
-                for row in data.validation.features
-            ),
+            rows=tuple(tuple(float(value) for value in row) for row in data.validation.features),
             labels=tuple(int(value) for value in data.validation.labels),
             group_ids=tuple(str(value) for value in data.validation.groups),
             source_partition="validation",
@@ -553,7 +640,12 @@ class DemoArtifactManager:
             ),
         )
 
-    def _verify(self, paths: _DemoPaths) -> ApplicationSettings:
+    def _verify(
+        self,
+        paths: _DemoPaths,
+        *,
+        enforce_current_correlation_capacity: bool = True,
+    ) -> ApplicationSettings:
         settings = self._demo_settings(paths)
         self._verify_dataset_version(paths)
         SupervisedTrainingService(
@@ -579,10 +671,8 @@ class DemoArtifactManager:
         load_runtime_policy(settings.runtime.policy_path)
         correlation = load_correlation_policy(settings.correlation.policy_path)
         if (
-            correlation.policy.maximum_alerts_per_group
-            != _DEMO_MAXIMUM_ALERTS_PER_GROUP
+            enforce_current_correlation_capacity
+            and correlation.policy.maximum_alerts_per_group != _DEMO_MAXIMUM_ALERTS_PER_GROUP
         ):
-            raise DataArtifactError(
-                "demo correlation capacity differs from the operation contract"
-            )
+            raise DataArtifactError("demo correlation capacity differs from the operation contract")
         return settings
