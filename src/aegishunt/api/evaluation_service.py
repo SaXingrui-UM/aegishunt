@@ -84,9 +84,7 @@ _SUMMARY_UNAVAILABLE = (
     "No verified evaluation is available yet. Run the controlled demo from "
     "Overview to prepare the checked model and evaluation artifacts."
 )
-_DEMO_EVALUATION_CHECKSUM_MANIFEST = Path(
-    "configs/models/phase-12-demo-evaluation-checksums.json"
-)
+_DEMO_EVALUATION_CHECKSUM_MANIFEST = Path("configs/models/phase-12-demo-evaluation-checksums.json")
 _LOAO_EVIDENCE_FILENAME = "leave_one_family_out.csv"
 
 
@@ -424,6 +422,8 @@ class DemoEvaluationSummaryService:
             return self._invalid()
         if demo_job is None:
             return self._unavailable()
+        artifacts = {artifact.artifact_type: artifact for artifact in demo_job.snapshot.artifacts}
+        fusion_identity = artifacts["fusion_policy"]
         runtime = EffectiveRuntimeModelService(
             self._database,
             self._settings,
@@ -444,7 +444,11 @@ class DemoEvaluationSummaryService:
             environment = DemoArtifactManager(
                 self._settings,
                 project_root=project_root,
-            ).read()
+            ).read_for_fusion_policy(
+                policy_id=fusion_identity.artifact_id,
+                policy_version=fusion_identity.version,
+                policy_checksum=fusion_identity.checksum,
+            )
         except (AegisHuntError, OSError, ValueError):
             return self._invalid()
         if environment is None:
@@ -462,9 +466,7 @@ class DemoEvaluationSummaryService:
                 effective_policy=effective,
                 runtime_job_id=runtime.latest_runtime_job_id,
                 snapshot_created_at=runtime.snapshot_created_at,
-                checksum_manifest_path=(
-                    project_root / _DEMO_EVALUATION_CHECKSUM_MANIFEST
-                ),
+                checksum_manifest_path=(project_root / _DEMO_EVALUATION_CHECKSUM_MANIFEST),
             )
         except (
             AegisHuntError,
@@ -514,9 +516,7 @@ class DemoEvaluationSummaryService:
     ) -> EvaluationSummary:
         experiment_id = settings.runtime.fusion_evaluation_experiment_id
         experiment = settings.runtime.fusion_evaluation_root / experiment_id
-        policy_directory = (
-            settings.runtime.fusion_policy_root / effective_policy.policy_version
-        )
+        policy_directory = settings.runtime.fusion_policy_root / effective_policy.policy_version
         policy = load_policy(policy_directory, root=settings.runtime.fusion_policy_root)
         selection = FusionSelectionRecord.model_validate_json(
             (experiment / "fusion_selection.json").read_text(encoding="utf-8")
@@ -537,8 +537,7 @@ class DemoEvaluationSummaryService:
             or policy.experiment_id != experiment_id
             or policy.recommendation_status != effective_policy.recommendation
             or policy.feature_schema_version != effective_policy.feature_schema_version
-            or policy.selected_weights.supervised_weight
-            != effective_policy.supervised_weight
+            or policy.selected_weights.supervised_weight != effective_policy.supervised_weight
             or policy.selected_weights.anomaly_weight != effective_policy.anomaly_weight
             or policy.selected_threshold != effective_policy.fusion_threshold
             or selection.selected_weights != policy.selected_weights
@@ -548,8 +547,7 @@ class DemoEvaluationSummaryService:
             or dataset.dataset_version != policy.dataset_version
             or split.dataset_id != dataset.dataset_id
             or split.dataset_version != dataset.dataset_version
-            or provenance.get("policy_manifest_hash")
-            != effective_policy.artifact_hash
+            or provenance.get("policy_manifest_hash") != effective_policy.artifact_hash
             or sha256_file(policy_directory / "fusion_policy_manifest.json")
             != effective_policy.artifact_hash
         ):
@@ -568,9 +566,7 @@ class DemoEvaluationSummaryService:
             engine: fmean(item.recall for item in loao if item.engine == engine)
             for engine in ("supervised", "anomaly", "fusion")
         }
-        confidence = self._confidence_summary(
-            experiment / "confidence_intervals.json"
-        )
+        confidence = self._confidence_summary(experiment / "confidence_intervals.json")
         artifact_hash = provenance.get("artifact_hash")
         if not isinstance(artifact_hash, str):
             raise ValueError("evaluation artifact identity is unavailable")
@@ -680,9 +676,7 @@ class DemoEvaluationSummaryService:
                     f1=_required_float(row, "f1"),
                     macro_f1=_required_float(row, "macro_f1"),
                     pr_auc=_required_float(row, "pr_auc"),
-                    false_positive_rate=_required_float(
-                        row, "false_positive_rate"
-                    ),
+                    false_positive_rate=_required_float(row, "false_positive_rate"),
                     tn=_required_int(row, "tn"),
                     fp=_required_int(row, "fp"),
                     fn=_required_int(row, "fn"),
@@ -700,9 +694,7 @@ class DemoEvaluationSummaryService:
     ) -> tuple[EvaluationLoaoRow, ...]:
         rows = _read_csv(path)
         actual_families = {_required_text(row, "held_out_family") for row in rows}
-        if actual_families != set(expected_families) or len(rows) != 3 * len(
-            expected_families
-        ):
+        if actual_families != set(expected_families) or len(rows) != 3 * len(expected_families):
             raise ValueError("LOAO comparison family inventory is invalid")
         output: list[EvaluationLoaoRow] = []
         identities: set[tuple[str, str]] = set()
@@ -728,15 +720,9 @@ class DemoEvaluationSummaryService:
                         mode,
                     ),
                     recall=_required_float(row, "recall"),
-                    false_positive_rate=_required_float(
-                        row, "false_positive_rate"
-                    ),
-                    evaluation_row_count=_required_int(
-                        row, "evaluation_row_count"
-                    ),
-                    evaluation_group_count=_required_int(
-                        row, "evaluation_group_count"
-                    ),
+                    false_positive_rate=_required_float(row, "false_positive_rate"),
+                    evaluation_row_count=_required_int(row, "evaluation_row_count"),
+                    evaluation_group_count=_required_int(row, "evaluation_group_count"),
                 )
             )
         engine_order = {"supervised": 0, "anomaly": 1, "fusion": 2}
@@ -762,8 +748,7 @@ class DemoEvaluationSummaryService:
             (
                 item
                 for item in payload
-                if isinstance(item, dict)
-                and item.get("experiment_kind") == "known_attack"
+                if isinstance(item, dict) and item.get("experiment_kind") == "known_attack"
             ),
             None,
         )
@@ -782,9 +767,7 @@ class DemoEvaluationSummaryService:
         for comparison in ("fusion_minus_supervised", "fusion_minus_anomaly"):
             for metric, source_metric in metric_fields.items():
                 record = intervals.get(f"{comparison}.{source_metric}")
-                if not isinstance(record, dict) or record.get(
-                    "unavailable_reason"
-                ) is not None:
+                if not isinstance(record, dict) or record.get("unavailable_reason") is not None:
                     raise ValueError("required confidence interval is unavailable")
                 output.append(
                     EvaluationConfidenceInterval(
