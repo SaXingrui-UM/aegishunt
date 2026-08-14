@@ -81,9 +81,9 @@ class EffectiveRuntimeModelService:
                 ),
             )
 
-        candidates = tuple(self._candidate_settings())
-        active_versions = self._active_versions()
         artifacts = {artifact.artifact_type: artifact for artifact in latest.snapshot.artifacts}
+        candidates = tuple(self._candidate_settings(artifacts["fusion_policy"]))
+        active_versions = self._active_versions()
         models = [
             self._effective_supervised(
                 latest,
@@ -141,7 +141,10 @@ class EffectiveRuntimeModelService:
                 for item in ModelVersionRepository(session).list_active()
             }
 
-    def _candidate_settings(self) -> Iterable[ApplicationSettings]:
+    def _candidate_settings(
+        self,
+        fusion_identity: RuntimeArtifactIdentity,
+    ) -> Iterable[ApplicationSettings]:
         yield self._settings
         try:
             sample_root = self._settings.ingestion.sample_root.resolve()
@@ -149,7 +152,11 @@ class EffectiveRuntimeModelService:
             environment = DemoArtifactManager(
                 self._settings,
                 project_root=project_root,
-            ).read()
+            ).read_for_fusion_policy(
+                policy_id=fusion_identity.artifact_id,
+                policy_version=fusion_identity.version,
+                policy_checksum=fusion_identity.checksum,
+            )
         except (AegisHuntError, OSError, ValueError):
             environment = None
         if environment is not None and environment.settings != self._settings:
