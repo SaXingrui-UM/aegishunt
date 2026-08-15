@@ -24,6 +24,7 @@ from aegishunt.runtime.contracts import (
     RuntimeWorker,
     RuntimeWorkerStatus,
 )
+from aegishunt.runtime.environment import ResolvedRuntimeEnvironment
 from aegishunt.runtime.errors import (
     RuntimePersistenceError,
     RuntimePreflightError,
@@ -260,6 +261,7 @@ def test_worker_shutdown_moves_job_to_recovery_pending_without_auto_requeue(
             clock=RuntimeClock(now=lambda: NOW, monotonic=lambda: 0.0),
         )
         assert worker.run_one_and_stop() is True
+        assert worker.last_claimed_job_id == job.job_id
 
         with database.session() as session:
             interrupted = RuntimeJobRepository(session).get(job.job_id)
@@ -276,6 +278,89 @@ def test_worker_shutdown_moves_job_to_recovery_pending_without_auto_requeue(
             )
         assert recovered.status is RuntimeJobStatus.QUEUED
         assert recovered.recovery_count == 1
+    finally:
+        database.dispose()
+
+
+def test_worker_runs_with_environment_resolved_from_pinned_snapshot(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    database = _database(tmp_path)
+    job = runtime_job()
+    policy = load_runtime_policy(PROJECT_ROOT / "configs/runtime.yaml")
+    configured_settings = ApplicationSettings(
+        database=DatabaseSettings(
+            url=f"sqlite:///{tmp_path / 'runtime-queue.sqlite3'}"
+        )
+    )
+    historical_settings = configured_settings.model_copy(
+        update={
+            "application": configured_settings.application.model_copy(
+                update={"environment": "historical-demo"}
+            )
+        }
+    )
+    selected = ResolvedRuntimeEnvironment(
+        settings=historical_settings,
+        runtime_policy=policy,
+        source="runtime_snapshot_demo",
+    )
+    observed: dict[str, object] = {}
+
+    def resolve(
+        settings: ApplicationSettings,
+        snapshot: object,
+        *,
+        project_root: Path,
+    ) -> ResolvedRuntimeEnvironment:
+        observed.update(
+            {
+                "base_settings": settings,
+                "snapshot": snapshot,
+                "project_root": project_root,
+            }
+        )
+        return selected
+
+    class CapturingRunner:
+        def __init__(self, database: Database, **kwargs: object) -> None:
+            observed["database"] = database
+            observed.update(kwargs)
+
+        def run(self, claimed: RuntimeJob) -> RuntimeCounters:
+            observed["job"] = claimed
+            raise ReplayInterrupted("captured resolved environment")
+
+    monkeypatch.setattr(
+        "aegishunt.runtime.worker.resolve_job_execution_environment",
+        resolve,
+    )
+    monkeypatch.setattr(
+        "aegishunt.runtime.worker.RuntimePipelineRunner",
+        CapturingRunner,
+    )
+    try:
+        with database.session() as session, session.begin():
+            RuntimeJobRepository(session).add(job, actor="operator")
+
+        worker = RuntimeWorkerProcess(
+            database,
+            settings=configured_settings,
+            runtime_policy=policy,
+            project_root=PROJECT_ROOT,
+            worker_id="snapshot-environment-worker",
+            clock=RuntimeClock(now=lambda: NOW, monotonic=lambda: 0.0),
+        )
+        assert worker.run_one_and_stop() is True
+
+        assert observed["settings"] is historical_settings
+        assert observed["runtime_policy"] is policy
+        assert observed["snapshot"] == job.snapshot
+        claimed = observed["job"]
+        assert isinstance(claimed, RuntimeJob)
+        assert claimed.job_id == job.job_id
+        assert claimed.status is RuntimeJobStatus.VALIDATING
     finally:
         database.dispose()
 

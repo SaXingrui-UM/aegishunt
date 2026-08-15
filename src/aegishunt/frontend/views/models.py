@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import streamlit as st
 
-from aegishunt.api.contracts import EffectiveModelState, ModelDescriptor
+from aegishunt.api.contracts import (
+    EffectiveModelDescriptor,
+    EffectiveModelState,
+    ModelDescriptor,
+)
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
 from aegishunt.frontend.components import (
     actor_input,
@@ -28,27 +30,16 @@ def _model_cards(
     return list(effective.operations.eligible_activation_models), effective
 
 
-def _matching_supervised_bundle(
-    models: Sequence[ModelDescriptor],
+def _verified_supervised_snapshot(
     effective: EffectiveModelState,
-) -> ModelDescriptor | None:
-    supervised = next(
+) -> EffectiveModelDescriptor | None:
+    return next(
         (
             item
             for item in effective.effective_models
             if item.engine_type == "supervised"
-        ),
-        None,
-    )
-    return next(
-        (
-            item
-            for item in models
-            if supervised is not None
-            and item.engine == supervised.engine_type
-            and item.version == supervised.version
-            and item.checksum == supervised.artifact_hash
-            and item.artifact_available
+            and item.source == "runtime_job_snapshot"
+            and item.registry_status == "verified"
         ),
         None,
     )
@@ -100,8 +91,8 @@ def render(client: AegisHuntApiClient) -> None:
             "but did not establish superiority."
         )
 
-    matching_bundle = _matching_supervised_bundle(models, effective)
-    if matching_bundle is not None:
+    supervised_snapshot = _verified_supervised_snapshot(effective)
+    if supervised_snapshot is not None:
         section_header("Verified feature importance")
         importance_label = st.radio(
             "Importance method",
@@ -114,7 +105,7 @@ def render(client: AegisHuntApiClient) -> None:
         )
         try:
             importance = client.model_importance(
-                matching_bundle.model_id,
+                supervised_snapshot.model_id,
                 kind=importance_label.casefold(),
             )
         except ApiClientError as error:
@@ -192,10 +183,10 @@ def render(client: AegisHuntApiClient) -> None:
                 f"Fusion policy `{fusion.policy_id}` v{fusion.policy_version} · "
                 f"evidence `{fusion.evaluation_source}` · hash `{fusion.artifact_hash}`"
             )
-        if matching_bundle is None:
+        if supervised_snapshot is None:
             st.caption(
                 "Verified importance evidence matching the effective supervised model "
-                "is not present in the global registry."
+                "is not present in the latest completed runtime snapshot."
             )
         st.caption(effective.operations.training_message)
         st.caption(effective.operations.activation_message)

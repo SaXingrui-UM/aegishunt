@@ -15,14 +15,17 @@ from fastapi.testclient import TestClient
 from streamlit.testing.v1 import AppTest
 
 from aegishunt.api.app import create_app
+from aegishunt.api.contracts import RuntimeRunOnceResult
 from aegishunt.api.evaluation_service import _read_csv
 from aegishunt.api.model_service import _writable_output_root
 from aegishunt.config import CaseFeedbackSettings
 from aegishunt.frontend import app
 from aegishunt.frontend.client import AegisHuntApiClient
 from aegishunt.frontend.components import markdown_table, page_header, section_header
-from aegishunt.frontend.views.models import _matching_supervised_bundle, _model_cards
+from aegishunt.frontend.views.ingestion import _worker_result_message
+from aegishunt.frontend.views.models import _model_cards, _verified_supervised_snapshot
 from aegishunt.frontend.views.overview import _active_alert_count, _demo_completed
+from aegishunt.runtime.contracts import RuntimeWorker, RuntimeWorkerStatus
 from aegishunt.storage import Database
 from tests.e2e.test_phase_12_api_frontend import _settings
 
@@ -39,6 +42,27 @@ EXPECTED_PAGES = {
 }
 
 
+def test_worker_result_distinguishes_concurrent_claim_from_empty_queue() -> None:
+    result = RuntimeRunOnceResult(
+        claimed_job=False,
+        outcome="job_already_claimed_by_another_worker",
+        queue_length_before=1,
+        running_jobs_before=0,
+        queue_length_after=0,
+        running_jobs_after=1,
+        job=None,
+        worker=RuntimeWorker(
+            worker_id="phase14-web-worker-concurrent",
+            status=RuntimeWorkerStatus.STOPPED,
+        ),
+    )
+
+    message = _worker_result_message(result)
+
+    assert "another worker already claimed available work" in message
+    assert "found no queued job" not in message
+
+
 def _button(test_app: AppTest, label: str) -> Any:
     matches = [item for item in test_app.button if item.label == label]
     assert len(matches) == 1, f"expected one button labelled {label!r}"
@@ -48,6 +72,18 @@ def _button(test_app: AppTest, label: str) -> Any:
 def _checkbox(test_app: AppTest, label: str) -> Any:
     matches = [item for item in test_app.checkbox if item.label == label]
     assert len(matches) == 1, f"expected one checkbox labelled {label!r}"
+    return matches[0]
+
+
+def _radio(test_app: AppTest, label: str) -> Any:
+    matches = [item for item in test_app.radio if item.label == label]
+    assert len(matches) == 1, f"expected one radio labelled {label!r}"
+    return matches[0]
+
+
+def _selectbox(test_app: AppTest, label: str) -> Any:
+    matches = [item for item in test_app.selectbox if item.label == label]
+    assert len(matches) == 1, f"expected one selectbox labelled {label!r}"
     return matches[0]
 
 
@@ -333,33 +369,37 @@ def test_model_cards_resolve_advertised_models_by_exact_id() -> None:
     client.models.assert_not_called()
 
 
-def test_importance_bundle_requires_runtime_artifact_identity() -> None:
+def test_importance_uses_verified_runtime_snapshot_without_global_registry() -> None:
+    effective = Mock()
+    verified_snapshot = Mock(
+        model_id="supervised-model",
+        engine_type="supervised",
+        source="runtime_job_snapshot",
+        registry_status="verified",
+    )
+    effective.effective_models = [verified_snapshot]
+
+    assert _verified_supervised_snapshot(effective) is verified_snapshot
+
+
+def test_importance_rejects_unverified_or_nonruntime_model() -> None:
     effective = Mock()
     effective.effective_models = [
         Mock(
-            model_id="supervised-model",
+            model_id="global-model",
             engine_type="supervised",
-            version="12.0.0",
-            artifact_hash="expected-hash",
-        )
+            source="global_active",
+            registry_status="verified",
+        ),
+        Mock(
+            model_id="unverified-runtime-model",
+            engine_type="supervised",
+            source="runtime_job_snapshot",
+            registry_status="unavailable",
+        ),
     ]
-    wrong = Mock(
-        model_id="registry-uuid",
-        engine="supervised",
-        version="12.0.0",
-        checksum="different-hash",
-        artifact_available=True,
-    )
-    matching = Mock(
-        model_id="different-registry-uuid",
-        engine="supervised",
-        version="12.0.0",
-        checksum="expected-hash",
-        artifact_available=True,
-    )
 
-    assert _matching_supervised_bundle([wrong], effective) is None
-    assert _matching_supervised_bundle([wrong, matching], effective) is matching
+    assert _verified_supervised_snapshot(effective) is None
 
 
 @pytest.mark.parametrize(
@@ -530,7 +570,15 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert not test_app.exception
         assert test_app.success
 
-        test_app.radio[0].set_value("Data Ingestion").run(timeout=20.0)
+        test_app.session_state["aegishunt-runtime-worker-job-id"] = demo_payload[
+            "runtime_job_id"
+        ]
+        _radio(test_app, "Navigation").set_value("Data Ingestion").run(timeout=20.0)
+        assert any(
+            item.value
+            == f"Runtime job {demo_payload['runtime_job_id']} · status completed"
+            for item in test_app.success
+        )
         test_app.selectbox[1].set_value("phase2-benign-pcap")
         test_app.text_area[1].set_value("explicit packaged sample ingestion")
         test_app.checkbox[1].check()
@@ -539,8 +587,16 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert test_app.success
         assert any(item.label == "Run one worker" for item in test_app.button)
 
-        test_app.radio[0].set_value("Traffic Explorer").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Traffic Explorer").run(timeout=20.0)
         assert not test_app.exception
+        assert _selectbox(test_app, "Runtime job scope").value.startswith(
+            demo_payload["runtime_job_id"]
+        )
+        assert any(
+            f"Runtime job `{demo_payload['runtime_job_id']}` · status completed"
+            in item.value
+            for item in test_app.caption
+        )
         traffic_tabs = {item.label for item in test_app.tabs}
         assert {
             "Flow detail",
@@ -551,7 +607,10 @@ def test_all_frontend_pages_render_real_populated_api_state(
         } <= traffic_tabs
         assert not any("Page 1 of 1" in item.value for item in test_app.caption)
 
-        test_app.radio[0].set_value("Alerts").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Alerts").run(timeout=20.0)
+        assert _selectbox(test_app, "Runtime job scope").value.startswith(
+            demo_payload["runtime_job_id"]
+        )
         alert_tabs = {item.label for item in test_app.tabs}
         assert "Related investigations" in alert_tabs
         assert "Reasons and entities" in alert_tabs
@@ -562,14 +621,20 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert not test_app.exception
         assert test_app.success
 
-        test_app.radio[0].set_value("Threat Hunts").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Threat Hunts").run(timeout=20.0)
+        assert _selectbox(test_app, "Runtime job scope").value.startswith(
+            demo_payload["runtime_job_id"]
+        )
         test_app.text_area[0].set_value("explicit hypothesis review")
         test_app.checkbox[0].check()
         _button(test_app, "Apply").click().run(timeout=20.0)
         assert not test_app.exception
         assert test_app.success
 
-        test_app.radio[0].set_value("Cases").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Cases").run(timeout=20.0)
+        assert _selectbox(test_app, "Runtime job scope").value.startswith(
+            demo_payload["runtime_job_id"]
+        )
         assert "Audit History" in {item.label for item in test_app.tabs}
         test_app.text_input[0].set_value("investigating")
         test_app.text_area[0].set_value("explicit case status update")
@@ -593,7 +658,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert not test_app.exception
         assert test_app.success
 
-        test_app.selectbox[1].set_value("verdict")
+        _selectbox(test_app, "Update").set_value("verdict")
         test_app.text_input[0].set_value("true_positive")
         test_app.text_area[0].set_value("record explicit case verdict")
         test_app.checkbox[0].check()
@@ -601,7 +666,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert not test_app.exception
         assert test_app.success
 
-        test_app.selectbox[1].set_value("verdict")
+        _selectbox(test_app, "Update").set_value("verdict")
         test_app.text_input[0].set_value("false_positive")
         test_app.text_area[0].set_value("correct the existing case verdict")
         _checkbox(test_app, "Confirm case lifecycle update").check()
@@ -667,7 +732,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
             for item in test_app.get("download_button")
         )
 
-        test_app.radio[0].set_value("Model Lab").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Model Lab").run(timeout=20.0)
         assert not test_app.exception
         model_lab_text = "\n".join(
             item.value
@@ -693,15 +758,17 @@ def test_all_frontend_pages_render_real_populated_api_state(
         importance_methods = [
             item for item in test_app.radio if item.label == "Importance method"
         ]
-        if importance_methods:
-            assert "N/A" in model_lab_text
-            importance_methods[0].set_value("Permutation").run(timeout=20.0)
-            assert any(
-                "balanced_accuracy" in item.value and "5 repeats" in item.value
-                for item in test_app.caption
-            )
+        assert len(importance_methods) == 1
+        assert "N/A" in model_lab_text
+        importance_methods[0].set_value("Permutation").run(timeout=20.0)
+        assert any(
+            "validation" in item.value
+            and "balanced_accuracy" in item.value
+            and "5 repeats" in item.value
+            for item in test_app.caption
+        )
 
-        test_app.radio[0].set_value("Evaluation").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Evaluation").run(timeout=20.0)
         assert not test_app.exception
         [
             item for item in test_app.selectbox if item.label == "Stored source / PCAP"
@@ -732,7 +799,7 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert "Train verified candidate" not in evaluation_text
         assert "Run controlled demo" not in evaluation_text
 
-        test_app.radio[0].set_value("Overview").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Overview").run(timeout=20.0)
         assert not test_app.exception
         assert [item.value for item in test_app.title].count("Overview") == 1
         overview_text = "\n".join(
@@ -750,10 +817,10 @@ def test_all_frontend_pages_render_real_populated_api_state(
         assert "Known Controlled Comparison" not in overview_text
         assert "Technical provenance" not in overview_text
 
-        test_app.radio[0].set_value("Model Lab").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("Model Lab").run(timeout=20.0)
         assert not test_app.exception
         assert [item.value for item in test_app.title].count("Model Lab") == 1
-        test_app.radio[0].set_value("System Health").run(timeout=20.0)
+        _radio(test_app, "Navigation").set_value("System Health").run(timeout=20.0)
         assert not test_app.exception
 
         visible = "\n".join(

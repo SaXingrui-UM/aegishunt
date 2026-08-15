@@ -2,14 +2,17 @@
 
 from pathlib import Path
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, Query, Request
 
 from aegishunt.api.contracts import Pagination
-from aegishunt.api.errors import ApiError
+from aegishunt.api.errors import ApiError, not_found
+from aegishunt.api.runtime_lineage import RuntimeJobLineageReader, RuntimeJobScope
 from aegishunt.config import ApplicationSettings
 from aegishunt.ingestion.service import IngestionService
 from aegishunt.runtime.config import load_runtime_policy
+from aegishunt.runtime.environment import resolve_replay_creation_environment
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.storage import Database
 
@@ -19,6 +22,27 @@ def get_database(request: Request) -> Database:
 
     database: Database = request.app.state.database
     return database
+
+
+def get_runtime_job_scope(
+    database: Annotated[Database, Depends(get_database)],
+    job_id: UUID | None = None,
+) -> RuntimeJobScope | None:
+    """Validate and resolve an optional runtime-job query scope once per request."""
+
+    if job_id is None:
+        return None
+    with database.session() as session:
+        scope = RuntimeJobLineageReader(session).read(job_id)
+    if scope is None:
+        not_found("runtime job")
+    return scope
+
+
+RuntimeJobScopeDependency = Annotated[
+    RuntimeJobScope | None,
+    Depends(get_runtime_job_scope),
+]
 
 
 def get_settings(request: Request) -> ApplicationSettings:
@@ -68,9 +92,27 @@ def get_runtime_service(request: Request) -> RuntimeJobService:
     """Build the Phase 11 service with its checksummed runtime policy."""
 
     settings = get_settings(request)
+    project_root = Path.cwd()
     return RuntimeJobService(
         get_database(request),
         settings=settings,
         runtime_policy=load_runtime_policy(settings.runtime.policy_path),
-        project_root=Path.cwd(),
+        project_root=project_root,
+    )
+
+
+def get_replay_creation_service(request: Request) -> RuntimeJobService:
+    """Build replay creation over one complete configured or prepared environment."""
+
+    settings = get_settings(request)
+    project_root = Path.cwd()
+    environment = resolve_replay_creation_environment(
+        settings,
+        project_root=project_root,
+    )
+    return RuntimeJobService(
+        get_database(request),
+        settings=environment.settings,
+        runtime_policy=environment.runtime_policy,
+        project_root=project_root,
     )

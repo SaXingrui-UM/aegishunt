@@ -18,7 +18,7 @@ from aegishunt.api.dependencies import (
     PaginationDependency,
     get_database,
     get_ingestion_service,
-    get_runtime_service,
+    get_replay_creation_service,
     get_settings,
 )
 from aegishunt.api.errors import ApiError, not_found
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 ServiceDependency = Annotated[IngestionService, Depends(get_ingestion_service)]
 UploadDependency = Annotated[UploadFile, File(description="Bounded telemetry upload")]
 DatabaseDependency = Annotated[Database, Depends(get_database)]
-RuntimeDependency = Annotated[RuntimeJobService, Depends(get_runtime_service)]
+RuntimeDependency = Annotated[RuntimeJobService, Depends(get_replay_creation_service)]
 SettingsDependency = Annotated[ApplicationSettings, Depends(get_settings)]
 ActorForm = Annotated[str, Form(min_length=1, max_length=128)]
 ReasonForm = Annotated[str, Form(min_length=1, max_length=1_000)]

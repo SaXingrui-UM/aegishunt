@@ -12,6 +12,7 @@ from aegishunt.frontend.components import (
     page_header,
     paginated_table,
     pagination_offset,
+    runtime_job_filter,
     table,
 )
 
@@ -22,9 +23,15 @@ def render(client: AegisHuntApiClient) -> None:
         "A SecurityAlert is an analyst-review prompt, not a confirmed attack. "
         "Risk is not attack probability and explanation evidence is non-causal."
     )
-    detection_offset = pagination_offset("alerts-detections")
     try:
-        detections = client.detections(offset=detection_offset)
+        job_id = runtime_job_filter(client)
+    except ApiClientError as error:
+        api_error(error)
+        return
+    scope = job_id or "all"
+    detection_offset = pagination_offset("alerts-detections", scope=scope)
+    try:
+        detections = client.detections(job_id=job_id, offset=detection_offset)
     except ApiClientError as error:
         api_error(error)
         return
@@ -49,9 +56,13 @@ def render(client: AegisHuntApiClient) -> None:
         "Severity",
         ("", "informational", "low", "medium", "high", "critical"),
     )
-    alert_offset = pagination_offset("alerts-records", scope=severity)
+    alert_offset = pagination_offset("alerts-records", scope=f"{scope}|{severity}")
     try:
-        page = client.alerts(severity=severity, offset=alert_offset)
+        page = client.alerts(
+            job_id=job_id,
+            severity=severity,
+            offset=alert_offset,
+        )
     except ApiClientError as error:
         api_error(error)
         return

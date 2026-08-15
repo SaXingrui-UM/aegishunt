@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from aegishunt.api.app import create_app
+from aegishunt.api.routes.runtime import _run_once_outcome
 from aegishunt.config import ApplicationSettings, DatabaseSettings, WebSettings
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
 from aegishunt.runtime.contracts import RuntimeWorker
@@ -81,6 +82,19 @@ REQUIRED_ROUTES = {
 }
 
 
+def test_run_once_outcome_reports_another_worker_winning_the_claim() -> None:
+    assert (
+        _run_once_outcome(
+            claimed=False,
+            queue_length_before=1,
+            running_jobs_before=0,
+            queue_length_after=0,
+            running_jobs_after=1,
+        )
+        == "job_already_claimed_by_another_worker"
+    )
+
+
 def test_openapi_has_unique_documented_phase12_operations(tmp_path: Path) -> None:
     settings = ApplicationSettings(
         database=DatabaseSettings(url=f"sqlite:///{tmp_path / 'openapi.db'}")
@@ -103,6 +117,21 @@ def test_openapi_has_unique_documented_phase12_operations(tmp_path: Path) -> Non
         for operation in path.values()
         if isinstance(operation, dict)
     )
+    for path in (
+        "/flows",
+        "/flows/summary",
+        "/detections",
+        "/alerts",
+        "/alert-groups",
+        "/hypotheses",
+        "/cases",
+    ):
+        query_parameters = {
+            parameter["name"]
+            for parameter in schema["paths"][path]["get"]["parameters"]
+            if parameter["in"] == "query"
+        }
+        assert "job_id" in query_parameters
 
 
 def test_pagination_and_request_identity_use_web_configuration(tmp_path: Path) -> None:
@@ -184,6 +213,12 @@ def test_runtime_worker_run_once_is_explicit_bounded_and_audited(
 
     assert response.status_code == 200
     assert response.json()["claimed_job"] is False
+    assert response.json()["outcome"] == "no_queued_job"
+    assert response.json()["queue_length_before"] == 0
+    assert response.json()["running_jobs_before"] == 0
+    assert response.json()["queue_length_after"] == 0
+    assert response.json()["running_jobs_after"] == 0
+    assert response.json()["job"] is None
     assert response.json()["execution_semantics"] == "claim_at_most_one_then_stop"
     assert response.json()["worker"]["worker_id"] == (
         "phase12-test-worker-bounded-cycle"
@@ -192,6 +227,7 @@ def test_runtime_worker_run_once_is_explicit_bounded_and_audited(
     assert len(audit) == 1
     assert audit[0].actor == "phase12-test"
     assert audit[0].details["claimed_job"] is False
+    assert audit[0].details["outcome"] == "no_queued_job"
 
 
 def test_frontend_worker_run_once_uses_the_dedicated_long_timeout() -> None:
@@ -203,6 +239,12 @@ def test_frontend_worker_run_once_uses_the_dedicated_long_timeout() -> None:
             200,
             json={
                 "claimed_job": False,
+                "outcome": "no_queued_job",
+                "queue_length_before": 0,
+                "running_jobs_before": 0,
+                "queue_length_after": 0,
+                "running_jobs_after": 0,
+                "job": None,
                 "worker": {
                     "worker_id": "phase12-test-worker-timeout",
                     "status": "stopped",
@@ -223,6 +265,7 @@ def test_frontend_worker_run_once_uses_the_dedicated_long_timeout() -> None:
         )
 
     assert result.claimed_job is False
+    assert result.outcome == "no_queued_job"
     assert observed_timeouts == [
         {"connect": 600.0, "read": 600.0, "write": 600.0, "pool": 600.0}
     ]
@@ -362,6 +405,60 @@ def test_typed_client_parses_success_and_sanitized_failure() -> None:
         else:
             raise AssertionError("expected typed API failure")
     assert calls[1].url.params["protocol"] == "tcp"
+
+
+def test_typed_client_forwards_runtime_job_scope_to_all_evidence_lists() -> None:
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if request.url.path == "/flows/summary":
+            return httpx.Response(
+                200,
+                json={
+                    "total": 0,
+                    "protocol_distribution": {},
+                    "total_packets": 0,
+                    "total_bytes": 0,
+                    "first_seen": None,
+                    "last_seen": None,
+                    "top_source_destination_pairs": [],
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "items": [],
+                "total": 0,
+                "limit": 50,
+                "offset": 0,
+                "next_offset": None,
+            },
+        )
+
+    job_id = "00000000-0000-4000-8000-000000000001"
+    with AegisHuntApiClient(
+        "http://127.0.0.1:8000",
+        transport=httpx.MockTransport(handler),
+    ) as client:
+        client.flow_summary(job_id=job_id)
+        client.flows(job_id=job_id)
+        client.detections(job_id=job_id)
+        client.alerts(job_id=job_id)
+        client.groups(job_id=job_id)
+        client.hypotheses(job_id=job_id)
+        client.cases(job_id=job_id)
+
+    assert [request.url.path for request in calls] == [
+        "/flows/summary",
+        "/flows",
+        "/detections",
+        "/alerts",
+        "/alert-groups",
+        "/hypotheses",
+        "/cases",
+    ]
+    assert all(request.url.params["job_id"] == job_id for request in calls)
 
 
 def test_typed_client_forwards_offsets_for_every_list_contract() -> None:

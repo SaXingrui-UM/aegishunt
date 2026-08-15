@@ -168,3 +168,53 @@ def test_correlation_can_be_bounded_to_one_runtime_job(tmp_path: Path) -> None:
         }
     finally:
         database.dispose()
+
+
+def test_hypothesis_generation_can_be_bounded_to_runtime_groups(tmp_path: Path) -> None:
+    database = _database(tmp_path / "bounded-hypotheses.sqlite3")
+    selected = [
+        alert(20, source_ip="192.0.2.30", destination_ip="198.51.100.30"),
+        alert(21, source_ip="192.0.2.30", destination_ip="198.51.100.31"),
+    ]
+    unrelated = [
+        alert(22, source_ip="192.0.2.40", destination_ip="198.51.100.40"),
+        alert(23, source_ip="192.0.2.40", destination_ip="198.51.100.41"),
+    ]
+    seed_alerts(database, [*selected, *unrelated])
+    loaded = correlation_policy()
+    try:
+        with database.session() as session, session.begin():
+            selected_groups = AlertCorrelationService(
+                session,
+                loaded,
+                clock=lambda: GROUP_GENERATED_AT,
+            ).correlate(
+                actor="bounded-runtime-correlation",
+                alert_ids={item.alert_id for item in selected},
+            )
+            unrelated_groups = AlertCorrelationService(
+                session,
+                loaded,
+                clock=lambda: GROUP_GENERATED_AT,
+            ).correlate(
+                actor="unrelated-runtime-correlation",
+                alert_ids={item.alert_id for item in unrelated},
+            )
+            hypotheses = ThreatHypothesisService(
+                session,
+                loaded,
+                clock=lambda: HYPOTHESIS_GENERATED_AT,
+            ).generate(
+                actor="bounded-runtime-hunting",
+                group_ids={item.group_id for item in selected_groups},
+            )
+
+            assert {item.group_id for item in hypotheses} == {
+                item.group_id for item in selected_groups
+            }
+            assert not {item.group_id for item in hypotheses} & {
+                item.group_id for item in unrelated_groups
+            }
+            assert ThreatHypothesisRepository(session).list() == list(hypotheses)
+    finally:
+        database.dispose()

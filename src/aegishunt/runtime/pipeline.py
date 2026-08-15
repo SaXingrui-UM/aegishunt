@@ -613,7 +613,10 @@ class RuntimePipelineRunner:
                         session,
                         loaded.correlation_policy,
                         clock=self._clock.now,
-                    ).generate(actor=self._worker_id),
+                    ).generate(
+                        actor=self._worker_id,
+                        group_ids=group_ids,
+                    ),
                     group_ids,
                 )
                 hypothesis_ids = {item.hypothesis_id for item in hypotheses}

@@ -54,9 +54,11 @@ class AlertCorrelationService:
     ) -> tuple[AlertGroup, ...]:
         """Correlate all eligible alerts or one explicitly bounded alert set."""
 
-        alerts = self._alerts.list()
-        if alert_ids is not None:
-            alerts = [item for item in alerts if item.alert_id in alert_ids]
+        alerts = (
+            self._alerts.list()
+            if alert_ids is None
+            else self._alerts.list_by_ids(alert_ids)
+        )
         groups = correlate_alerts(
             alerts,
             self._policy,

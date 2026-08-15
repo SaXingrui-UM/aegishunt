@@ -16,6 +16,7 @@ from aegishunt.config import ApplicationSettings, load_settings
 from aegishunt.errors import AegisHuntError
 from aegishunt.runtime.config import LoadedRuntimePolicy, load_runtime_policy
 from aegishunt.runtime.contracts import RuntimeJobStatus
+from aegishunt.runtime.environment import resolve_replay_creation_environment
 from aegishunt.runtime.repositories import RuntimeWorkerRepository
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.runtime.status import RuntimeStatusReader
@@ -57,6 +58,22 @@ def _service(
         database,
         settings=settings,
         runtime_policy=policy,
+        project_root=Path.cwd(),
+    )
+
+
+def _creation_service(
+    settings: ApplicationSettings,
+    database: Database,
+) -> RuntimeJobService:
+    environment = resolve_replay_creation_environment(
+        settings,
+        project_root=Path.cwd(),
+    )
+    return RuntimeJobService(
+        database,
+        settings=environment.settings,
+        runtime_policy=environment.runtime_policy,
         project_root=Path.cwd(),
     )
 
@@ -105,9 +122,9 @@ def create_replay(
 
     database: Database | None = None
     try:
-        settings, policy, database = _load(config)
+        settings, _policy, database = _load(config)
         _echo(
-            _service(settings, policy, database).create_replay(
+            _creation_service(settings, database).create_replay(
                 source_id,
                 speed=speed,
                 actor=actor,

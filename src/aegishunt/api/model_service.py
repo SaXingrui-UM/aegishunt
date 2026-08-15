@@ -18,12 +18,21 @@ from aegishunt.api.contracts import (
 from aegishunt.api.errors import ApiError, conflict, not_found
 from aegishunt.config import ApplicationSettings
 from aegishunt.detection.errors import DetectionArtifactError
-from aegishunt.explainability.artifacts import load_explanation_artifact
+from aegishunt.errors import AegisHuntError
+from aegishunt.explainability.artifacts import (
+    CHECKSUMS_FILENAME,
+    load_explanation_artifact,
+    sha256_bytes,
+)
+from aegishunt.explainability.contracts import LoadedExplanationArtifact
 from aegishunt.ml.anomaly.config import AnomalyTrainingConfig
 from aegishunt.ml.anomaly.service import AnomalyTrainingService
 from aegishunt.ml.supervised.config import SupervisedTrainingConfig
 from aegishunt.ml.supervised.service import SupervisedTrainingService
 from aegishunt.runtime.config import load_runtime_policy
+from aegishunt.runtime.contracts import RuntimeJobStatus
+from aegishunt.runtime.environment import resolve_job_execution_environment
+from aegishunt.runtime.repositories import RuntimeJobRepository
 from aegishunt.schemas import ModelVersion
 from aegishunt.schemas.base import JsonObject, utc_now
 from aegishunt.schemas.enums import ModelStatus, ModelType
@@ -284,14 +293,15 @@ class ModelRegistryService:
     ) -> ModelImportance:
         """Return exact verified global sensitivity evidence, never inferred values."""
 
+        runtime_result = self._runtime_importance(model_id, kind=kind)
+        if runtime_result is not None:
+            return runtime_result
+
         descriptor = self.get(model_id)
         if descriptor.engine != "supervised":
-            return ModelImportance(
-                model_id=descriptor.model_id,
-                available=False,
-                method=None,
-                importance=None,
-                message="verified global-importance artifact is unavailable",
+            return self._unavailable_importance(
+                descriptor.model_id,
+                "verified global-importance artifact is unavailable",
             )
         runtime = load_runtime_policy(self._settings.runtime.policy_path)
         try:
@@ -303,13 +313,96 @@ class ModelRegistryService:
                 root=self._settings.detection.explanation_artifact_root,
             )
         except DetectionArtifactError:
-            return ModelImportance(
-                model_id=descriptor.model_id,
-                available=False,
-                method=None,
-                importance=None,
-                message="verified global-importance artifact is unavailable",
+            return self._unavailable_importance(
+                descriptor.model_id,
+                "verified global-importance artifact is unavailable",
             )
+        return self._project_importance(
+            response_model_id=descriptor.model_id,
+            expected_model_id=artifact.manifest.supervised_model_id,
+            expected_model_version=descriptor.version,
+            artifact=artifact,
+            kind=kind,
+        )
+
+    def _runtime_importance(
+        self,
+        model_id: str,
+        *,
+        kind: Literal["native", "permutation"],
+    ) -> ModelImportance | None:
+        """Read importance from the immutable latest completed-job environment."""
+
+        with self._database.session() as session:
+            job = RuntimeJobRepository(session).latest_with_status(
+                RuntimeJobStatus.COMPLETED
+            )
+        if job is None:
+            return None
+        identities = {item.artifact_type: item for item in job.snapshot.artifacts}
+        supervised = identities["supervised_model"]
+        if model_id != supervised.artifact_id:
+            return None
+        explanation = identities["explanation_artifact"]
+        try:
+            project_root = self._settings.ingestion.sample_root.resolve().parent.parent
+            environment = resolve_job_execution_environment(
+                self._settings,
+                job.snapshot,
+                project_root=project_root,
+            )
+            root = environment.settings.detection.explanation_artifact_root
+            artifact_path = root / explanation.version
+            checksum = sha256_bytes(
+                (artifact_path / CHECKSUMS_FILENAME).read_bytes()
+            )
+            artifact = load_explanation_artifact(artifact_path, root=root)
+        except (AegisHuntError, OSError, ValueError):
+            return self._unavailable_importance(
+                model_id,
+                "verified runtime-pinned importance artifact is unavailable",
+            )
+        manifest = artifact.manifest
+        if (
+            checksum != explanation.checksum
+            or manifest.artifact_id != explanation.artifact_id
+            or manifest.artifact_version != explanation.version
+            or manifest.supervised_model_id != supervised.artifact_id
+            or manifest.supervised_model_version != supervised.version
+            or manifest.feature_schema_version != job.snapshot.feature_schema_version
+        ):
+            return self._unavailable_importance(
+                model_id,
+                "verified runtime-pinned importance artifact identity does not match",
+            )
+        return self._project_importance(
+            response_model_id=model_id,
+            expected_model_id=supervised.artifact_id,
+            expected_model_version=supervised.version,
+            artifact=artifact,
+            kind=kind,
+        )
+
+    @staticmethod
+    def _unavailable_importance(model_id: str, message: str) -> ModelImportance:
+        return ModelImportance(
+            model_id=model_id,
+            available=False,
+            method=None,
+            importance=None,
+            message=message,
+        )
+
+    @classmethod
+    def _project_importance(
+        cls,
+        *,
+        response_model_id: str,
+        expected_model_id: str,
+        expected_model_version: str,
+        artifact: LoadedExplanationArtifact,
+        kind: Literal["native", "permutation"],
+    ) -> ModelImportance:
         report = (
             artifact.native_importance
             if kind == "native"
@@ -317,18 +410,15 @@ class ModelRegistryService:
         )
         if (
             (kind == "native" and artifact.native_importance.status != "available")
-            or report.model_version != descriptor.version
-            or report.model_id != f"aegishunt-supervised-{descriptor.version}"
+            or report.model_version != expected_model_version
+            or report.model_id != expected_model_id
         ):
-            return ModelImportance(
-                model_id=descriptor.model_id,
-                available=False,
-                method=None,
-                importance=None,
-                message="verified global-importance artifact does not match this model",
+            return cls._unavailable_importance(
+                response_model_id,
+                "verified global-importance artifact does not match this model",
             )
         return ModelImportance(
-            model_id=descriptor.model_id,
+            model_id=response_model_id,
             available=True,
             method=report.method,
             source_partition=(

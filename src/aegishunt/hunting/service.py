@@ -36,9 +36,16 @@ class ThreatHypothesisService:
         self._policy = loaded_policy
         self._clock = clock
 
-    def generate(self, *, actor: str = "hypothesis-service") -> tuple[ThreatHypothesis, ...]:
+    def generate(
+        self,
+        *,
+        actor: str = "hypothesis-service",
+        group_ids: set[UUID] | None = None,
+    ) -> tuple[ThreatHypothesis, ...]:
+        """Generate hypotheses, optionally bounded to explicit correlation groups."""
+
         output: list[ThreatHypothesis] = []
-        for group in self._groups.list_open():
+        for group in self._groups.list_open(group_ids=group_ids):
             existing = self._hypotheses.get_by_group(group.group_id)
             if existing is not None:
                 output.append(existing)
