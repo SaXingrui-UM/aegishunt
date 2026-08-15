@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
@@ -32,7 +32,7 @@ from aegishunt.config import ApplicationSettings
 from aegishunt.metadata import APPLICATION_NAME, __version__
 from aegishunt.runtime.config import load_runtime_policy
 from aegishunt.runtime.contracts import RuntimeJob, RuntimeJobStatus, RuntimeWorker
-from aegishunt.runtime.repositories import RuntimeWorkerRepository
+from aegishunt.runtime.repositories import RuntimeJobRepository, RuntimeWorkerRepository
 from aegishunt.runtime.service import RuntimeJobService
 from aegishunt.runtime.status import RuntimeStatusReader
 from aegishunt.runtime.worker import RuntimeWorkerProcess
@@ -43,6 +43,71 @@ router = APIRouter(tags=["system", "runtime"])
 DatabaseDependency = Annotated[Database, Depends(get_database)]
 RuntimeDependency = Annotated[RuntimeJobService, Depends(get_runtime_service)]
 SettingsDependency = Annotated[ApplicationSettings, Depends(get_settings)]
+RunOnceOutcome = Literal[
+    "job_claimed_by_request_worker",
+    "job_already_claimed_by_another_worker",
+    "job_queued_after_cycle",
+    "no_queued_job",
+]
+
+
+def _runtime_job_observation(
+    database: Database,
+) -> tuple[int, int, RuntimeJob | None]:
+    """Read counts and one related job in a single database snapshot."""
+
+    with database.session() as session:
+        jobs = RuntimeJobRepository(session)
+        queue_length = jobs.count_by_status(RuntimeJobStatus.QUEUED)
+        running_jobs = jobs.count_by_status(
+            RuntimeJobStatus.VALIDATING,
+            RuntimeJobStatus.RUNNING,
+            RuntimeJobStatus.PAUSE_REQUESTED,
+        )
+        queued, _ = jobs.list(limit=1, status=RuntimeJobStatus.QUEUED)
+        if queued:
+            return queue_length, running_jobs, queued[0]
+        active = tuple(
+            job
+            for status in (
+                RuntimeJobStatus.VALIDATING,
+                RuntimeJobStatus.RUNNING,
+                RuntimeJobStatus.PAUSE_REQUESTED,
+            )
+            if (job := jobs.latest_with_status(status)) is not None
+        )
+        related_job = (
+            None
+            if not active
+            else max(active, key=lambda job: (job.updated_at, str(job.job_id)))
+        )
+        return queue_length, running_jobs, related_job
+
+
+def _runtime_job(database: Database, job_id: UUID) -> RuntimeJob | None:
+    """Reload one related job after another worker may have changed its state."""
+
+    with database.session() as session:
+        return RuntimeJobRepository(session).get(job_id)
+
+
+def _run_once_outcome(
+    *,
+    claimed: bool,
+    queue_length_before: int,
+    running_jobs_before: int,
+    queue_length_after: int,
+    running_jobs_after: int,
+) -> RunOnceOutcome:
+    """Distinguish an empty queue from another worker winning the claim race."""
+
+    if claimed:
+        return "job_claimed_by_request_worker"
+    if queue_length_before > 0 or running_jobs_before > 0 or running_jobs_after > 0:
+        return "job_already_claimed_by_another_worker"
+    if queue_length_after > 0:
+        return "job_queued_after_cycle"
+    return "no_queued_job"
 
 
 @router.get(
@@ -184,6 +249,11 @@ def run_runtime_worker_once(
 ) -> RuntimeRunOnceResult:
     """Execute one explicit bounded local worker cycle and then stop."""
 
+    (
+        queue_length_before,
+        running_jobs_before,
+        related_job_before,
+    ) = _runtime_job_observation(database)
     request_id = str(request.state.request_id).lower()
     worker_id = f"{settings.web.web_worker_id_prefix}-{request_id[:24]}"
     process = RuntimeWorkerProcess(
@@ -194,6 +264,24 @@ def run_runtime_worker_once(
         worker_id=worker_id,
     )
     claimed = process.run_one_and_stop()
+    (
+        queue_length_after,
+        running_jobs_after,
+        related_job_after,
+    ) = _runtime_job_observation(database)
+    if process.last_claimed_job_id is not None:
+        related_job = _runtime_job(database, process.last_claimed_job_id)
+    elif related_job_before is not None:
+        related_job = _runtime_job(database, related_job_before.job_id)
+    else:
+        related_job = related_job_after
+    outcome = _run_once_outcome(
+        claimed=claimed,
+        queue_length_before=queue_length_before,
+        running_jobs_before=running_jobs_before,
+        queue_length_after=queue_length_after,
+        running_jobs_after=running_jobs_after,
+    )
     with database.session() as session, session.begin():
         worker = RuntimeWorkerRepository(session).get(worker_id)
         if worker is None:
@@ -206,10 +294,30 @@ def run_runtime_worker_once(
             details={
                 "reason": payload.reason,
                 "claimed_job": claimed,
+                "outcome": outcome,
+                "queue_length_before": queue_length_before,
+                "running_jobs_before": running_jobs_before,
+                "queue_length_after": queue_length_after,
+                "running_jobs_after": running_jobs_after,
+                "related_job_id": (
+                    None if related_job is None else str(related_job.job_id)
+                ),
+                "related_job_status": (
+                    None if related_job is None else related_job.status.value
+                ),
                 "execution_semantics": "claim_at_most_one_then_stop",
             },
         )
-    return RuntimeRunOnceResult(claimed_job=claimed, worker=worker)
+    return RuntimeRunOnceResult(
+        claimed_job=claimed,
+        outcome=outcome,
+        queue_length_before=queue_length_before,
+        running_jobs_before=running_jobs_before,
+        queue_length_after=queue_length_after,
+        running_jobs_after=running_jobs_after,
+        job=related_job,
+        worker=worker,
+    )
 
 
 @router.get(

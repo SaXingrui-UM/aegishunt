@@ -9,7 +9,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from aegishunt.api.contracts import FlowSummary, NetworkFlowPage
-from aegishunt.api.dependencies import PaginationDependency, get_database
+from aegishunt.api.dependencies import (
+    PaginationDependency,
+    RuntimeJobScopeDependency,
+    get_database,
+)
 from aegishunt.api.errors import not_found
 from aegishunt.api.repository import ApiReadRepository
 from aegishunt.schemas import NetworkFlow
@@ -25,6 +29,7 @@ DatabaseDependency = Annotated[Database, Depends(get_database)]
 def list_flows(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     source_id: UUID | None = None,
     capture_session_id: str | None = None,
     protocol: NetworkProtocol | None = None,
@@ -54,6 +59,7 @@ def list_flows(
             alert_present=alert_present,
             minimum_risk=minimum_risk,
             minimum_anomaly_score=minimum_anomaly_score,
+            runtime_scope=runtime_scope,
         )
     return NetworkFlowPage(
         items=items,
@@ -71,12 +77,16 @@ def list_flows(
 @router.get("/summary", response_model=FlowSummary, operation_id="summarize_network_flows")
 def summarize_flows(
     database: DatabaseDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     source_id: UUID | None = None,
 ) -> FlowSummary:
     """Return bounded SQL aggregations for the Traffic Explorer."""
 
     with database.session() as session:
-        return ApiReadRepository(session).flow_summary(source_id=source_id)
+        return ApiReadRepository(session).flow_summary(
+            source_id=source_id,
+            runtime_scope=runtime_scope,
+        )
 
 
 @router.get("/{flow_id}", response_model=NetworkFlow, operation_id="get_network_flow")

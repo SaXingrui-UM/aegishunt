@@ -318,6 +318,39 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         case_id = first.json()["case_id"]
         assert case_id is not None
         assert client.get(f"/cases/{case_id}").status_code == 200
+        first_job_scope = {"job_id": first.json()["runtime_job_id"]}
+        assert client.get("/flows/summary", params=first_job_scope).json()["total"] == 2
+        assert client.get("/flows", params=first_job_scope).json()["total"] == 2
+        assert client.get("/detections", params=first_job_scope).json()["total"] == 2
+        assert client.get("/alerts", params=first_job_scope).json()["total"] == 2
+        assert {
+            item["group_id"]
+            for item in client.get("/alert-groups", params=first_job_scope).json()[
+                "items"
+            ]
+        } == set(first.json()["group_ids"])
+        assert {
+            item["hypothesis_id"]
+            for item in client.get("/hypotheses", params=first_job_scope).json()[
+                "items"
+            ]
+        } == set(first.json()["hypothesis_ids"])
+        scoped_cases = client.get("/cases", params=first_job_scope).json()
+        assert scoped_cases["total"] == 1
+        assert scoped_cases["items"][0]["case_id"] == case_id
+        unknown_scope = {"job_id": str(uuid4())}
+        for path in (
+            "/flows/summary",
+            "/flows",
+            "/detections",
+            "/alerts",
+            "/alert-groups",
+            "/hypotheses",
+            "/cases",
+        ):
+            response = client.get(path, params=unknown_scope)
+            assert response.status_code == 404
+            assert response.json()["error_code"] == "resource_not_found"
         verdict = client.patch(
             f"/cases/{case_id}",
             json={
@@ -354,6 +387,29 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
             ("supervised", "random_forest", "12.0.0"),
             ("anomaly", "local_outlier_factor", "1.1.0-candidate"),
         }
+        supervised = next(
+            item
+            for item in effective["effective_models"]
+            if item["engine_type"] == "supervised"
+        )
+        native_importance = client.get(
+            f"/models/{supervised['model_id']}/importance",
+            params={"kind": "native"},
+        )
+        assert native_importance.status_code == 200, native_importance.text
+        assert native_importance.json()["available"] is True
+        assert all(
+            item["standard_deviation"] is None
+            for item in native_importance.json()["importance"]
+        )
+        permutation_importance = client.get(
+            f"/models/{supervised['model_id']}/importance",
+            params={"kind": "permutation"},
+        )
+        assert permutation_importance.status_code == 200, permutation_importance.text
+        assert permutation_importance.json()["source_partition"] == "validation"
+        assert permutation_importance.json()["scoring_metric"] == "balanced_accuracy"
+        assert permutation_importance.json()["repeats"] == 5
         anomaly = next(
             item
             for item in effective["effective_models"]
@@ -425,6 +481,23 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
             assert effective_frontend.status == "available"
             assert len(effective_frontend.effective_models) == 2
             assert effective_frontend.effective_fusion_policy is not None
+            frontend_native = frontend.model_importance(
+                supervised["model_id"],
+                kind="native",
+            )
+            assert frontend_native.available is True
+            assert frontend_native.importance is not None
+            assert all(
+                item.standard_deviation is None
+                for item in frontend_native.importance
+            )
+            frontend_permutation = frontend.model_importance(
+                supervised["model_id"],
+                kind="permutation",
+            )
+            assert frontend_permutation.source_partition == "validation"
+            assert frontend_permutation.scoring_metric == "balanced_accuracy"
+            assert frontend_permutation.repeats == 5
             assert frontend.evaluations().items == []
             assert frontend.fusion_evaluation_status().status == "unavailable"
             assert frontend.case_audit_events(case_id).total >= 3
@@ -457,6 +530,25 @@ def test_sample_demo_runs_full_existing_pipeline_idempotently(tmp_path: Path) ->
         assert len(presentation.json()["group_ids"]) == 1
         assert len(presentation.json()["hypothesis_ids"]) == 1
         assert presentation.json()["case_id"] is None
+        presentation_scope = {"job_id": presentation.json()["runtime_job_id"]}
+        assert client.get("/flows/summary", params=presentation_scope).json()[
+            "total"
+        ] == len(presentation.json()["flow_ids"])
+        assert client.get("/detections", params=presentation_scope).json()[
+            "total"
+        ] == len(presentation.json()["flow_ids"])
+        assert client.get("/alerts", params=presentation_scope).json()["total"] == len(
+            presentation.json()["alert_ids"]
+        )
+        assert client.get("/alert-groups", params=presentation_scope).json()[
+            "total"
+        ] == len(presentation.json()["group_ids"])
+        assert client.get("/hypotheses", params=presentation_scope).json()[
+            "total"
+        ] == len(presentation.json()["hypothesis_ids"])
+        assert client.get("/cases", params=presentation_scope).json()["total"] == 0
+        assert client.get("/flows", params=first_job_scope).json()["total"] == 2
+        assert client.get("/cases", params=first_job_scope).json()["total"] == 1
         combined_summary = client.get("/flows/summary").json()
         assert combined_summary["total"] == 11
         assert combined_summary["total_packets"] == 37

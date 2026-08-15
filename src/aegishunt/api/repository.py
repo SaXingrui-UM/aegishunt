@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TypeVar
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import false, func, select
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.selectable import Select
 
 from aegishunt.api.contracts import FlowSummary
+from aegishunt.api.runtime_lineage import RuntimeJobLineageReader, RuntimeJobScope
 from aegishunt.schemas import (
     AlertGroup,
     DetectionResult,
@@ -30,9 +34,21 @@ from aegishunt.storage.models import (
     DetectionResultRecord,
     InvestigationCaseRecord,
     NetworkFlowRecord,
+    RuntimeOutputLedgerRecord,
     SecurityAlertRecord,
     ThreatHypothesisRecord,
 )
+
+IdentityT = TypeVar("IdentityT")
+
+
+def _runtime_output_ids(
+    job_id: UUID,
+    column: InstrumentedAttribute[IdentityT],
+) -> Select[tuple[IdentityT]]:
+    """Return one job-bounded ledger identity subquery without large IN parameters."""
+
+    return select(column).where(RuntimeOutputLedgerRecord.job_id == job_id)
 
 
 class ApiReadRepository:
@@ -57,6 +73,7 @@ class ApiReadRepository:
         alert_present: bool | None = None,
         minimum_risk: float | None = None,
         minimum_anomaly_score: float | None = None,
+        runtime_scope: RuntimeJobScope | None = None,
     ) -> tuple[list[NetworkFlow], int]:
         """Return a stable filtered page without exposing evaluation-only ground truth."""
 
@@ -90,6 +107,15 @@ class ApiReadRepository:
                 SecurityAlertRecord.detection_id == DetectionResultRecord.detection_id,
             )
         conditions: list[ColumnElement[bool]] = []
+        if runtime_scope is not None:
+            conditions.append(
+                NetworkFlowRecord.flow_id.in_(
+                    _runtime_output_ids(
+                        runtime_scope.job_id,
+                        RuntimeOutputLedgerRecord.flow_id,
+                    )
+                )
+            )
         optional_pairs = (
             (source_id, NetworkFlowRecord.source_id),
             (capture_session_id, NetworkFlowRecord.capture_session_id),
@@ -124,12 +150,27 @@ class ApiReadRepository:
         total = self._session.scalar(count_query) or 0
         return [NetworkFlow.model_validate(row) for row in rows], total
 
-    def flow_summary(self, *, source_id: UUID | None = None) -> FlowSummary:
+    def flow_summary(
+        self,
+        *,
+        source_id: UUID | None = None,
+        runtime_scope: RuntimeJobScope | None = None,
+    ) -> FlowSummary:
         """Aggregate bounded summary fields in SQL instead of the frontend."""
 
-        condition = (
-            () if source_id is None else (NetworkFlowRecord.source_id == source_id,)
-        )
+        conditions: list[ColumnElement[bool]] = []
+        if source_id is not None:
+            conditions.append(NetworkFlowRecord.source_id == source_id)
+        if runtime_scope is not None:
+            conditions.append(
+                NetworkFlowRecord.flow_id.in_(
+                    _runtime_output_ids(
+                        runtime_scope.job_id,
+                        RuntimeOutputLedgerRecord.flow_id,
+                    )
+                )
+            )
+        condition = tuple(conditions)
         total, packets, byte_count, first_seen, last_seen = self._session.execute(
             select(
                 func.count(NetworkFlowRecord.flow_id),
@@ -199,10 +240,20 @@ class ApiReadRepository:
         status: AlertStatus | None = None,
         analyst_verdict: AnalystVerdict | None = None,
         minimum_risk: float | None = None,
+        runtime_scope: RuntimeJobScope | None = None,
     ) -> tuple[list[SecurityAlert], int]:
         query = select(SecurityAlertRecord)
         count_query = select(func.count(SecurityAlertRecord.alert_id))
         conditions: list[ColumnElement[bool]] = []
+        if runtime_scope is not None:
+            conditions.append(
+                SecurityAlertRecord.alert_id.in_(
+                    _runtime_output_ids(
+                        runtime_scope.job_id,
+                        RuntimeOutputLedgerRecord.alert_id,
+                    )
+                )
+            )
         for value, column in (
             (severity, SecurityAlertRecord.severity),
             (status, SecurityAlertRecord.status),
@@ -232,12 +283,22 @@ class ApiReadRepository:
         supervised_label: str | None = None,
         minimum_risk: float | None = None,
         minimum_anomaly_score: float | None = None,
+        runtime_scope: RuntimeJobScope | None = None,
     ) -> tuple[list[DetectionResult], int]:
         """Return immutable detection evidence with bounded deterministic ordering."""
 
         query = select(DetectionResultRecord)
         count_query = select(func.count(DetectionResultRecord.detection_id))
         conditions: list[ColumnElement[bool]] = []
+        if runtime_scope is not None:
+            conditions.append(
+                DetectionResultRecord.detection_id.in_(
+                    _runtime_output_ids(
+                        runtime_scope.job_id,
+                        RuntimeOutputLedgerRecord.detection_id,
+                    )
+                )
+            )
         if flow_id is not None:
             conditions.append(DetectionResultRecord.flow_id == flow_id)
         if supervised_label is not None:
@@ -289,10 +350,20 @@ class ApiReadRepository:
         offset: int,
         severity: Severity | None = None,
         status: str | None = None,
+        runtime_scope: RuntimeJobScope | None = None,
     ) -> tuple[list[AlertGroup], int]:
         query = select(AlertGroupRecord)
         count_query = select(func.count(AlertGroupRecord.group_id))
         conditions: list[ColumnElement[bool]] = []
+        if runtime_scope is not None:
+            group_ids, _ = RuntimeJobLineageReader(self._session).downstream_ids(
+                runtime_scope.job_id
+            )
+            conditions.append(
+                false()
+                if not group_ids
+                else AlertGroupRecord.group_id.in_(group_ids)
+            )
         if severity is not None:
             conditions.append(AlertGroupRecord.severity == severity)
         if status is not None:
@@ -315,10 +386,22 @@ class ApiReadRepository:
         offset: int,
         status: HypothesisStatus | None = None,
         severity: Severity | None = None,
+        runtime_scope: RuntimeJobScope | None = None,
     ) -> tuple[list[ThreatHypothesis], int]:
         query = select(ThreatHypothesisRecord)
         count_query = select(func.count(ThreatHypothesisRecord.hypothesis_id))
         conditions: list[ColumnElement[bool]] = []
+        if runtime_scope is not None:
+            _, hypothesis_ids = RuntimeJobLineageReader(
+                self._session
+            ).downstream_ids(runtime_scope.job_id)
+            conditions.append(
+                false()
+                if not hypothesis_ids
+                else ThreatHypothesisRecord.hypothesis_id.in_(
+                    hypothesis_ids
+                )
+            )
         if status is not None:
             conditions.append(ThreatHypothesisRecord.status == status)
         if severity is not None:
@@ -352,10 +435,22 @@ class ApiReadRepository:
         status: object | None,
         priority: object | None,
         assigned_to: str | None,
+        runtime_scope: RuntimeJobScope | None = None,
     ) -> tuple[list[InvestigationCase], int]:
         query = select(InvestigationCaseRecord)
         count_query = select(func.count(InvestigationCaseRecord.case_id))
         conditions: list[ColumnElement[bool]] = []
+        if runtime_scope is not None:
+            _, hypothesis_ids = RuntimeJobLineageReader(
+                self._session
+            ).downstream_ids(runtime_scope.job_id)
+            conditions.append(
+                false()
+                if not hypothesis_ids
+                else InvestigationCaseRecord.hypothesis_id.in_(
+                    hypothesis_ids
+                )
+            )
         if status is not None:
             conditions.append(InvestigationCaseRecord.status == status)
         if priority is not None:

@@ -14,7 +14,11 @@ from aegishunt.api.contracts import (
     DetectionResultPage,
     SecurityAlertPage,
 )
-from aegishunt.api.dependencies import PaginationDependency, get_database
+from aegishunt.api.dependencies import (
+    PaginationDependency,
+    RuntimeJobScopeDependency,
+    get_database,
+)
 from aegishunt.api.errors import not_found
 from aegishunt.api.repository import ApiReadRepository
 from aegishunt.schemas import SecurityAlert
@@ -39,6 +43,7 @@ DatabaseDependency = Annotated[Database, Depends(get_database)]
 def list_detections(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     flow_id: UUID | None = None,
     supervised_label: str | None = None,
     minimum_risk: Annotated[float | None, Query(ge=0.0, le=1.0)] = None,
@@ -52,6 +57,7 @@ def list_detections(
             supervised_label=supervised_label,
             minimum_risk=minimum_risk,
             minimum_anomaly_score=minimum_anomaly_score,
+            runtime_scope=runtime_scope,
         )
     return DetectionResultPage(
         items=items,
@@ -87,6 +93,7 @@ def get_detection(detection_id: UUID, database: DatabaseDependency) -> Detection
 def list_alerts(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     severity: Severity | None = None,
     alert_status: AlertStatus | None = None,
     analyst_verdict: AnalystVerdict | None = None,
@@ -100,6 +107,7 @@ def list_alerts(
             status=alert_status,
             analyst_verdict=analyst_verdict,
             minimum_risk=minimum_risk,
+            runtime_scope=runtime_scope,
         )
     return SecurityAlertPage(
         items=items,

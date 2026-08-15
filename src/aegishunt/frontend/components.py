@@ -10,7 +10,11 @@ from typing import Any, Protocol
 
 import streamlit as st
 
-from aegishunt.frontend.client import ApiClientError
+from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
+from aegishunt.runtime.contracts import RuntimeJob, RuntimeJobStatus
+
+_ALL_RUNTIME_JOBS = "__all_runtime_jobs__"
+_RUNTIME_JOB_SCOPE_KEY = "aegishunt-runtime-job-scope"
 
 
 class PaginationMetadata(Protocol):
@@ -48,6 +52,83 @@ def empty(message: str) -> None:
 def api_error(error: ApiClientError) -> None:
     suffix = f" Request ID: {error.request_id}." if error.request_id else ""
     st.error(f"{error}{suffix}")
+
+
+def _runtime_job_label(job: RuntimeJob) -> str:
+    completed = (
+        ""
+        if job.completed_at is None
+        else f" · completed {job.completed_at.isoformat(timespec='seconds')}"
+    )
+    return f"{job.job_id} · {job.status.value}{completed}"
+
+
+def runtime_job_filter(client: AegisHuntApiClient) -> str | None:
+    """Render one cross-page runtime lineage selector, defaulting to latest complete."""
+
+    first_page = client.runtime_jobs()
+    page = first_page
+    if first_page.total > len(first_page.items):
+        page = client.runtime_jobs(
+            limit=first_page.limit,
+            offset=max(0, first_page.total - first_page.limit),
+        )
+    jobs = sorted(
+        page.items,
+        key=lambda item: (item.created_at, str(item.job_id)),
+        reverse=True,
+    )
+    by_id = {str(job.job_id): job for job in jobs}
+    latest_completed = next(
+        (job for job in jobs if job.status is RuntimeJobStatus.COMPLETED),
+        None,
+    )
+    default = (
+        str(latest_completed.job_id)
+        if latest_completed is not None
+        else (str(jobs[0].job_id) if jobs else _ALL_RUNTIME_JOBS)
+    )
+    options = [default]
+    options.extend(identifier for identifier in by_id if identifier != default)
+    if default != _ALL_RUNTIME_JOBS:
+        options.append(_ALL_RUNTIME_JOBS)
+    current = st.session_state.get(_RUNTIME_JOB_SCOPE_KEY)
+    if current not in options:
+        st.session_state[_RUNTIME_JOB_SCOPE_KEY] = default
+
+    selected = str(
+        st.selectbox(
+            "Runtime job scope",
+            options,
+            key=_RUNTIME_JOB_SCOPE_KEY,
+            format_func=lambda value: (
+                "All retained runtime evidence"
+                if value == _ALL_RUNTIME_JOBS
+                else _runtime_job_label(by_id[value])
+            ),
+            help=(
+                "The same selection is retained across Traffic Explorer, Alerts, "
+                "Threat Hunts, and Cases."
+            ),
+        )
+    )
+    if selected == _ALL_RUNTIME_JOBS:
+        st.caption(
+            "Showing all retained runtime evidence across jobs; select one job for "
+            "an exact provenance scope."
+        )
+        return None
+
+    job = by_id[selected]
+    st.caption(
+        f"Runtime job `{job.job_id}` · status {job.status.value} · "
+        f"source `{job.source_id}` · capture `{job.capture_session_id}`"
+    )
+    if first_page.total > len(page.items):
+        st.caption(
+            f"Showing the most recent {len(page.items)} of {first_page.total} runtime jobs."
+        )
+    return selected
 
 
 def metrics(values: Mapping[str, object | None]) -> None:

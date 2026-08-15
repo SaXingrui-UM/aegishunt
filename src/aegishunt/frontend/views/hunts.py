@@ -12,6 +12,7 @@ from aegishunt.frontend.components import (
     page_header,
     paginated_table,
     pagination_offset,
+    runtime_job_filter,
 )
 
 
@@ -22,10 +23,19 @@ def render(client: AegisHuntApiClient) -> None:
         "are not attack probabilities; possible MITRE mappings are not attribution, "
         "and recommended queries are not executed."
     )
+    try:
+        job_id = runtime_job_filter(client)
+    except ApiClientError as error:
+        api_error(error)
+        return
+    scope = job_id or "all"
     groups_tab, hypotheses_tab = st.tabs(("Alert groups", "Hypotheses"))
     with groups_tab:
         try:
-            groups = client.groups(offset=pagination_offset("hunts-groups"))
+            groups = client.groups(
+                job_id=job_id,
+                offset=pagination_offset("hunts-groups", scope=scope),
+            )
             paginated_table(
                 groups,
                 (
@@ -47,7 +57,8 @@ def render(client: AegisHuntApiClient) -> None:
     with hypotheses_tab:
         try:
             hypotheses = client.hypotheses(
-                offset=pagination_offset("hunts-hypotheses")
+                job_id=job_id,
+                offset=pagination_offset("hunts-hypotheses", scope=scope),
             )
         except ApiClientError as error:
             api_error(error)

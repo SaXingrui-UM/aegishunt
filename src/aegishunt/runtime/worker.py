@@ -14,6 +14,7 @@ from aegishunt.errors import AegisHuntError
 from aegishunt.runtime.clock import RuntimeClock
 from aegishunt.runtime.config import LoadedRuntimePolicy
 from aegishunt.runtime.contracts import RuntimeStage, RuntimeWorker, RuntimeWorkerStatus
+from aegishunt.runtime.environment import resolve_job_execution_environment
 from aegishunt.runtime.errors import (
     ReplayInterrupted,
     RuntimeError,
@@ -53,10 +54,17 @@ class RuntimeWorkerProcess:
         self._stop = stop_event or threading.Event()
         self._clock = clock or RuntimeClock()
         self._resource_sampler = resource_sampler
+        self._last_claimed_job_id: UUID | None = None
 
     @property
     def stop_event(self) -> threading.Event:
         return self._stop
+
+    @property
+    def last_claimed_job_id(self) -> UUID | None:
+        """Return the job identity claimed by the most recent bounded cycle."""
+
+        return self._last_claimed_job_id
 
     def start(self) -> RuntimeWorker:
         now = self._clock.now()
@@ -83,6 +91,7 @@ class RuntimeWorkerProcess:
     def run_once(self) -> bool:
         """Run at most one queued job; return whether a claim was made."""
 
+        self._last_claimed_job_id = None
         if self._stop.is_set():
             return False
         now = self._clock.now()
@@ -110,6 +119,7 @@ class RuntimeWorkerProcess:
                     )
                 )
                 return False
+            self._last_claimed_job_id = job.job_id
             attempt = jobs.start_attempt(
                 job.job_id,
                 worker_id=self._worker_id,
@@ -131,17 +141,22 @@ class RuntimeWorkerProcess:
                 )
             )
             job = claimed
-        runner = RuntimePipelineRunner(
-            self._database,
-            settings=self._settings,
-            runtime_policy=self._runtime,
-            project_root=self._project_root,
-            worker_id=self._worker_id,
-            stop_event=self._stop,
-            clock=self._clock,
-            resource_sampler=self._resource_sampler,
-        )
         try:
+            environment = resolve_job_execution_environment(
+                self._settings,
+                job.snapshot,
+                project_root=self._project_root,
+            )
+            runner = RuntimePipelineRunner(
+                self._database,
+                settings=environment.settings,
+                runtime_policy=environment.runtime_policy,
+                project_root=self._project_root,
+                worker_id=self._worker_id,
+                stop_event=self._stop,
+                clock=self._clock,
+                resource_sampler=self._resource_sampler,
+            )
             runner.run(job)
         except ReplayInterrupted as exc:
             self._interrupt(job.job_id, str(exc))

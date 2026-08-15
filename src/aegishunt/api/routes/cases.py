@@ -27,7 +27,12 @@ from aegishunt.api.contracts import (
     FeedbackRequest,
     InvestigationCasePage,
 )
-from aegishunt.api.dependencies import PaginationDependency, get_database, get_settings
+from aegishunt.api.dependencies import (
+    PaginationDependency,
+    RuntimeJobScopeDependency,
+    get_database,
+    get_settings,
+)
 from aegishunt.api.errors import ApiError, not_found
 from aegishunt.api.repository import ApiReadRepository
 from aegishunt.artifact_io import (
@@ -77,6 +82,7 @@ def _policy(settings: ApplicationSettings) -> LoadedCaseFeedbackPolicy:
 def list_cases(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     case_status: CaseStatus | None = None,
     priority: CasePriority | None = None,
     assigned_to: str | None = None,
@@ -88,6 +94,7 @@ def list_cases(
             status=case_status,
             priority=priority,
             assigned_to=assigned_to,
+            runtime_scope=runtime_scope,
         )
     return InvestigationCasePage(
         items=items,

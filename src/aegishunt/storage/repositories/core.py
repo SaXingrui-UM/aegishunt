@@ -162,6 +162,18 @@ class SecurityAlertRepository(SqlAlchemyRepository[SecurityAlert, SecurityAlertR
         )
         return None if row is None else SecurityAlert.model_validate(row)
 
+    def list_by_ids(self, alert_ids: set[UUID]) -> list[SecurityAlert]:
+        """Return only explicitly selected alerts in stable identifier order."""
+
+        if not alert_ids:
+            return []
+        rows = self._session.scalars(
+            select(SecurityAlertRecord)
+            .where(SecurityAlertRecord.alert_id.in_(alert_ids))
+            .order_by(SecurityAlertRecord.alert_id)
+        ).all()
+        return [SecurityAlert.model_validate(row) for row in rows]
+
     def update_verdict(
         self,
         alert_id: UUID,
@@ -214,13 +226,20 @@ class AlertGroupRepository(SqlAlchemyRepository[AlertGroup, AlertGroupRecord]):
             audit_log=audit_log,
         )
 
-    def list_open(self) -> list[AlertGroup]:
-        """Return Phase 9 open groups in stable event-time order."""
+    def list_open(
+        self,
+        *,
+        group_ids: set[UUID] | None = None,
+    ) -> list[AlertGroup]:
+        """Return open groups, optionally bounded to explicit identities."""
 
+        if group_ids == set():
+            return []
+        statement = select(AlertGroupRecord).where(AlertGroupRecord.status == "open")
+        if group_ids is not None:
+            statement = statement.where(AlertGroupRecord.group_id.in_(group_ids))
         rows = self._session.scalars(
-            select(AlertGroupRecord)
-            .where(AlertGroupRecord.status == "open")
-            .order_by(AlertGroupRecord.first_seen, AlertGroupRecord.group_id)
+            statement.order_by(AlertGroupRecord.first_seen, AlertGroupRecord.group_id)
         ).all()
         return [AlertGroup.model_validate(row) for row in rows]
 

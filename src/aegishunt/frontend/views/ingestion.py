@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from aegishunt.api.contracts import RuntimeRunOnceResult
 from aegishunt.frontend.client import AegisHuntApiClient, ApiClientError
 from aegishunt.frontend.components import (
     actor_input,
@@ -13,6 +14,42 @@ from aegishunt.frontend.components import (
     paginated_table,
     pagination_offset,
 )
+from aegishunt.runtime.contracts import RuntimeJob
+
+_TRACKED_RUNTIME_JOB_KEY = "aegishunt-runtime-worker-job-id"
+
+
+def _worker_result_message(result: RuntimeRunOnceResult) -> str:
+    """Explain which worker, if any, won the atomic queued-job claim."""
+
+    worker_id = result.worker.worker_id
+    if result.outcome == "job_claimed_by_request_worker":
+        return f"Worker {worker_id} claimed one job, finished its cycle, and stopped."
+    if result.outcome == "job_already_claimed_by_another_worker":
+        return (
+            f"Worker {worker_id} did not duplicate an existing claim: another worker "
+            "already claimed available work and is processing it independently."
+        )
+    if result.outcome == "job_queued_after_cycle":
+        return (
+            f"Worker {worker_id} stopped before a new job entered the queue; the "
+            "background worker can process it, or run another bounded cycle."
+        )
+    return f"Worker {worker_id} found no queued or active job and stopped."
+
+
+def _render_runtime_job_status(job: RuntimeJob | None) -> None:
+    """Persistently show the job associated with the last manual worker cycle."""
+
+    if job is None:
+        return
+    message = f"Runtime job {job.job_id} · status {job.status.value}"
+    if job.status.value == "completed":
+        st.success(message)
+    elif job.status.value == "failed":
+        st.error(message)
+    else:
+        st.info(message)
 
 
 def render(client: AegisHuntApiClient) -> None:
@@ -173,6 +210,15 @@ def render(client: AegisHuntApiClient) -> None:
                 key="ingestion-runtime-jobs",
                 empty_message="No runtime replay jobs are present.",
             )
+            tracked_runtime_job = None
+            tracked_runtime_job_id = st.session_state.get(_TRACKED_RUNTIME_JOB_KEY)
+            if isinstance(tracked_runtime_job_id, str):
+                try:
+                    tracked_runtime_job = client.runtime_job(
+                        tracked_runtime_job_id
+                    ).job
+                except ApiClientError as error:
+                    api_error(error)
             with st.form("runtime-run-once"):
                 worker_actor = actor_input(key="runtime-worker-actor")
                 worker_reason = st.text_area(
@@ -189,18 +235,21 @@ def render(client: AegisHuntApiClient) -> None:
                         actor=worker_actor,
                         reason=worker_reason,
                     )
-                    if worker_result.claimed_job:
-                        st.success(
-                            f"Worker {worker_result.worker.worker_id} claimed at most one job "
-                            "and stopped."
-                        )
+                    message = _worker_result_message(worker_result)
+                    if worker_result.outcome == "job_claimed_by_request_worker":
+                        st.success(message)
+                    elif worker_result.outcome == "job_queued_after_cycle":
+                        st.warning(message)
                     else:
-                        st.info(
-                            f"Worker {worker_result.worker.worker_id} found no queued job and "
-                            "stopped."
+                        st.info(message)
+                    if worker_result.job is not None:
+                        tracked_runtime_job = worker_result.job
+                        st.session_state[_TRACKED_RUNTIME_JOB_KEY] = str(
+                            worker_result.job.job_id
                         )
                 except ApiClientError as error:
                     api_error(error)
+            _render_runtime_job_status(tracked_runtime_job)
             if runtime_jobs.items:
                 with st.form("runtime-control"):
                     selected_job = st.selectbox(

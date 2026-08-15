@@ -141,6 +141,17 @@ class RuntimeRunOnceResult(ApiContract):
     """Bounded worker result without implying that a job was available."""
 
     claimed_job: bool
+    outcome: Literal[
+        "job_claimed_by_request_worker",
+        "job_already_claimed_by_another_worker",
+        "job_queued_after_cycle",
+        "no_queued_job",
+    ]
+    queue_length_before: int = Field(ge=0)
+    running_jobs_before: int = Field(ge=0)
+    queue_length_after: int = Field(ge=0)
+    running_jobs_after: int = Field(ge=0)
+    job: RuntimeJob | None
     worker: RuntimeWorker
     execution_semantics: Literal["claim_at_most_one_then_stop"] = (
         "claim_at_most_one_then_stop"

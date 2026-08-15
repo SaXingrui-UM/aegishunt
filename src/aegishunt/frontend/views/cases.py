@@ -11,6 +11,7 @@ from aegishunt.frontend.components import (
     page_header,
     paginated_table,
     pagination_offset,
+    runtime_job_filter,
     table,
 )
 
@@ -18,7 +19,11 @@ from aegishunt.frontend.components import (
 def render(client: AegisHuntApiClient) -> None:
     page_header("Cases", "Analyst-controlled investigations, evidence, notes, and feedback")
     try:
-        cases = client.cases(offset=pagination_offset("cases-records"))
+        job_id = runtime_job_filter(client)
+        cases = client.cases(
+            job_id=job_id,
+            offset=pagination_offset("cases-records", scope=job_id or "all"),
+        )
     except ApiClientError as error:
         api_error(error)
         return

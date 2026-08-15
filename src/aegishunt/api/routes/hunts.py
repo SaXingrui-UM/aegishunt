@@ -15,7 +15,12 @@ from aegishunt.api.contracts import (
     HypothesisStatusRequest,
     ThreatHypothesisPage,
 )
-from aegishunt.api.dependencies import PaginationDependency, get_database, get_settings
+from aegishunt.api.dependencies import (
+    PaginationDependency,
+    RuntimeJobScopeDependency,
+    get_database,
+    get_settings,
+)
 from aegishunt.api.errors import not_found
 from aegishunt.api.repository import ApiReadRepository
 from aegishunt.cases.config import load_case_feedback_policy
@@ -44,6 +49,7 @@ SettingsDependency = Annotated[ApplicationSettings, Depends(get_settings)]
 def list_alert_groups(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     severity: Severity | None = None,
     group_status: str | None = None,
 ) -> AlertGroupPage:
@@ -53,6 +59,7 @@ def list_alert_groups(
             offset=pagination.offset,
             severity=severity,
             status=group_status,
+            runtime_scope=runtime_scope,
         )
     return AlertGroupPage(
         items=items,
@@ -95,6 +102,7 @@ def get_alert_group(group_id: UUID, database: DatabaseDependency) -> AlertGroupD
 def list_hypotheses(
     database: DatabaseDependency,
     pagination: PaginationDependency,
+    runtime_scope: RuntimeJobScopeDependency,
     hypothesis_status: HypothesisStatus | None = None,
     severity: Severity | None = None,
 ) -> ThreatHypothesisPage:
@@ -104,6 +112,7 @@ def list_hypotheses(
             offset=pagination.offset,
             status=hypothesis_status,
             severity=severity,
+            runtime_scope=runtime_scope,
         )
     return ThreatHypothesisPage(
         items=items,

@@ -347,8 +347,8 @@ class AegisHuntApiClient:
     def flow(self, flow_id: str) -> NetworkFlow:
         return self._get(f"/flows/{flow_id}", NetworkFlow)
 
-    def flow_summary(self) -> FlowSummary:
-        return self._get("/flows/summary", FlowSummary)
+    def flow_summary(self, *, job_id: str | None = None) -> FlowSummary:
+        return self._get("/flows/summary", FlowSummary, {"job_id": job_id})
 
     def alerts(self, **filters: object) -> SecurityAlertPage:
         filters.setdefault("limit", self._page_size)

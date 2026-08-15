@@ -12,6 +12,7 @@ from aegishunt.frontend.components import (
     page_header,
     paginated_table,
     pagination_offset,
+    runtime_job_filter,
     table,
 )
 
@@ -21,17 +22,29 @@ def render(client: AegisHuntApiClient) -> None:
         "Traffic Explorer",
         "Canonical flows, directional behavior, detections, and related alerts",
     )
+    try:
+        job_id = runtime_job_filter(client)
+    except ApiClientError as error:
+        api_error(error)
+        return
     protocol = st.selectbox("Protocol filter", ("", "tcp", "udp", "icmp", "other"))
     source_ip = st.text_input("Source IP")
     destination_ip = st.text_input("Destination IP")
     minimum_risk = st.slider("Minimum operational risk", 0.0, 1.0, 0.0)
     filter_scope = "|".join(
-        (protocol, source_ip.strip(), destination_ip.strip(), f"{minimum_risk:.6f}")
+        (
+            job_id or "all",
+            protocol,
+            source_ip.strip(),
+            destination_ip.strip(),
+            f"{minimum_risk:.6f}",
+        )
     )
     offset = pagination_offset("traffic-flows", scope=filter_scope)
     try:
-        summary = client.flow_summary()
+        summary = client.flow_summary(job_id=job_id)
         page = client.flows(
+            job_id=job_id,
             protocol=protocol,
             source_ip=source_ip,
             destination_ip=destination_ip,
@@ -87,7 +100,11 @@ def render(client: AegisHuntApiClient) -> None:
     )
     try:
         flow = client.flow(selected)
-        detection_page = client.detections(flow_id=selected, limit=1)
+        detection_page = client.detections(
+            flow_id=selected,
+            job_id=job_id,
+            limit=1,
+        )
         detection_detail = (
             client.detection(str(detection_page.items[0].detection_id))
             if detection_page.items
