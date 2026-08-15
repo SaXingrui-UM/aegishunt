@@ -169,6 +169,34 @@ isolated to the selected job. Browser QA against the retained Docker state
 switched between the 449-flow 2025 replay and 1,170-flow 2026 replay and
 rendered native and permutation importance separately.
 
+## Runtime job provenance corrective
+
+The bounded `codex/runtime-job-provenance-filters` corrective keeps replay
+creation and execution within one verified artifact environment so a prepared
+demo model cannot be combined with a stale configured runtime policy. The
+manual one-cycle worker response now distinguishes an empty queue from another
+worker winning the atomic claim and returns the associated runtime job and its
+actual terminal status.
+
+Correlation and hypothesis generation are bounded to the current replay job's
+alerts and groups. Runtime-pinned feature-importance evidence is resolved from
+the latest completed job snapshot: Native reports standard deviation as not
+applicable, while Permutation reports the persisted validation-partition mean,
+standard deviation, `balanced_accuracy`, and five repeats. Traffic Explorer,
+Alerts, Threat Hunts, and Cases share one persistent runtime-job selector; the
+corresponding read APIs accept `job_id`, validate that the job exists, and
+trace flows, detections, alerts, groups, hypotheses, and cases without changing
+stored evidence.
+
+Ruff passed; strict mypy passed 242 source files; all 583 pytest tests passed
+with zero failures at 85.93% branch-aware coverage. Rebuilt local Compose
+services were healthy, rendered browser QA had no console errors, and two
+retained replay scopes were verified independently: 42 flows/alerts with one
+group, hypothesis, and case; and 1,170 flows/alerts with 337 groups and
+hypotheses and no case. No PCAP, database, generated model, replay output,
+threshold, fusion/risk policy, release Tag, or automatic response behavior is
+changed or committed.
+
 ## Next phase
 
 None. No further implementation phase is planned. Optional archival, thesis
